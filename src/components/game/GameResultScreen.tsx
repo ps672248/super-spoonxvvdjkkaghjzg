@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, Text, TouchableOpacity, ScrollView } from 'react-native';
+import { View, StyleSheet, Text, TouchableOpacity, ScrollView, Modal, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, Radius, Shadows } from '../../theme';
@@ -57,8 +57,21 @@ export const GameResultScreen = ({
   const { fullName } = useSettingsStore();
   const { selectedPSU, selectedBranch } = useExamStore();
   const { addQuestionBookmark, isQuestionBookmarked, updateQuestionNote, removeQuestionBookmark, questionBookmarks } = useBookmarkStore();
-  
+  const [noteModalItem, setNoteModalItem] = React.useState<GenericResultItem | null>(null);
+  const [localNote, setLocalNote] = React.useState('');
+
   const firstName = fullName.split(' ')[0];
+
+  const handleBookmarkPress = (item: GenericResultItem) => {
+    const bookmarked = isQuestionBookmarked(item.id);
+    if (bookmarked) {
+      removeQuestionBookmark(item.id);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } else {
+      setLocalNote(questionBookmarks.find(b => b.id === item.id)?.note || '');
+      setNoteModalItem(item);
+    }
+  };
   
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
@@ -91,6 +104,13 @@ export const GameResultScreen = ({
                       {item.type === 'mcq' ? 'QUESTION' : 'CHALLENGE'} {String(i + 1).padStart(2, '0')} • {item.topic?.toUpperCase() || 'GENERAL'}
                     </Text>
                   </View>
+                  <TouchableOpacity onPress={() => handleBookmarkPress(item)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                    <Ionicons
+                      name={bookmarked ? 'bookmark' : 'bookmark-outline'}
+                      size={22}
+                      color={bookmarked ? Colors.gold : Colors.outline}
+                    />
+                  </TouchableOpacity>
                 </View>
 
                 <UnifiedQuestion
@@ -105,24 +125,6 @@ export const GameResultScreen = ({
                   pairs={item.type === 'match' ? item.matchPairs?.map(p => ({ id: p.left, left: p.left, right: p.right })) : undefined}
                   isBookmarked={bookmarked}
                   bookmarkNote={savedNote}
-                  onToggleBookmark={async (note) => {
-                    if (bookmarked) {
-                      if (!note) {
-                        await removeQuestionBookmark(item.id);
-                      } else {
-                        await updateQuestionNote(item.id, note);
-                      }
-                    } else {
-                      await addQuestionBookmark({
-                        ...item.rawQuestion,
-                        yourAnswer: item.type === 'mcq' ? item.yourAnswer : JSON.stringify(item.matchPairs),
-                        psuName: selectedPSU?.name || 'PSU',
-                        branchName: selectedBranch?.name || 'General',
-                        note: note || '',
-                      });
-                    }
-                    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                  }}
                 />
               </View>
             );
@@ -139,6 +141,46 @@ export const GameResultScreen = ({
         </View>
       </ScrollView>
 
+      <Modal visible={!!noteModalItem} transparent animationType="fade" onRequestClose={() => setNoteModalItem(null)}>
+        <View style={styles.noteOverlay}>
+          <View style={styles.noteCard}>
+            <Text style={styles.noteTitle}>Save to Bookmarks</Text>
+            <Text style={styles.noteSubtitle}>Add an optional note for this question</Text>
+            <TextInput
+              style={styles.noteInput}
+              placeholder="Type your note here..."
+              placeholderTextColor={Colors.outline}
+              multiline
+              value={localNote}
+              onChangeText={setLocalNote}
+              maxLength={200}
+            />
+            <View style={styles.noteActions}>
+              <TouchableOpacity style={styles.noteCancelBtn} onPress={() => setNoteModalItem(null)}>
+                <Text style={styles.noteCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.noteSaveBtn}
+                onPress={async () => {
+                  if (noteModalItem) {
+                    await addQuestionBookmark({
+                      ...noteModalItem.rawQuestion,
+                      yourAnswer: noteModalItem.type === 'mcq' ? noteModalItem.yourAnswer : JSON.stringify(noteModalItem.matchPairs),
+                      psuName: selectedPSU?.name || 'PSU',
+                      branchName: selectedBranch?.name || 'General',
+                      note: localNote,
+                    });
+                    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                  }
+                  setNoteModalItem(null);
+                }}
+              >
+                <Text style={styles.noteSaveText}>Save</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -186,6 +228,16 @@ const styles = StyleSheet.create({
   reviewCardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.md },
   questionTag: { backgroundColor: '#FFF9E6', paddingHorizontal: Spacing.md, paddingVertical: 4, borderRadius: Radius.pill },
   questionTagText: { ...Typography.labelCaps, color: '#B8860B', fontSize: 9, fontFamily: 'Inter_700Bold' },
+  noteOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: Spacing.xl },
+  noteCard: { backgroundColor: '#FFF', borderRadius: Radius.xl, padding: Spacing.xl, gap: Spacing.lg, ...Shadows.cardHover },
+  noteTitle: { ...Typography.h2, color: Colors.primary },
+  noteSubtitle: { ...Typography.bodySm, color: Colors.onSurfaceVariant, marginTop: -8 },
+  noteInput: { backgroundColor: '#F8FAFF', borderRadius: Radius.md, padding: Spacing.md, height: 100, textAlignVertical: 'top', ...Typography.bodyMd, color: Colors.onSurface, borderWidth: 1, borderColor: '#E1E8F0' },
+  noteActions: { flexDirection: 'row', gap: Spacing.md },
+  noteCancelBtn: { flex: 1, padding: Spacing.md, borderRadius: Radius.md, alignItems: 'center', backgroundColor: '#F0F2F5' },
+  noteCancelText: { ...Typography.bodyMd, color: Colors.onSurfaceVariant, fontFamily: 'Inter_700Bold' },
+  noteSaveBtn: { flex: 1, padding: Spacing.md, borderRadius: Radius.md, alignItems: 'center', backgroundColor: Colors.primary },
+  noteSaveText: { ...Typography.bodyMd, color: '#FFF', fontFamily: 'Inter_700Bold' },
   footerActions: { flexDirection: 'row', padding: Spacing.lg, gap: Spacing.md },
   restartBtn: { flex: 1, backgroundColor: '#F2F4F7', paddingVertical: Spacing.lg, borderRadius: Radius.md, alignItems: 'center' },
   restartBtnText: { ...Typography.button, color: Colors.onSurfaceVariant },

@@ -66,7 +66,7 @@ export default function BookmarksScreen() {
         {/* Page Title & Attempt Mode Toggle */}
         <View style={styles.headerRow}>
           <View style={styles.titleRow}>
-            <Text style={styles.mainTitle}>Saved Questions</Text>
+            <Text style={styles.mainTitle} numberOfLines={1} adjustsFontSizeToFit>Saved Questions</Text>
             <View style={styles.countBadge}>
                <Text style={styles.countText}>{questionBookmarks.length} ITEMS</Text>
             </View>
@@ -89,7 +89,9 @@ export default function BookmarksScreen() {
 
         {questionBookmarks.length === 0 ? (
           <View style={styles.empty}>
-            <Text style={styles.emptyEmoji}>📚</Text>
+            <View style={styles.emptyIconContainer}>
+              <Ionicons name="bookmarks-outline" size={48} color={Colors.primary} />
+            </View>
             <Text style={styles.emptyTitle}>No saved questions yet</Text>
             <Text style={styles.emptyDesc}>Bookmark challenging questions during your study sessions to review them here.</Text>
           </View>
@@ -457,28 +459,44 @@ const styles = StyleSheet.create({
     flexDirection: 'row', 
     justifyContent: 'space-between', 
     alignItems: 'center', 
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
     marginBottom: Spacing.md 
   },
-  titleRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
-  mainTitle: { ...Typography.h1, color: Colors.primary, fontSize: 32 },
+  titleRow: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    gap: Spacing.sm,
+    flex: 1,
+    minWidth: 180,
+    marginRight: Spacing.xs 
+  },
+  mainTitle: { 
+    ...Typography.h1, 
+    color: Colors.primary, 
+    fontSize: 26, 
+    flexShrink: 1 
+  },
   countBadge: { 
     backgroundColor: '#EAEDF2', 
     paddingHorizontal: Spacing.md, 
     paddingVertical: 6, 
-    borderRadius: Radius.sm 
+    borderRadius: Radius.sm,
+    flexShrink: 0
   },
   countText: { ...Typography.labelCaps, fontSize: 10, color: Colors.outline },
 
   attemptToggle: { 
     flexDirection: 'row', 
     alignItems: 'center', 
-    gap: 8, 
+    gap: 6, 
     backgroundColor: '#FFF', 
     paddingHorizontal: Spacing.md, 
     paddingVertical: 8, 
     borderRadius: Radius.pill,
     borderWidth: 1,
     borderColor: Colors.primary,
+    flexShrink: 0,
     ...Shadows.card
   },
   attemptToggleActive: { backgroundColor: Colors.primary },
@@ -656,7 +674,17 @@ const styles = StyleSheet.create({
   },
 
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: Spacing.md, marginTop: 100 },
-  emptyEmoji: { fontSize: 56 },
+  emptyIconContainer: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: Colors.primary + '10',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: Spacing.sm,
+    borderWidth: 2,
+    borderColor: Colors.primary + '20',
+  },
   emptyTitle: { ...Typography.h3, color: Colors.onSurface },
   emptyDesc: { ...Typography.bodyMd, color: Colors.onSurfaceVariant, textAlign: 'center', lineHeight: 22 },
 

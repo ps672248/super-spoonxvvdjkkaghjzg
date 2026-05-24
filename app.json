@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Aspirant Arcade",
-    "slug": "psu-plus",
+    "slug": "aspirant-arcade",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -24,7 +24,8 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.aspirantarcade.app"
+      "package": "com.aspirants.arcade",
+      "googleServicesFile": "./google-services.json"
     },
     "plugins": [
       "expo-router",
@@ -33,6 +34,12 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "7f7ad0b6-83f8-41a1-8eec-cfface44b3d2"
+      }
     }
   }
 }

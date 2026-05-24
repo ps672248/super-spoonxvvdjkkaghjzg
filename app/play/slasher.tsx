@@ -1,11 +1,13 @@
 import React from 'react';
 import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
+import { useRouter } from 'expo-router';
 import { SyllabusSlasher } from '@/components/game/SyllabusSlasher';
 import { useSyllabusSlasherLogic } from '@/hooks/useSyllabusSlasherLogic';
 import { Colors, Typography } from '@/theme';
 
 export default function SlasherScreen() {
   const logic = useSyllabusSlasherLogic();
+  const router = useRouter();
 
   if (logic.loading) {
     return (
@@ -16,7 +18,13 @@ export default function SlasherScreen() {
     );
   }
 
-  return <SyllabusSlasher logic={logic} />;
+  return (
+    <SyllabusSlasher
+      logic={logic}
+      onRestart={() => router.replace('/play/slasher')}
+      onHome={() => router.replace('/')}
+    />
+  );
 }
 
 const styles = StyleSheet.create({

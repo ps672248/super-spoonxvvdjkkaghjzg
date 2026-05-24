@@ -6,6 +6,10 @@ import { useFonts, Inter_400Regular, Inter_600SemiBold, Inter_700Bold } from '@e
 import * as SplashScreen from 'expo-splash-screen';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { useBookmarkStore } from '@/stores/bookmarkStore';
+import { useAuthStore } from '@/stores/authStore';
+import { useConfigStore } from '@/stores/configStore';
+import { FlagsProvider } from '@/context/FlagsContext';
+import { FlagsModals } from '@/components/FlagsModals';
 import { Colors } from '@/theme';
 
 SplashScreen.preventAutoHideAsync();
@@ -14,10 +18,17 @@ export default function RootLayout() {
   const [fontsLoaded] = useFonts({ Inter_400Regular, Inter_600SemiBold, Inter_700Bold });
   const { loadSettings } = useSettingsStore();
   const { loadBookmarks } = useBookmarkStore();
+  const { initialize } = useAuthStore();
+  const { loadConfig } = useConfigStore();
 
   useEffect(() => {
     async function init() {
-      await Promise.all([loadSettings(), loadBookmarks()]);
+      initialize();
+      await Promise.all([
+        loadSettings(), 
+        loadBookmarks(),
+        loadConfig()
+      ]);
       if (fontsLoaded) SplashScreen.hideAsync();
     }
     init();
@@ -26,21 +37,24 @@ export default function RootLayout() {
   if (!fontsLoaded) return null;
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <StatusBar style="dark" backgroundColor={Colors.surface} />
-      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: Colors.surface } }}>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="sections" options={{ presentation: 'card' }} />
-        <Stack.Screen name="syllabus" options={{ presentation: 'card' }} />
-        <Stack.Screen name="game-mode" options={{ presentation: 'card' }} />
-        <Stack.Screen name="play/mcq" options={{ presentation: 'fullScreenModal' }} />
-        <Stack.Screen name="play/survival" options={{ presentation: 'fullScreenModal' }} />
-        <Stack.Screen name="play/match" options={{ presentation: 'fullScreenModal' }} />
-        <Stack.Screen name="play/slasher" options={{ presentation: 'fullScreenModal' }} />
-        <Stack.Screen name="play/mario" options={{ presentation: 'fullScreenModal' }} />
-        <Stack.Screen name="api-setup" options={{ presentation: 'modal' }} />
-      </Stack>
-    </GestureHandlerRootView>
+    <FlagsProvider>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <StatusBar style="dark" backgroundColor={Colors.surface} />
+        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: Colors.surface } }}>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="sections" options={{ presentation: 'card' }} />
+          <Stack.Screen name="syllabus" options={{ presentation: 'card' }} />
+          <Stack.Screen name="game-mode" options={{ presentation: 'card' }} />
+          <Stack.Screen name="play/mcq" options={{ presentation: 'fullScreenModal' }} />
+          <Stack.Screen name="play/survival" options={{ presentation: 'fullScreenModal' }} />
+          <Stack.Screen name="play/match" options={{ presentation: 'fullScreenModal' }} />
+          <Stack.Screen name="play/slasher" options={{ presentation: 'fullScreenModal' }} />
+          <Stack.Screen name="play/mario" options={{ presentation: 'fullScreenModal' }} />
+          <Stack.Screen name="api-setup" options={{ presentation: 'modal' }} />
+        </Stack>
+        <FlagsModals />
+      </GestureHandlerRootView>
+    </FlagsProvider>
   );
 }
 

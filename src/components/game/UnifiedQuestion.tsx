@@ -174,17 +174,18 @@ export const UnifiedQuestion = ({
 
   // --- Theme Styles Mapping ---
   const isDark = theme === 'dark' || theme === 'arcade';
+  const isArcade = theme === 'arcade';
   const themeColors = {
     text: isDark ? '#FFF' : Colors.onSurface,
-    subtext: isDark ? 'rgba(255,255,255,0.7)' : Colors.onSurfaceVariant,
-    cardBg: isDark ? 'rgba(255,255,255,0.08)' : '#FFF',
+    subtext: isDark ? 'rgba(255,255,255,0.75)' : Colors.onSurfaceVariant,
+    cardBg: isArcade ? 'rgba(0,0,0,0.5)' : isDark ? 'rgba(255,255,255,0.08)' : '#FFF',
     surface: isDark ? 'rgba(255,255,255,0.12)' : '#F0F2F5',
     onSurface: isDark ? '#FFF' : Colors.onSurface,
-    border: isDark ? 'rgba(255,255,255,0.1)' : '#F0F2F5',
-    outline: isDark ? 'rgba(255,255,255,0.3)' : Colors.outline,
-    primary: isDark ? (theme === 'arcade' ? Colors.gold : Colors.primary) : Colors.primary,
+    border: isArcade ? 'rgba(255,255,255,0.22)' : isDark ? 'rgba(255,255,255,0.1)' : '#F0F2F5',
+    outline: isDark ? 'rgba(255,255,255,0.35)' : Colors.outline,
+    primary: isDark ? (isArcade ? Colors.gold : Colors.primary) : Colors.primary,
     accent: Colors.gold,
-    secondary: isDark ? (theme === 'arcade' ? '#FF3D00' : Colors.secondary) : Colors.secondary,
+    secondary: isDark ? (isArcade ? '#FF3D00' : Colors.secondary) : Colors.secondary,
   };
 
   // --- Sub-Components ---
@@ -197,7 +198,7 @@ export const UnifiedQuestion = ({
         <View style={styles.mcqContainer}>
           {question && (
             <View style={styles.questionHeader}>
-              <Text style={[styles.questionText, { color: themeColors.text }]}>{question}</Text>
+              <Text style={[styles.questionText, { color: themeColors.text }, isArcade && styles.questionTextArcade]}>{question}</Text>
               {onToggleBookmark && (
                 <TouchableOpacity onPress={handleBookmarkPress} style={styles.bookmarkBtnInline}>
                   <Ionicons
@@ -222,23 +223,26 @@ export const UnifiedQuestion = ({
                   style={[
                     styles.optionBtn,
                     { backgroundColor: themeColors.cardBg, borderColor: themeColors.border },
-                    isDark && { backgroundColor: 'rgba(255,255,255,0.05)' },
-                    isSelected && { borderColor: themeColors.primary, backgroundColor: themeColors.primary + '15' }
+                    isSelected && {
+                      borderColor: themeColors.primary,
+                      backgroundColor: isArcade ? 'rgba(255,215,0,0.18)' : themeColors.primary + '15',
+                    }
                   ]}
                   onPress={() => {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                     setSelectedMCQ(opt);
                   }}
+                  activeOpacity={0.75}
                 >
                   <View style={[
                     styles.letterBadge,
-                    { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : '#F0F2F5' },
+                    { backgroundColor: isArcade ? 'rgba(255,255,255,0.15)' : isDark ? 'rgba(255,255,255,0.1)' : '#F0F2F5' },
                     isSelected && { backgroundColor: themeColors.primary }
                   ]}>
                     <Text style={[
                       styles.letterText,
                       { color: themeColors.text },
-                      isSelected && { color: '#FFF' }
+                      isSelected && { color: isArcade ? '#1a0000' : '#FFF' }
                     ]}>{letter}</Text>
                   </View>
                   <Text style={[
@@ -259,9 +263,10 @@ export const UnifiedQuestion = ({
                 onAnswer?.(selectedMCQ);
                 setSelectedMCQ(null);
               }}
+              activeOpacity={0.8}
             >
-              <Text style={styles.confirmBtnText}>CONFIRM ANSWER</Text>
-              <Ionicons name="arrow-forward" size={20} color="#FFF" />
+              <Text style={[styles.confirmBtnText, isArcade && { color: '#1a0000' }]}>CONFIRM ANSWER</Text>
+              <Ionicons name="arrow-forward" size={20} color={isArcade ? '#1a0000' : '#FFF'} />
             </TouchableOpacity>
           )}
         </View>
@@ -271,21 +276,7 @@ export const UnifiedQuestion = ({
     // Review Mode MCQ
     return (
       <View style={styles.reviewMcq}>
-        <View style={styles.matchHeader}>
-          {question && <Text style={[styles.reviewQuestionText, { color: themeColors.primary }]}>{question}</Text>}
-          {onToggleBookmark && (
-            <TouchableOpacity 
-              onPress={handleBookmarkPress}
-              style={[styles.bookmarkBtn, { backgroundColor: themeColors.surface }]}
-            >
-              <Ionicons 
-                name={isBookmarked ? "bookmark" : "bookmark-outline"} 
-                size={22} 
-                color={isBookmarked ? themeColors.accent : themeColors.outline} 
-              />
-            </TouchableOpacity>
-          )}
-        </View>
+        {question && <Text style={[styles.reviewQuestionText, { color: themeColors.primary }]}>{question}</Text>}
 
         <View style={styles.reviewOptionsContainer}>
           {options?.map((opt, index) => {
@@ -443,21 +434,7 @@ export const UnifiedQuestion = ({
     const userMatchesObj = userAnswer as Record<string, string> || {};
     return (
       <View style={styles.reviewMatch}>
-        <View style={styles.matchHeader}>
-          <Text style={[styles.reviewQuestionText, { color: themeColors.primary, marginBottom: 0 }]}>Matching Review</Text>
-          {onToggleBookmark && (
-            <TouchableOpacity 
-              onPress={handleBookmarkPress}
-              style={[styles.bookmarkBtn, { backgroundColor: themeColors.surface }]}
-            >
-              <Ionicons 
-                name={isBookmarked ? "bookmark" : "bookmark-outline"} 
-                size={22} 
-                color={isBookmarked ? themeColors.accent : themeColors.outline} 
-              />
-            </TouchableOpacity>
-          )}
-        </View>
+        <Text style={[styles.reviewQuestionText, { color: themeColors.primary, marginBottom: 0 }]}>Matching Review</Text>
         <View style={styles.reviewMatchContainer}>
           {pairs?.map((p, pi) => {
             const roman = toRoman(pi);
@@ -559,6 +536,7 @@ const styles = StyleSheet.create({
   mcqContainer: { gap: Spacing.md },
   questionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: Spacing.lg, gap: Spacing.md },
   questionText: { ...Typography.h2, lineHeight: 32, flex: 1 },
+  questionTextArcade: { fontSize: 17, lineHeight: 26, fontFamily: 'Inter_700Bold' },
   bookmarkBtnInline: { paddingTop: 4 },
   bookmarkBtn: { width: 40, height: 40, borderRadius: Radius.md, alignItems: 'center', justifyContent: 'center' },
   optionsList: { gap: Spacing.md },
@@ -566,7 +544,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.md,
-    padding: Spacing.md,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 14,
     borderRadius: Radius.lg,
     borderWidth: 1.5,
   },

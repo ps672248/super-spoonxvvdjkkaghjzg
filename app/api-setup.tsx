@@ -1,11 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet,
   KeyboardAvoidingView, Platform, Alert, ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Typography, Spacing, Radius, Shadows } from '@/theme';
 import { useSettingsStore, GEMINI_MODELS } from '@/stores/settingsStore';
 
@@ -32,11 +31,11 @@ export default function ApiSetupScreen() {
   };
 
   return (
-    <View style={styles.modalOverlay}>
-      <KeyboardAvoidingView 
-        style={{ width: '100%', alignItems: 'center' }} 
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
+    <KeyboardAvoidingView
+      style={styles.modalOverlay}
+      behavior="padding"
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 24}
+    >
         <View style={styles.modalCard}>
           <View style={styles.modalTopAccent} />
           
@@ -125,8 +124,7 @@ export default function ApiSetupScreen() {
             </TouchableOpacity>
           </View>
         </View>
-      </KeyboardAvoidingView>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 

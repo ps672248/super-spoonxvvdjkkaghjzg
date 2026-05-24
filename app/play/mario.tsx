@@ -22,7 +22,7 @@ const MARIO_SIZE = 50;
 const MARIO_X = 50;
 
 type MarioMode = 'small' | 'super' | 'fire';
-type EntityType = 'block' | 'pipe' | 'enemy' | 'brick';
+type EntityType = 'block' | 'pipe' | 'enemy' | 'brick' | 'coin';
 
 interface GameEntity {
   id: string;
@@ -31,7 +31,11 @@ interface GameEntity {
   w: number;
   h: number;
   color: string;
+  entityBottom?: number;
+  used?: boolean;
 }
+
+interface FloatingLabel { id: string; text: string; x: number; y: number; }
 
 interface Fireball {
   id: string;
@@ -69,6 +73,13 @@ export default function MarioScreen() {
   const streakRef = useRef(0);
   const livesRef = useRef(3);
 
+  const [floatingLabels, setFloatingLabels] = useState<FloatingLabel[]>([]);
+  const floatingAnimRefs = useRef<Map<string, { opacity: Animated.Value; translateY: Animated.Value }>>(new Map());
+  const [powerUpBanner, setPowerUpBanner] = useState<string | null>(null);
+  const bannerOpacity = useRef(new Animated.Value(0)).current;
+  const [gameFeedback, setGameFeedback] = useState<{ text: string; bg: string; fg: string } | null>(null);
+  const feedbackAnim = useRef(new Animated.Value(0)).current;
+
   // Mario Physics (Velocity-based)
   const [marioY, setMarioY] = useState(0);
   const velocityV = useRef(0);
@@ -83,6 +94,8 @@ export default function MarioScreen() {
   // Entities & Projectiles
   const [entities, setEntities] = useState<GameEntity[]>([]);
   const [fireballs, setFireballs] = useState<Fireball[]>([]);
+  const entitiesRef = useRef<GameEntity[]>([]);
+  const fireballsRef = useRef<Fireball[]>([]);
   const speed = useRef(6);
   const gameLoopRef = useRef<number | null>(null);
 
@@ -116,6 +129,42 @@ export default function MarioScreen() {
     }
   }
 
+  const spawnLabel = (x: number, y: number, text: string) => {
+    const id = Math.random().toString();
+    const opacity = new Animated.Value(1);
+    const translateY = new Animated.Value(0);
+    floatingAnimRefs.current.set(id, { opacity, translateY });
+    setFloatingLabels(prev => [...prev, { id, text, x, y }]);
+    Animated.parallel([
+      Animated.timing(translateY, { toValue: -70, duration: 900, useNativeDriver: true }),
+      Animated.sequence([
+        Animated.delay(400),
+        Animated.timing(opacity, { toValue: 0, duration: 500, useNativeDriver: true }),
+      ]),
+    ]).start(() => {
+      floatingAnimRefs.current.delete(id);
+      setFloatingLabels(prev => prev.filter(l => l.id !== id));
+    });
+  };
+
+  const showBanner = (text: string) => {
+    setPowerUpBanner(text);
+    bannerOpacity.setValue(1);
+    Animated.sequence([
+      Animated.delay(800),
+      Animated.timing(bannerOpacity, { toValue: 0, duration: 500, useNativeDriver: true }),
+    ]).start(() => setPowerUpBanner(null));
+  };
+
+  const showFeedback = (text: string, bg: string, fg: string) => {
+    setGameFeedback({ text, bg, fg });
+    feedbackAnim.setValue(1);
+    Animated.sequence([
+      Animated.delay(1400),
+      Animated.timing(feedbackAnim, { toValue: 0, duration: 350, useNativeDriver: true }),
+    ]).start(() => setGameFeedback(null));
+  };
+
   function startGame() {
     setGameState('playing');
     setScore(0);
@@ -130,8 +179,13 @@ export default function MarioScreen() {
     setLives(3);
     livesRef.current = 3;
     setResults([]);
+    setFloatingLabels([]);
+    setPowerUpBanner(null);
     speed.current = 6;
-    setEntities(generateLevelEntities());
+    const initialEntities = generateLevelEntities();
+    entitiesRef.current = initialEntities;
+    setEntities(initialEntities);
+    fireballsRef.current = [];
     setFireballs([]);
     setMarioY(0);
     marioYRef.current = 0;
@@ -141,7 +195,7 @@ export default function MarioScreen() {
   }
 
   function generateLevelEntities(startX: number = SCREEN_WIDTH) {
-    const patterns = ['stairs', 'enemies', 'bricks', 'pipes', 'single'];
+    const patterns = ['stairs', 'enemies', 'bricks', 'pipes', 'single', 'coins'];
     const newEntities: GameEntity[] = [];
     let currentX = startX;
 
@@ -166,9 +220,23 @@ export default function MarioScreen() {
         }
         currentX += 400;
       } else if (pattern === 'pipes') {
+        const twoPipes = Math.random() < 0.45;
         newEntities.push({ id: Math.random().toString(), x: currentX, type: 'pipe', w: 60, h: 60, color: '#27ae60' });
-        newEntities.push({ id: Math.random().toString(), x: currentX + 150, type: 'pipe', w: 60, h: 100, color: '#2ecc71' });
-        currentX += 400;
+        newEntities.push({ id: Math.random().toString(), x: currentX + 19, type: 'coin', w: 22, h: 22, color: '#FFD700', entityBottom: GROUND_LEVEL + 70 });
+        if (twoPipes) {
+          const gap = 280 + Math.random() * 80; // 280-360px gap between pipes
+          newEntities.push({ id: Math.random().toString(), x: currentX + gap, type: 'pipe', w: 60, h: 100, color: '#2ecc71' });
+          newEntities.push({ id: Math.random().toString(), x: currentX + gap + 19, type: 'coin', w: 22, h: 22, color: '#FFD700', entityBottom: GROUND_LEVEL + 110 });
+          currentX += gap + 300;
+        } else {
+          currentX += 350;
+        }
+      } else if (pattern === 'coins') {
+        const count = 3 + Math.floor(Math.random() * 3);
+        for (let j = 0; j < count; j++) {
+          newEntities.push({ id: Math.random().toString(), x: currentX + (j * 35), type: 'coin', w: 22, h: 22, color: '#FFD700', entityBottom: GROUND_LEVEL + 80 });
+        }
+        currentX += 250;
       } else {
         newEntities.push({ id: Math.random().toString(), x: currentX, type: 'block', w: 40, h: 40, color: '#f39c12' });
         currentX += 300;
@@ -184,108 +252,135 @@ export default function MarioScreen() {
       return;
     }
 
-    // Apply Gravity & Update Mario Y
+    // --- Gravity ---
     velocityV.current += gravity;
     let nextY = marioYRef.current + velocityV.current;
-
-    // Ground floor check
+    let onGroundFloor = false;
     if (nextY >= 0) {
       nextY = 0;
       velocityV.current = 0;
-      isGrounded.current = true;
-    } else {
-      isGrounded.current = false;
+      onGroundFloor = true;
     }
-
     marioYRef.current = nextY;
     setMarioY(nextY);
 
-    // Move Fireballs
-    let currentFireballs: Fireball[] = [];
-    setFireballs(prev => {
-      currentFireballs = prev.map(f => ({ ...f, x: f.x + 10 })).filter(f => f.x < SCREEN_WIDTH);
-      return currentFireballs;
-    });
+    // --- Fireballs (synchronous via ref) ---
+    const newFireballs = fireballsRef.current
+      .map(f => ({ ...f, x: f.x + 10 }))
+      .filter(f => f.x < SCREEN_WIDTH);
+    fireballsRef.current = newFireballs;
 
-    // Move Entities & Collision
-    setEntities(prev => {
-      let collided: string | boolean = false;
-      let landedOn: number | null = null;
-      let hitFireballIds: string[] = [];
+    // --- Entity processing (synchronous via ref) ---
+    const currentMarioSize = isStarmanRef.current ? MARIO_SIZE * 1.5
+      : marioModeRef.current !== 'small' ? MARIO_SIZE * 1.25 : MARIO_SIZE;
 
-      // 1. Move and check collisions
-      const updated = prev.map(ent => {
-        let moveX = isStarmanRef.current ? speed.current * 1.5 : speed.current;
-        if (ent.type === 'enemy') moveX += 2;
-        const newX = ent.x - moveX;
+    let collided: string | boolean = false;
+    let landedOn: number | null = null;
+    let hitFireballIds: string[] = [];
+    const scoreQueue: { amt: number; label: string; lx: number; ly: number; haptic?: 'light' | 'medium' }[] = [];
 
-        let currentMarioSize = MARIO_SIZE;
-        if (isStarmanRef.current) currentMarioSize = MARIO_SIZE * 1.5;
-        else if (marioModeRef.current !== 'small') currentMarioSize = MARIO_SIZE * 1.25;
+    const updated = entitiesRef.current.map(ent => {
+      const moveX = (isStarmanRef.current ? speed.current * 1.5 : speed.current) + (ent.type === 'enemy' ? 2 : 0);
+      const newX = ent.x - moveX;
 
-        const collisionX = MARIO_X + currentMarioSize - 10 > newX && MARIO_X + 10 < newX + ent.w;
-        let isDead = false;
+      // Coin
+      if (ent.type === 'coin') {
+        const marioBottomScreen = GROUND_LEVEL + (-marioYRef.current);
+        const marioTopScreen = marioBottomScreen + currentMarioSize;
+        const coinBottomScreen = ent.entityBottom ?? GROUND_LEVEL;
+        const coinTopScreen = coinBottomScreen + ent.h;
+        const xOverlap = MARIO_X + currentMarioSize > newX && MARIO_X < newX + ent.w;
+        const yOverlap = marioTopScreen >= coinBottomScreen && marioBottomScreen <= coinTopScreen;
+        if (xOverlap && yOverlap) {
+          scoreQueue.push({ amt: 50, label: '+50', lx: newX, ly: SCREEN_HEIGHT - coinTopScreen - 20, haptic: 'light' });
+          return null;
+        }
+        return { ...ent, x: newX };
+      }
 
-        if (collisionX) {
-          const marioBottom = -marioYRef.current;
-          const entityTop = ent.h;
-          const prevMarioBottom = -(marioYRef.current - velocityV.current);
+      const collisionX = MARIO_X + currentMarioSize - 10 > newX && MARIO_X + 10 < newX + ent.w;
+      let isDead = false;
 
-          if (prevMarioBottom >= entityTop - 10 && velocityV.current >= 0 && ent.type !== 'enemy') {
-            landedOn = entityTop;
-          } else if (marioBottom < entityTop) {
-            if (isStarmanRef.current) {
-              collided = 'destroy:' + ent.id;
-            } else if (!isInvincible.current) {
-              collided = ent.id;
-            }
+      if (collisionX) {
+        const marioBottom = -marioYRef.current;
+        const entityTop = ent.h;
+        const prevMarioBottom = -(marioYRef.current - velocityV.current);
+
+        if (prevMarioBottom >= entityTop - 10 && velocityV.current >= 0 && ent.type !== 'enemy') {
+          landedOn = entityTop;
+        } else if (ent.type === 'block' && !ent.used && velocityV.current < 0 && Math.abs((marioBottom + currentMarioSize) - ent.h) < 20) {
+          velocityV.current = 0;
+          scoreQueue.push({ amt: 50, label: '+50', lx: newX, ly: SCREEN_HEIGHT - ent.h - GROUND_LEVEL - 30, haptic: 'medium' });
+          return { ...ent, x: newX, color: '#7f8c8d', used: true };
+        } else if (marioBottom < entityTop) {
+          if (isStarmanRef.current) {
+            collided = 'destroy:' + ent.id;
+          } else if (!isInvincible.current) {
+            collided = ent.id;
           }
         }
-
-        // 2. Fireball collisions
-        const hittingFireball = currentFireballs.find(f =>
-          f.x + 10 > newX && f.x < newX + ent.w &&
-          Math.abs(f.y - (-ent.h / 2)) < 50
-        );
-
-        if (hittingFireball && (ent.type === 'enemy' || ent.type === 'brick')) {
-          hitFireballIds.push(hittingFireball.id);
-          isDead = true;
-          setScore(s => s + 100);
-        }
-
-        return isDead ? null : { ...ent, x: newX };
-      }).filter((e): e is GameEntity => e !== null);
-
-      if (hitFireballIds.length > 0) {
-        setFireballs(fs => fs.filter(f => !hitFireballIds.includes(f.id)));
       }
 
-      if (landedOn !== null) {
-        marioYRef.current = -landedOn;
-        setMarioY(-landedOn);
-        velocityV.current = 0;
-        isGrounded.current = true;
+      const hittingFireball = newFireballs.find(f =>
+        f.x + 10 > newX && f.x < newX + ent.w && Math.abs(f.y - (-ent.h / 2)) < 50
+      );
+      if (hittingFireball && (ent.type === 'enemy' || ent.type === 'brick')) {
+        hitFireballIds.push(hittingFireball.id);
+        isDead = true;
+        scoreQueue.push({ amt: 100, label: '+100', lx: newX, ly: SCREEN_HEIGHT - ent.h - GROUND_LEVEL - 30 });
       }
 
-      if (collided && gameStateRef.current === 'playing') {
-        if (collided && typeof collided === 'string' && (collided as string).startsWith('destroy:')) {
-          const id = (collided as string).split(':')[1];
-          setScore(s => s + 500);
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-          return updated.filter(e => e.id !== id);
-        } else {
-          handleCollision();
-        }
-      }
+      return isDead ? null : { ...ent, x: newX };
+    }).filter((e): e is GameEntity => e !== null);
 
-      const filtered = updated.filter(ent => ent.x > -200);
-      if (filtered.length < 8) {
-        const lastX = filtered.length > 0 ? filtered[filtered.length - 1].x : SCREEN_WIDTH;
-        return [...filtered, ...generateLevelEntities(lastX + 400)];
+    // Remove hit fireballs from ref
+    if (hitFireballIds.length > 0) {
+      fireballsRef.current = newFireballs.filter(f => !hitFireballIds.includes(f.id));
+    }
+
+    // Flush score/label queue
+    for (const q of scoreQueue) {
+      setScore(s => s + q.amt);
+      spawnLabel(q.lx, q.ly, q.label);
+      if (q.haptic === 'light') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      else if (q.haptic === 'medium') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    }
+
+    // --- Resolve isGrounded SYNCHRONOUSLY ---
+    if (landedOn !== null) {
+      marioYRef.current = -landedOn;
+      setMarioY(-landedOn);
+      velocityV.current = 0;
+      isGrounded.current = true;
+    } else {
+      isGrounded.current = onGroundFloor;
+    }
+
+    // --- Collision handling ---
+    let finalEntities: GameEntity[];
+    if (collided && gameStateRef.current === 'playing') {
+      if (typeof collided === 'string' && collided.startsWith('destroy:')) {
+        const id = collided.split(':')[1];
+        const killed = updated.find(e => e.id === id);
+        setScore(s => s + 500);
+        if (killed) spawnLabel(killed.x, SCREEN_HEIGHT * 0.5, '+500');
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        finalEntities = updated.filter(e => e.id !== id);
+      } else {
+        handleCollision();
+        finalEntities = updated;
       }
-      return filtered;
-    });
+    } else {
+      finalEntities = updated;
+    }
+
+    const trimmed = finalEntities.filter(e => e.x > -200);
+    const withNew = trimmed.length < 8
+      ? [...trimmed, ...generateLevelEntities((trimmed[trimmed.length - 1]?.x ?? SCREEN_WIDTH) + 400)]
+      : trimmed;
+    entitiesRef.current = withNew;
+    setEntities(withNew);
+    setFireballs(fireballsRef.current);
 
     if (isStarmanRef.current) {
       const colors = ['#e74c3c', '#f1c40f', '#2ecc71', '#3498db', '#9b59b6'];
@@ -358,24 +453,35 @@ export default function MarioScreen() {
       setStreak(newStreak);
       streakRef.current = newStreak;
       setScore(s => s + 200);
+      spawnLabel(MARIO_X, SCREEN_HEIGHT * 0.5, '+200');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
       if (newStreak === 3 && marioModeRef.current === 'small') {
         setMarioMode('super');
         marioModeRef.current = 'super';
         triggerInvincibility();
+        showBanner('🍄 SUPER MARIO!');
       }
       if (newStreak === 5) {
         setMarioMode('fire');
         marioModeRef.current = 'fire';
         triggerInvincibility();
+        showBanner('🔥 FIRE MARIO!');
+      }
+
+      // Life saved / streak feedback
+      if (newStreak >= 2 && newStreak !== 3 && newStreak !== 5 && newStreak !== 7) {
+        showFeedback(`❤️ SAVED  🔥 ×${newStreak} STREAK`, 'rgba(255,160,0,0.18)', '#FFB300');
+      } else if (newStreak === 1) {
+        showFeedback('❤️ LIFE SAVED!', 'rgba(0,200,83,0.18)', '#00E676');
       }
 
       setGameState('playing');
       gameStateRef.current = 'playing';
-      triggerInvincibility(); // Protect Mario when resuming from a hit-triggered question
+      triggerInvincibility();
 
       if (newStreak === 7) {
+        showBanner('⭐ STAR POWER!');
         setIsStarman(true);
         isStarmanRef.current = true;
         setTimeout(() => {
@@ -399,6 +505,11 @@ export default function MarioScreen() {
         setGameState('result');
         return;
       }
+      showFeedback(
+        nextLives === 1 ? '💔 LAST LIFE!' : `💔 LIFE LOST  ${nextLives}❤️ left`,
+        'rgba(255,23,68,0.18)',
+        '#FF4444'
+      );
       setGameState('playing');
       gameStateRef.current = 'playing';
       triggerInvincibility();
@@ -412,6 +523,10 @@ export default function MarioScreen() {
       if (nextIdx === Math.floor(questions.length / 2)) {
         setLevel(2);
         speed.current = 10;
+      }
+      if (nextIdx === Math.floor(questions.length * 0.8)) {
+        setLevel(3);
+        speed.current = 14;
       }
     }
   }
@@ -458,7 +573,7 @@ export default function MarioScreen() {
   }
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: level === 2 ? '#2c3e50' : '#5c94fc' }]} edges={['top', 'bottom']}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: level === 3 ? '#1a1a2e' : (level === 2 ? '#2c3e50' : '#5c94fc') }]} edges={['top', 'bottom']}>
       <TouchableOpacity
         activeOpacity={1}
         style={styles.gameArea}
@@ -469,7 +584,7 @@ export default function MarioScreen() {
           <View style={styles.stats}>
             <View style={styles.statBox}>
               <Text style={styles.statLabel}>WORLD</Text>
-              <Text style={styles.statValue}>{level}-1</Text>
+              <Text style={styles.statValue}>{level === 3 ? '3-1 🏰' : `${level}-1`}</Text>
             </View>
             <View style={styles.statBox}>
               <Text style={styles.statLabel}>SCORE</Text>
@@ -498,6 +613,9 @@ export default function MarioScreen() {
           <Ionicons name="cloud" size={60} color="rgba(255,255,255,0.4)" style={{ position: 'absolute', top: 80, right: 50 }} />
           {level === 2 && (
             <Ionicons name="moon" size={40} color="#f1c40f" style={{ position: 'absolute', top: 40, right: 120 }} />
+          )}
+          {level === 3 && (
+            <Text style={{ position: 'absolute', top: 40, right: 120, fontSize: 40 }}>🏰</Text>
           )}
         </View>
 
@@ -558,17 +676,56 @@ export default function MarioScreen() {
 
         {/* Entities */}
         {entities.map(ent => (
-          <View key={ent.id} style={[styles.entity, { left: ent.x, width: ent.w, height: ent.h, backgroundColor: ent.color }]}>
-            {ent.type === 'block' && <Text style={styles.blockText}>?</Text>}
+          <View key={ent.id} style={[
+            styles.entity,
+            {
+              left: ent.x,
+              bottom: ent.entityBottom ?? GROUND_LEVEL,
+              width: ent.w,
+              height: ent.h,
+              backgroundColor: ent.color,
+              ...(ent.type === 'coin' ? { borderRadius: 11, borderTopWidth: 0, borderLeftWidth: 0 } : {}),
+            }
+          ]}>
+            {ent.type === 'block' && <Text style={styles.blockText}>{ent.used ? '' : '?'}</Text>}
             {ent.type === 'enemy' && <Text style={styles.blockText}>👾</Text>}
             {ent.type === 'brick' && <View style={styles.brickTexture} />}
             {ent.type === 'pipe' && <View style={{ width: '100%', height: 20, backgroundColor: 'rgba(0,0,0,0.1)', position: 'absolute', top: 0 }} />}
+            {ent.type === 'coin' && <Text style={{ fontSize: 18 }}>🪙</Text>}
           </View>
         ))}
 
+        {/* Floating Score Labels */}
+        {floatingLabels.map(l => {
+          const a = floatingAnimRefs.current.get(l.id);
+          if (!a) return null;
+          return (
+            <Animated.Text key={l.id} pointerEvents="none" style={{
+              position: 'absolute', left: l.x, top: l.y,
+              color: '#FFD700', fontSize: 22, fontFamily: 'Inter_900Black',
+              textShadowColor: '#000', textShadowRadius: 4,
+              opacity: a.opacity, transform: [{ translateY: a.translateY }], zIndex: 20,
+            }}>{l.text}</Animated.Text>
+          );
+        })}
+
+        {/* Life / Streak Feedback Toast */}
+        {gameFeedback && (
+          <Animated.View pointerEvents="none" style={{ position: 'absolute', bottom: GROUND_LEVEL + 80, alignSelf: 'center', backgroundColor: gameFeedback.bg, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 24, opacity: feedbackAnim, zIndex: 25, borderWidth: 1, borderColor: gameFeedback.fg + '40' }}>
+            <Text style={{ color: gameFeedback.fg, fontSize: 20, fontFamily: 'Inter_900Black', textShadowColor: '#000', textShadowRadius: 4 }}>{gameFeedback.text}</Text>
+          </Animated.View>
+        )}
+
+        {/* Power-up Banner */}
+        {powerUpBanner && (
+          <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(255,215,0,0.15)', opacity: bannerOpacity, justifyContent: 'center', alignItems: 'center', zIndex: 30 }]} pointerEvents="none">
+            <Text style={{ fontSize: 36, fontFamily: 'Inter_900Black', color: '#FFD700', textShadowColor: '#000', textShadowRadius: 8 }}>{powerUpBanner}</Text>
+          </Animated.View>
+        )}
+
         {/* Ground */}
-        <View style={[styles.ground, { backgroundColor: level === 2 ? '#34495e' : '#8a4b08' }]}>
-          <View style={[styles.grass, { backgroundColor: level === 2 ? '#2ecc71' : '#4aba10' }]} />
+        <View style={[styles.ground, { backgroundColor: level === 3 ? '#2d1b00' : (level === 2 ? '#34495e' : '#8a4b08') }]}>
+          <View style={[styles.grass, { backgroundColor: level === 3 ? '#8B0000' : (level === 2 ? '#2ecc71' : '#4aba10') }]} />
         </View>
       </TouchableOpacity>
 

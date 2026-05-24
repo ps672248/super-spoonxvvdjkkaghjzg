@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
 } from 'react-native';
@@ -9,19 +9,12 @@ import { Colors, Typography, Spacing, Radius, Shadows } from '@/theme';
 import { BranchConfig, BRANCHES } from '@/config/branches';
 import { PSUS, PSUConfig } from '@/config/psus';
 import { useExamStore } from '@/stores/examStore';
-import { useSettingsStore } from '@/stores/settingsStore';
 import { AppHeader } from '@/components/AppHeader';
 
 export default function HomeScreen() {
   const router = useRouter();
   const { selectedPSU, selectedBranch, setPSU, setBranch } = useExamStore();
-  const { geminiApiKey, isLoaded } = useSettingsStore();
 
-  useEffect(() => {
-    if (isLoaded && !geminiApiKey) {
-      router.push('/api-setup');
-    }
-  }, [isLoaded, geminiApiKey]);
 
   const showExams = !selectedPSU;
 

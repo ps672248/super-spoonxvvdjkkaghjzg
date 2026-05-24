@@ -22,6 +22,7 @@ export interface SlasherLogic {
   questionVisible: boolean;
   setQuestionVisible: (v: boolean) => void;
   recordSlice: (isBomb: boolean) => any;
+  recordMiss: () => void;
   handleQuestionResponse: (selected: string | Record<string, string>) => void;
   isPaused: boolean;
   toggleBookmark: (q: MCQQuestion) => void;
@@ -60,6 +61,7 @@ export const useSyllabusSlasherLogic = (): SlasherLogic => {
   const livesRef = useRef(3);
   const usedIndicesRef = useRef<number[]>([]);
   const questionsRef = useRef<MCQQuestion[]>([]);
+  const isQuestionActiveRef = useRef(false);
 
   const { loadQuestions: fetchQuestions } = useGameQuestions();
   const [loading, setLoading] = useState(true);
@@ -85,23 +87,36 @@ export const useSyllabusSlasherLogic = (): SlasherLogic => {
 
   const comboTimer = useRef<NodeJS.Timeout | null>(null);
 
+  const showLifeLossQuestion = useCallback(() => {
+    if (isQuestionActiveRef.current) return;
+    isQuestionActiveRef.current = true;
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    const unUsed = questionsRef.current.filter((_, i) => !usedIndicesRef.current.includes(i));
+    if (unUsed.length > 0) {
+      const nextQ = unUsed[0];
+      const idx = questionsRef.current.indexOf(nextQ);
+      usedIndicesRef.current.push(idx);
+      setUsedIndices([...usedIndicesRef.current]);
+      setCurrentQuestion(nextQ);
+      setQuestionVisible(true);
+      setIsPaused(true);
+    } else {
+      // No questions left — lose life directly
+      livesRef.current -= 1;
+      setLives(livesRef.current);
+      if (livesRef.current <= 0) setGameState('result');
+      isQuestionActiveRef.current = false;
+    }
+  }, []);
+
+  const recordMiss = useCallback(() => {
+    showLifeLossQuestion();
+  }, [showLifeLossQuestion]);
+
   const recordSlice = (isBomb: boolean) => {
     if (isBomb) {
       setCombo(0);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-      
-      const unUsed = questions.filter((_, i) => !usedIndicesRef.current.includes(i));
-      if (unUsed.length > 0) {
-        const nextQ = unUsed[0];
-        const idx = questions.indexOf(nextQ);
-        usedIndicesRef.current.push(idx);
-        setUsedIndices([...usedIndicesRef.current]);
-        setCurrentQuestion(nextQ);
-        setQuestionVisible(true);
-        setIsPaused(true);
-      } else {
-        setGameState('result');
-      }
+      showLifeLossQuestion();
     } else {
       const isCritical = Math.random() < 0.1;
       const points = isCritical ? 10 : (1 + Math.floor(combo / 3));
@@ -114,7 +129,7 @@ export const useSyllabusSlasherLogic = (): SlasherLogic => {
       } else {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       }
-      return { isCritical };
+      return { isCritical, points };
     }
   };
 
@@ -132,10 +147,10 @@ export const useSyllabusSlasherLogic = (): SlasherLogic => {
     setQuestionVisible(false);
     
     if (isCorrect) {
-      setFeedbackMessage({ text: "BOMB DIFFUSED\nLIFE SAVED", type: 'success' });
+      setFeedbackMessage({ text: "LIFE SAVED! ✓", type: 'success' });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } else {
-      setFeedbackMessage({ text: "BOMB BLASTED\nLIFE WASTED", type: 'error' });
+      setFeedbackMessage({ text: "LIFE LOST! ✗", type: 'error' });
       livesRef.current -= 1;
       setLives(livesRef.current);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
@@ -143,7 +158,8 @@ export const useSyllabusSlasherLogic = (): SlasherLogic => {
 
     setTimeout(() => {
       setFeedbackMessage(null);
-      
+      isQuestionActiveRef.current = false;
+
       if (livesRef.current <= 0 && !isCorrect) {
          setGameState('result');
       } else if (usedIndicesRef.current.length >= questionsRef.current.length) {
@@ -178,6 +194,7 @@ export const useSyllabusSlasherLogic = (): SlasherLogic => {
     setResults([]);
     setStats({ correct: 0, incorrect: 0, totalAsked: 0 });
     setFeedbackMessage(null);
+    isQuestionActiveRef.current = false;
     setGameState('playing');
   };
 
@@ -191,13 +208,14 @@ export const useSyllabusSlasherLogic = (): SlasherLogic => {
     setResults([]);
     setStats({ correct: 0, incorrect: 0, totalAsked: 0 });
     setFeedbackMessage(null);
+    isQuestionActiveRef.current = false;
     setGameState('loading');
     loadQuestions();
   };
 
   return {
     gameState, score, lives, combo, questions, currentQuestion, questionVisible,
-    setQuestionVisible, recordSlice, handleQuestionResponse, isPaused,
+    setQuestionVisible, recordSlice, recordMiss, handleQuestionResponse, isPaused,
     toggleBookmark, isQuestionBookmarked, startGame, resetGame, loading, stats, results,
     feedbackMessage
   };

@@ -1,6 +1,7 @@
 import { create } from 'zustand';
-import { PSUConfig, getPSU } from '../config/psus';
-import { BranchConfig, getBranch } from '../config/branches';
+import { useConfigStore } from './configStore';
+import { PSUConfig, PSUS } from '../config/psus';
+import { BranchConfig, BRANCHES } from '../config/branches';
 
 export type GameMode = 'mcq' | 'survival' | 'match' | 'slasher' | 'mario';
 
@@ -33,26 +34,33 @@ export const useExamStore = create<ExamState>((set) => ({
   selectedMode: null,
   questionCount: 10,
 
-  setPSU: (id) => set({
-    selectedPSU: id ? getPSU(id) ?? null : null,
-    selectedBranch: null,
-    selectedSections: [],
-    selectedTopics: [],
-    selectedMode: null,
-  }),
+  setPSU: (id) => {
+    const { getPSU } = useConfigStore.getState();
+    const psu = id ? (getPSU(id) ?? PSUS.find(p => p.id === id) ?? null) : null;
+    set({
+      selectedPSU: psu,
+      selectedBranch: null,
+      selectedSections: [],
+      selectedTopics: [],
+      selectedMode: null,
+    });
+  },
 
-  setBranch: (id) => set({
-    selectedBranch: id ? getBranch(id) ?? null : null,
-    selectedSections: [],
-    selectedTopics: [],
-    selectedMode: null,
-  }),
+  setBranch: (id) => {
+    const { getBranch } = useConfigStore.getState();
+    const branch = id ? (getBranch(id) ?? BRANCHES.find(b => b.id === id) ?? null) : null;
+    set({
+      selectedBranch: branch,
+      selectedSections: [],
+      selectedTopics: [],
+      selectedMode: null,
+    });
+  },
 
   toggleSection: (id) => set((state) => ({
     selectedSections: state.selectedSections.includes(id)
       ? state.selectedSections.filter(s => s !== id)
       : [...state.selectedSections, id],
-    selectedTopics: [],
   })),
 
   setAllSections: (ids) => set({ selectedSections: ids, selectedTopics: [] }),

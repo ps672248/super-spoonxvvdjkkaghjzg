@@ -89,7 +89,7 @@ export default function SectionsScreen() {
   const canProceed = selectedTopics.length > 0;
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
+    <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
       <AppHeader />
 
       <ScrollView

@@ -78,7 +78,7 @@ export default function GameModeScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
+    <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
       <AppHeader />
 
       <ScrollView
@@ -147,7 +147,7 @@ export default function GameModeScreen() {
         onClose={() => setShowApiModal(false)}
         onGoToSettings={() => {
           setShowApiModal(false);
-          router.push('/(tabs)/settings');
+          router.push('/api-setup');
         }}
       />
     </SafeAreaView>
@@ -225,8 +225,8 @@ function ApiKeyModal({ visible, onClose, onGoToSettings }: any) {
               <Text style={styles.modalCancelText}>Cancel</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.modalSettingsBtn} onPress={onGoToSettings}>
-              <Text style={styles.modalSettingsText}>Go to Settings</Text>
-              <Ionicons name="settings" size={18} color={Colors.secondary} />
+              <Text style={styles.modalSettingsText}>Configure AI Access</Text>
+              <Ionicons name="key" size={18} color={Colors.secondary} />
             </TouchableOpacity>
           </View>
         </View>
