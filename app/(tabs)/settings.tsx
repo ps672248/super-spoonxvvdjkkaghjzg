@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
-  ScrollView, TextInput, LayoutAnimation, Alert,
+  ScrollView, TextInput, LayoutAnimation, Alert, ActivityIndicator,
   KeyboardAvoidingView, Platform
 } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -14,6 +14,9 @@ import { testApiKey } from '@/services/gemini';
 import { AppHeader } from '@/components/AppHeader';
 import { signOut } from 'firebase/auth';
 import { auth as firebaseAuth } from '@/config/firebase';
+import { migrateStaticToFirebase } from '@/services/migration';
+
+const ADMIN_EMAIL = 'ps671248@gmail.com';
 
 export default function SettingsScreen() {
   const router = useRouter();
@@ -28,6 +31,33 @@ export default function SettingsScreen() {
   const [showKey, setShowKey] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
+  const [isMigrating, setIsMigrating] = useState(false);
+
+  const isAdmin = user?.email === ADMIN_EMAIL;
+
+  const handleMigrate = () => {
+    Alert.alert(
+      'Run Config Migration',
+      'Upload PSUs, Branches, and Syllabus to Firestore. Only run once (or when config changes).',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Run Migration',
+          onPress: async () => {
+            setIsMigrating(true);
+            try {
+              await migrateStaticToFirebase();
+              Alert.alert('Done', 'Config migrated to Firestore ✓');
+            } catch (e: any) {
+              Alert.alert('Migration Failed', e.message);
+            } finally {
+              setIsMigrating(false);
+            }
+          }
+        }
+      ]
+    );
+  };
 
   useEffect(() => {
     setLocalKey(geminiApiKey);
@@ -36,9 +66,10 @@ export default function SettingsScreen() {
 
   const handleSave = async () => {
     await setApiKey(localKey);
-    await setFullName(localName);
+    // Name only saved for guests; logged-in users use Auth displayName
+    if (!user) await setFullName(localName);
     LayoutAnimation.configureNext(LayoutAnimation.Presets.spring);
-    Alert.alert('Success', 'Profile and configuration saved!');
+    Alert.alert('Saved', 'API configuration saved!');
   };
 
   const handleTest = async () => {
@@ -111,10 +142,20 @@ export default function SettingsScreen() {
               </View>
 
               {user ? (
-                <View style={styles.accountInfo}>
-                  <View>
+                <View style={styles.accountLoggedIn}>
+                  {/* Avatar circle with initial */}
+                  <View style={styles.avatarCircle}>
+                    <Text style={styles.avatarText}>
+                      {(user.displayName || user.email || 'U')[0].toUpperCase()}
+                    </Text>
+                  </View>
+                  <View style={styles.accountDetails}>
                     <Text style={styles.accountName}>{user.displayName || 'User'}</Text>
                     <Text style={styles.accountEmail}>{user.email}</Text>
+                    <View style={styles.syncBadge}>
+                      <Ionicons name="cloud-done-outline" size={12} color={Colors.matchGreen} />
+                      <Text style={styles.syncBadgeText}>Bookmarks synced</Text>
+                    </View>
                   </View>
                   <TouchableOpacity style={styles.signOutBtn} onPress={handleSignOut}>
                     <Text style={styles.signOutBtnText}>Sign Out</Text>
@@ -122,9 +163,9 @@ export default function SettingsScreen() {
                 </View>
               ) : (
                 <View style={styles.accountInfo}>
-                  <Text style={styles.guestText}>You are currently browsing as a guest.</Text>
-                  <TouchableOpacity 
-                    style={styles.signInBtn} 
+                  <Text style={styles.guestText}>Browsing as guest. Sign in to sync bookmarks.</Text>
+                  <TouchableOpacity
+                    style={styles.signInBtn}
                     onPress={() => router.push('/auth/login' as any)}
                   >
                     <Text style={styles.signInBtnText}>Sign In</Text>
@@ -134,29 +175,31 @@ export default function SettingsScreen() {
             </View>
           </View>
 
-          {/* Profile Details Card */}
-          <View style={styles.card}>
-            <View style={styles.cardAccent} />
-            <View style={styles.cardInner}>
-              <View style={styles.cardTitleRow}>
-                <Ionicons name="person-outline" size={20} color={Colors.primary} />
-                <Text style={styles.cardTitle}>Profile Details</Text>
-              </View>
-
-              <View style={styles.field}>
-                <Text style={styles.fieldLabel}>FULL NAME</Text>
-                <View style={styles.inputContainer}>
-                  <TextInput 
-                    style={styles.input}
-                    value={localName}
-                    onChangeText={setLocalName}
-                    placeholder="Enter your full name"
-                  />
+          {/* Profile Details Card — guest only (logged-in users use Auth displayName) */}
+          {!user && (
+            <View style={styles.card}>
+              <View style={styles.cardAccent} />
+              <View style={styles.cardInner}>
+                <View style={styles.cardTitleRow}>
+                  <Ionicons name="person-outline" size={20} color={Colors.primary} />
+                  <Text style={styles.cardTitle}>Profile Details</Text>
                 </View>
-                <Text style={styles.helperText}>This name will be used to personalize your performance feedback.</Text>
+
+                <View style={styles.field}>
+                  <Text style={styles.fieldLabel}>DISPLAY NAME</Text>
+                  <View style={styles.inputContainer}>
+                    <TextInput
+                      style={styles.input}
+                      value={localName}
+                      onChangeText={setLocalName}
+                      placeholder="Enter your name"
+                    />
+                  </View>
+                  <Text style={styles.helperText}>Used to personalize your performance feedback.</Text>
+                </View>
               </View>
             </View>
-          </View>
+          )}
 
           {/* API Configuration Card */}
           <View style={styles.card}>
@@ -241,6 +284,36 @@ export default function SettingsScreen() {
               </View>
             </View>
           </View>
+
+          {/* Admin Tools Card — visible only to admin */}
+          {isAdmin && (
+            <View style={styles.card}>
+              <View style={[styles.cardAccent, { backgroundColor: '#7B2FBE' }]} />
+              <View style={styles.cardInner}>
+                <View style={styles.cardTitleRow}>
+                  <Ionicons name="construct-outline" size={20} color="#7B2FBE" />
+                  <Text style={[styles.cardTitle, { color: '#7B2FBE' }]}>Admin Tools</Text>
+                </View>
+                <Text style={styles.supportDesc}>
+                  Upload static config (PSUs, branches, syllabus) to Firestore. Run once, or after config changes.
+                </Text>
+                <TouchableOpacity
+                  style={[styles.supportBtn, { backgroundColor: '#7B2FBE' }, isMigrating && { opacity: 0.6 }]}
+                  onPress={handleMigrate}
+                  disabled={isMigrating}
+                >
+                  {isMigrating ? (
+                    <ActivityIndicator color="#FFF" size="small" />
+                  ) : (
+                    <Ionicons name="cloud-upload-outline" size={18} color="#FFF" />
+                  )}
+                  <Text style={styles.supportBtnText}>
+                    {isMigrating ? 'Migrating...' : 'Run Config Migration'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
 
           {/* Help & Support Card */}
           <View style={styles.card}>
@@ -449,14 +522,50 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: Spacing.sm,
   },
+  accountLoggedIn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+    marginTop: Spacing.sm,
+  },
+  avatarCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: Colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  avatarText: {
+    ...Typography.h2,
+    color: '#FFF',
+    lineHeight: 28,
+  },
+  accountDetails: {
+    flex: 1,
+    gap: 2,
+  },
   accountName: {
     ...Typography.bodyMd,
     color: Colors.onSurface,
-    fontWeight: 'bold',
+    fontFamily: 'Inter_700Bold',
   },
   accountEmail: {
     ...Typography.bodySm,
     color: Colors.outline,
+  },
+  syncBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 4,
+  },
+  syncBadgeText: {
+    ...Typography.bodySm,
+    color: Colors.matchGreen,
+    fontSize: 10,
+    fontFamily: 'Inter_600SemiBold',
   },
   signOutBtn: {
     paddingVertical: Spacing.sm,

@@ -423,26 +423,28 @@ function BookmarkItem({
           )}
         </View>
 
+        {/* Note — visible only when NOT in attempt mode */}
+        {!attemptMode && <TouchableOpacity style={styles.noteBox} onPress={onEditNote}>
+          <View style={styles.noteHeader}>
+            <Ionicons name="document-text-outline" size={14} color={Colors.secondary} />
+            <Text style={styles.noteHeaderTitle}>MY STUDY NOTE</Text>
+            <Ionicons name="pencil" size={12} color={Colors.outline} />
+          </View>
+          <Text style={[styles.noteText, !item.note && styles.noteTextEmpty]}>
+            {item.note || "Tap to add a study note…"}
+          </Text>
+        </TouchableOpacity>}
+
+        {/* Explanation — gated: needs expand + (not attempt OR attempted) */}
         {expanded && (!attemptMode || (isMatchQuestion ? currentAttempt === 'MATCH_DONE' : !!currentAttempt)) && (
           <View style={styles.expandedContent}>
-             <View style={styles.divider} />
-             <View style={styles.reviewGrid}>
-               <View style={styles.reviewSection}>
-                 <Text style={styles.explanationLabel}>EXPLANATION</Text>
-                 <Text style={styles.explanationText}>{item.explanation}</Text>
-               </View>
-             </View>
-
-             <TouchableOpacity style={styles.noteBox} onPress={onEditNote}>
-                <View style={styles.noteHeader}>
-                  <Ionicons name="document-text-outline" size={14} color={Colors.secondary} />
-                  <Text style={styles.noteHeaderTitle}>MY STUDY NOTE</Text>
-                  <Ionicons name="pencil" size={12} color={Colors.outline} />
-                </View>
-                <Text style={styles.noteText}>
-                  {item.note || "No note added yet. Tap to add one."}
-                </Text>
-              </TouchableOpacity>
+            <View style={styles.divider} />
+            <View style={styles.reviewGrid}>
+              <View style={styles.reviewSection}>
+                <Text style={styles.explanationLabel}>EXPLANATION</Text>
+                <Text style={styles.explanationText}>{item.explanation}</Text>
+              </View>
+            </View>
           </View>
         )}
       </View>
@@ -666,11 +668,15 @@ const styles = StyleSheet.create({
   },
   noteHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 },
   noteHeaderTitle: { ...Typography.labelCaps, color: Colors.secondary, fontSize: 9 },
-  noteText: { 
-    ...Typography.bodySm, 
-    color: Colors.onSurfaceVariant, 
-    fontStyle: 'italic', 
-    lineHeight: 18 
+  noteText: {
+    ...Typography.bodySm,
+    color: Colors.onSurfaceVariant,
+    fontStyle: 'italic',
+    lineHeight: 18
+  },
+  noteTextEmpty: {
+    color: Colors.outline,
+    opacity: 0.6,
   },
 
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: Spacing.md, marginTop: 100 },

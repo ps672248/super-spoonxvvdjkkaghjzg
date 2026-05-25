@@ -6,6 +6,7 @@ import { Colors, Typography, Spacing, Radius, Shadows } from '../../theme';
 import { useBookmarkStore } from '../../stores/bookmarkStore';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { useExamStore } from '../../stores/examStore';
+import { useActivityStore } from '../../stores/activityStore';
 import { UnifiedQuestion } from './UnifiedQuestion';
 import * as Haptics from 'expo-haptics';
 
@@ -55,12 +56,31 @@ export const GameResultScreen = ({
   personalMessage
 }: GameResultScreenProps) => {
   const { fullName } = useSettingsStore();
-  const { selectedPSU, selectedBranch } = useExamStore();
+  const { selectedPSU, selectedBranch, selectedSections, selectedTopics, selectedMode } = useExamStore();
   const { addQuestionBookmark, isQuestionBookmarked, updateQuestionNote, removeQuestionBookmark, questionBookmarks } = useBookmarkStore();
+  const { logSession } = useActivityStore();
   const [noteModalItem, setNoteModalItem] = React.useState<GenericResultItem | null>(null);
   const [localNote, setLocalNote] = React.useState('');
 
   const firstName = fullName.split(' ')[0];
+
+  // Log session once when result screen mounts
+  React.useEffect(() => {
+    if (!selectedPSU || !selectedBranch) return;
+    logSession({
+      psuId: selectedPSU.id,
+      psuName: selectedPSU.name,
+      branchId: selectedBranch.id,
+      branchName: selectedBranch.name,
+      sections: selectedSections,
+      topics: selectedTopics,
+      gameMode: (selectedMode ?? 'mcq'),
+      questionsTotal: results.length,
+      questionsCorrect: results.filter(r => r.isCorrect).length,
+      score,
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // fire once on mount only
 
   const handleBookmarkPress = (item: GenericResultItem) => {
     const bookmarked = isQuestionBookmarked(item.id);

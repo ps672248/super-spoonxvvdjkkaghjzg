@@ -111,15 +111,14 @@ export default function LoginScreen() {
               <View style={styles.line} />
             </View>
 
-            <TouchableOpacity 
-              style={styles.googleButton} 
-              onPress={async () => {
-                try {
-                  await useAuthStore.getState().signInWithGoogle();
-                  router.replace('/(tabs)/settings');
-                } catch (e: any) {
-                  Alert.alert('Google Login Failed', e.message);
-                }
+            <TouchableOpacity
+              style={styles.googleButton}
+              onPress={() => {
+                Alert.alert(
+                  'Google Sign-In Unavailable',
+                  'Google Sign-In requires an EAS production or dev-client build. Please use email/password login for now.',
+                  [{ text: 'OK' }]
+                );
               }}
               disabled={isLoading}
             >

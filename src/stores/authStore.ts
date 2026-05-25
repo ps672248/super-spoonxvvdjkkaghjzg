@@ -1,7 +1,9 @@
 import { create } from 'zustand';
-import { User, onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { User, onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/config/firebase';
 import { useSettingsStore } from './settingsStore';
+import { useBookmarkStore } from './bookmarkStore';
+import { useActivityStore } from './activityStore';
 
 interface AuthState {
   user: User | null;
@@ -19,26 +21,33 @@ export const useAuthStore = create<AuthState>((set) => ({
   initialized: false,
   setUser: (user) => set({ user, isLoading: false }),
   setLoading: (isLoading) => set({ isLoading }),
+
   initialize: () => {
     onAuthStateChanged(auth, async (user) => {
       set({ user, isLoading: false, initialized: true });
+
       if (user) {
-        // Fetch cloud settings upon successful login
+        // Load cloud settings
         await useSettingsStore.getState().loadSettings();
+
+        // Seed fullName from Firebase Auth displayName if not set in cloud
+        const { fullName, setFullName } = useSettingsStore.getState();
+        if (user.displayName && (!fullName || fullName === 'Future Officer')) {
+          await setFullName(user.displayName);
+        }
+
+        // Merge local + Firestore bookmarks
+        await useBookmarkStore.getState().loadBookmarks();
+
+        // Merge local + Firestore activity sessions
+        await useActivityStore.getState().loadSessions();
       }
     });
   },
 
   signInWithGoogle: async () => {
-    set({ isLoading: true });
-    try {
-      const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
-    } catch (error) {
-      console.error('Google Sign-In Error:', error);
-      throw error;
-    } finally {
-      set({ isLoading: false });
-    }
+    // Google Sign-In requires an EAS dev client or production build (native module).
+    // Not available in Expo Go — caller should show an alert.
+    throw new Error('Google Sign-In requires an EAS build. Use email/password login instead.');
   },
 }));

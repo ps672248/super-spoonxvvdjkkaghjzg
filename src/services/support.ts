@@ -79,17 +79,20 @@ export const addReply = async (ticketId: string, text: string, attachments: stri
 };
 
 export const getTicketsWithMessages = (userId: string, callback: (tickets: any[]) => void) => {
+  // No composite index needed — filter by userId only, sort client-side
   const q = query(
     collection(db, TICKETS_COLLECTION),
-    where('userId', '==', userId),
-    orderBy('updatedAt', 'desc')
+    where('userId', '==', userId)
   );
 
   return onSnapshot(q, async (snapshot) => {
-    const ticketsData = snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    })) as any[];
+    const ticketsData = snapshot.docs
+      .map(doc => ({ id: doc.id, ...doc.data() }))
+      .sort((a: any, b: any) => {
+        const aTime = a.updatedAt?.toMillis?.() ?? 0;
+        const bTime = b.updatedAt?.toMillis?.() ?? 0;
+        return bTime - aTime;
+      }) as any[];
 
     const ticketsWithMessages = await Promise.all(ticketsData.map(async (ticket) => {
       const messagesQ = query(

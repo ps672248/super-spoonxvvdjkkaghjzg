@@ -1,0 +1,67 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Helper ───────────────────────────────────────────────────────────────
+    function isAdmin() {
+      return request.auth != null
+          && request.auth.token.email == 'ps671248@gmail.com';
+    }
+
+    // ── Static config — public read, admin write ─────────────────────────────
+    match /psus/{doc} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /branches/{doc} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /syllabus/{doc} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /metadata/{doc} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // ── User data — owner only ────────────────────────────────────────────────
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+
+      // Bookmarks subcollections
+      match /topic_bookmarks/{bookmarkId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+      match /question_bookmarks/{bookmarkId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+      // Activity / study sessions
+      match /sessions/{sessionId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+
+    // ── Support tickets ───────────────────────────────────────────────────────
+    match /support_tickets/{ticketId} {
+      // Owner or admin can read their ticket
+      allow read: if request.auth != null
+          && (resource.data.userId == request.auth.uid || isAdmin());
+
+      // Any logged-in user can create a ticket for themselves
+      allow create: if request.auth != null
+          && request.resource.data.userId == request.auth.uid;
+
+      // Owner can update (add reply); admin can update (change status)
+      allow update: if request.auth != null
+          && (resource.data.userId == request.auth.uid || isAdmin());
+
+      allow delete: if isAdmin();
+
+      match /messages/{msgId} {
+        allow read, write: if request.auth != null;
+      }
+    }
+  }
+}
