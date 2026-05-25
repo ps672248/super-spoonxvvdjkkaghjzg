@@ -1,11 +1,22 @@
-import React, { useState } from 'react';
-import { 
-  View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, 
-  ActivityIndicator, Image, Alert, KeyboardAvoidingView, Platform 
+import React, { useState, useRef, useEffect } from 'react';
+import {
+  View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView,
+  ActivityIndicator, Image, Alert, KeyboardAvoidingView, Platform,
+  Modal, Dimensions, StatusBar,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { Colors, Typography, Spacing, Radius, Shadows } from '@/theme';
+
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+const { width: SCREEN_W } = Dimensions.get('window');
+/** Width of media-containing bubble */
+const BUBBLE_MEDIA_W = Math.min(SCREEN_W * 0.72, 320);
+/** Aspect ratio for images: 4:3 */
+const IMG_H = BUBBLE_MEDIA_W * 0.75;
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 interface Message {
   id: string;
@@ -31,6 +42,24 @@ interface ChatThreadProps {
   onUpdateStatus?: (status: 'open' | 'closed' | 'pending') => Promise<void>;
 }
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function formatTime(dateStr: string): string {
+  try {
+    return new Date(dateStr).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  } catch {
+    return '';
+  }
+}
+
+const STATUS_COLORS: Record<string, string> = {
+  open: Colors.success ?? '#2E7D32',
+  pending: Colors.warning ?? '#F57C00',
+  closed: Colors.outline,
+};
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
 export const ChatThread: React.FC<ChatThreadProps> = ({
   ticket,
   isLoading,
@@ -42,26 +71,33 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
   const [inputText, setInputText] = useState('');
   const [attachments, setAttachments] = useState<{ uri: string; name: string; type: string }[]>([]);
   const [isSending, setIsSending] = useState(false);
-  const [status, requestPermission] = ImagePicker.useMediaLibraryPermissions();
+  const [viewerUri, setViewerUri] = useState<string | null>(null);
+  const scrollRef = useRef<ScrollView>(null);
+  const [mediaPermission, requestPermission] = ImagePicker.useMediaLibraryPermissions();
+
+  // Auto-scroll to bottom on new messages
+  useEffect(() => {
+    const t = setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 120);
+    return () => clearTimeout(t);
+  }, [ticket.messages?.length]);
+
+  // ── Attachment picker ───────────────────────────────────────────────────────
 
   const handlePickAttachment = async () => {
-    if (status?.status !== ImagePicker.PermissionStatus.GRANTED) {
-      const permission = await requestPermission();
-      if (!permission.granted) {
-        Alert.alert('Permission Required', 'Permission to access camera roll is required!');
+    if (mediaPermission?.status !== ImagePicker.PermissionStatus.GRANTED) {
+      const p = await requestPermission();
+      if (!p.granted) {
+        Alert.alert('Permission Required', 'Allow access to your photo library to attach images.');
         return;
       }
     }
-
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
       quality: 0.8,
     });
-
-    if (!result.canceled && result.assets && result.assets.length > 0) {
+    if (!result.canceled && result.assets?.length > 0) {
       const asset = result.assets[0];
-      setAttachments([...attachments, {
+      setAttachments(prev => [...prev, {
         uri: asset.uri,
         name: asset.fileName || 'upload.jpg',
         type: 'image/jpeg',
@@ -69,9 +105,10 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
     }
   };
 
-  const removeAttachment = (index: number) => {
-    setAttachments(attachments.filter((_, i) => i !== index));
-  };
+  const removeAttachment = (index: number) =>
+    setAttachments(prev => prev.filter((_, i) => i !== index));
+
+  // ── Send ────────────────────────────────────────────────────────────────────
 
   const handleSend = async () => {
     if (!inputText.trim() && attachments.length === 0) return;
@@ -81,53 +118,62 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
       setInputText('');
       setAttachments([]);
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to send message');
+      Alert.alert('Send Failed', error.message || 'Could not send message.');
     } finally {
       setIsSending(false);
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'open': return Colors.success;
-      case 'pending': return Colors.warning;
-      case 'closed': return Colors.outline;
-      default: return Colors.primary;
-    }
-  };
+  // ── Render ──────────────────────────────────────────────────────────────────
 
   return (
-    <KeyboardAvoidingView 
-      style={styles.container} 
+    <KeyboardAvoidingView
+      style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
     >
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color={isAdmin ? Colors.secondary : Colors.primary} />
+      {/* ── Header ── */}
+      <View style={[styles.header, isAdmin && styles.headerAdmin]}>
+        <TouchableOpacity onPress={onBack} style={styles.backBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+          <Ionicons name="arrow-back" size={22} color={isAdmin ? '#FFF' : Colors.primary} />
         </TouchableOpacity>
-        <View style={styles.headerTitleContainer}>
-          <Text style={styles.headerTitle} numberOfLines={1}>{ticket.subject}</Text>
-          <View style={[styles.statusBadge, { backgroundColor: getStatusColor(ticket.status) + '1A' }]}>
-            <Text style={[styles.statusBadgeText, { color: getStatusColor(ticket.status) }]}>
+        <View style={styles.headerMeta}>
+          <Text style={[styles.headerTitle, isAdmin && styles.headerTitleAdmin]} numberOfLines={1}>
+            {ticket.subject}
+          </Text>
+          <View style={[
+            styles.statusPill,
+            { backgroundColor: isAdmin ? 'rgba(255,255,255,0.15)' : STATUS_COLORS[ticket.status] + '20' },
+          ]}>
+            <View style={[styles.statusDot, { backgroundColor: isAdmin ? '#FFF' : STATUS_COLORS[ticket.status] }]} />
+            <Text style={[
+              styles.statusText,
+              { color: isAdmin ? '#FFF' : STATUS_COLORS[ticket.status] },
+            ]}>
               {ticket.status.toUpperCase()}
             </Text>
           </View>
         </View>
+        {/* Admin badge */}
+        {isAdmin && (
+          <View style={styles.adminBadge}>
+            <Ionicons name="shield-checkmark" size={14} color={Colors.gold} />
+            <Text style={styles.adminBadgeText}>ADMIN</Text>
+          </View>
+        )}
       </View>
 
-      {/* Admin Status Changer */}
+      {/* ── Admin status bar ── */}
       {isAdmin && onUpdateStatus && (
-        <View style={styles.adminActions}>
-          <Text style={styles.adminActionsLabel}>Change Status:</Text>
-          <View style={styles.adminButtons}>
-            {(['open', 'pending', 'closed'] as const).map((s) => (
+        <View style={styles.adminBar}>
+          <Text style={styles.adminBarLabel}>Set status:</Text>
+          <View style={styles.adminBtns}>
+            {(['open', 'pending', 'closed'] as const).map(s => (
               <TouchableOpacity
                 key={s}
                 style={[
                   styles.adminBtn,
-                  ticket.status === s && { backgroundColor: getStatusColor(s) },
+                  ticket.status === s && { backgroundColor: STATUS_COLORS[s] },
                 ]}
                 onPress={() => onUpdateStatus(s)}
               >
@@ -140,85 +186,125 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
         </View>
       )}
 
-      {/* Messages ScrollView */}
-      <ScrollView 
-        style={styles.messagesContainer}
-        contentContainerStyle={styles.messagesContent}
+      {/* ── Messages ── */}
+      <ScrollView
+        ref={scrollRef}
+        style={styles.msgList}
+        contentContainerStyle={styles.msgListContent}
         showsVerticalScrollIndicator={false}
+        onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: false })}
       >
         {isLoading ? (
-          <View style={styles.loadingContainer}>
+          <View style={styles.centered}>
             <ActivityIndicator size="large" color={isAdmin ? Colors.secondary : Colors.primary} />
           </View>
         ) : !ticket.messages || ticket.messages.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No messages in this ticket yet.</Text>
+          <View style={styles.centered}>
+            <Ionicons name="chatbubbles-outline" size={40} color={Colors.outlineVariant} />
+            <Text style={styles.emptyText}>No messages yet</Text>
           </View>
         ) : (
-          ticket.messages.map((msg) => {
+          ticket.messages.map(msg => {
             const isSupport = msg.sender === 'support';
-            // If admin view, 'support' messages are mine, 'user' messages are theirs
+            // "mine" = messages I sent in this context
             const isMine = isAdmin ? isSupport : !isSupport;
+            const hasImages = !!msg.attachments && msg.attachments.length > 0;
+            const hasText = !!msg.message?.trim();
 
             return (
-              <View 
-                key={msg.id} 
-                style={[styles.messageBubble, isMine ? styles.myBubble : styles.theirBubble]}
-              >
-                <Text style={[styles.messageSender, isMine && styles.mySenderText]}>
-                  {isSupport ? 'Support Team' : 'User'}
-                </Text>
-
-                {msg.message ? (
-                  <Text style={[styles.messageText, isMine && styles.myMessageText]}>
-                    {msg.message}
+              <View key={msg.id} style={[styles.msgRow, isMine ? styles.msgRowRight : styles.msgRowLeft]}>
+                <View style={[
+                  styles.bubble,
+                  isMine ? styles.myBubble : styles.theirBubble,
+                  hasImages && styles.mediaBubble,
+                ]}>
+                  {/* Sender label */}
+                  <Text style={[
+                    styles.senderLabel,
+                    isMine ? styles.mySenderLabel : styles.theirSenderLabel,
+                    hasImages && styles.labelPadded,
+                  ]}>
+                    {isSupport ? 'Support Team' : 'You'}
                   </Text>
-                ) : null}
 
-                {msg.attachments && msg.attachments.length > 0 && (
-                  <View style={styles.attachmentGrid}>
-                    {msg.attachments.map((att, index) => (
-                      <Image key={index} source={{ uri: att.uri }} style={styles.attachedImg} />
-                    ))}
-                  </View>
-                )}
+                  {/* Text */}
+                  {hasText && (
+                    <Text style={[
+                      styles.msgText,
+                      isMine ? styles.myMsgText : styles.theirMsgText,
+                      hasImages && styles.textPadded,
+                    ]}>
+                      {msg.message}
+                    </Text>
+                  )}
 
-                <Text style={[styles.messageDate, isMine && styles.myDateText]}>
-                  {new Date(msg.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </Text>
+                  {/* Images */}
+                  {hasImages && (
+                    <View style={styles.imgStack}>
+                      {msg.attachments!.map((att, idx) => (
+                        <TouchableOpacity
+                          key={idx}
+                          onPress={() => setViewerUri(att.uri)}
+                          activeOpacity={0.92}
+                        >
+                          <Image
+                            source={{ uri: att.uri }}
+                            style={[
+                              styles.msgImg,
+                              !hasText && idx === 0 && styles.imgFirst,
+                              idx === msg.attachments!.length - 1 && (
+                                isMine ? styles.imgLastMine : styles.imgLastTheir
+                              ),
+                            ]}
+                            resizeMode="cover"
+                          />
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  )}
+
+                  {/* Timestamp */}
+                  <Text style={[
+                    styles.timeText,
+                    isMine ? styles.myTimeText : styles.theirTimeText,
+                    hasImages && styles.timePadded,
+                  ]}>
+                    {formatTime(msg.date)}
+                  </Text>
+                </View>
               </View>
             );
           })
         )}
       </ScrollView>
 
-      {/* Closed Banner or Input Bar */}
+      {/* ── Closed banner / Input bar ── */}
       {ticket.status === 'closed' ? (
         <View style={styles.closedBanner}>
-          <Ionicons name="information-circle" size={20} color={Colors.outline} />
-          <Text style={styles.closedBannerText}>
-            This ticket has been closed. If you have further questions, please open a new ticket.
+          <Ionicons name="lock-closed-outline" size={18} color={Colors.outline} />
+          <Text style={styles.closedText}>
+            Ticket closed. Open a new ticket for further assistance.
           </Text>
         </View>
       ) : (
         <View style={styles.inputSection}>
-          {/* Attachment Preview Bar */}
+          {/* Attachment previews */}
           {attachments.length > 0 && (
-            <View style={styles.attachmentPreviewContainer}>
-              {attachments.map((att, index) => (
-                <View key={index} style={styles.attachmentPreview}>
+            <View style={styles.previewRow}>
+              {attachments.map((att, idx) => (
+                <View key={idx} style={styles.previewWrap}>
                   <Image source={{ uri: att.uri }} style={styles.previewImg} />
-                  <TouchableOpacity style={styles.removeAttBtn} onPress={() => removeAttachment(index)}>
-                    <Ionicons name="close-circle" size={20} color={Colors.error} />
+                  <TouchableOpacity style={styles.removeBtn} onPress={() => removeAttachment(idx)}>
+                    <Ionicons name="close-circle" size={20} color="#FF4D4F" />
                   </TouchableOpacity>
                 </View>
               ))}
             </View>
           )}
 
-          {/* Input Row */}
+          {/* Input row */}
           <View style={styles.inputRow}>
-            <TouchableOpacity style={styles.attachBtn} onPress={handlePickAttachment}>
+            <TouchableOpacity style={styles.attachBtn} onPress={handlePickAttachment} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
               <Ionicons name="image-outline" size={24} color={Colors.outline} />
             </TouchableOpacity>
 
@@ -226,250 +312,307 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
               style={styles.input}
               value={inputText}
               onChangeText={setInputText}
-              placeholder="Type your message..."
+              placeholder="Type a message…"
               placeholderTextColor={Colors.outline}
               multiline
               maxLength={500}
             />
 
-            <TouchableOpacity 
-              style={[styles.sendBtn, (!inputText.trim() && attachments.length === 0) && styles.sendBtnDisabled]}
+            <TouchableOpacity
+              style={[
+                styles.sendBtn,
+                (!inputText.trim() && attachments.length === 0) && styles.sendBtnOff,
+              ]}
               onPress={handleSend}
               disabled={isSending || (!inputText.trim() && attachments.length === 0)}
             >
-              {isSending ? (
-                <ActivityIndicator size="small" color="#FFF" />
-              ) : (
-                <Ionicons name="send" size={20} color="#FFF" />
-              )}
+              {isSending
+                ? <ActivityIndicator size="small" color="#FFF" />
+                : <Ionicons name="send" size={18} color="#FFF" />}
             </TouchableOpacity>
           </View>
         </View>
       )}
+
+      {/* ── Full-screen image viewer ── */}
+      <Modal
+        visible={!!viewerUri}
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+        onRequestClose={() => setViewerUri(null)}
+      >
+        <View style={styles.viewerBg}>
+          <TouchableOpacity
+            style={styles.viewerCloseBtn}
+            onPress={() => setViewerUri(null)}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          >
+            <View style={styles.viewerCloseCircle}>
+              <Ionicons name="close" size={22} color="#FFF" />
+            </View>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.viewerTouchable} activeOpacity={1} onPress={() => setViewerUri(null)}>
+            {viewerUri && (
+              <Image source={{ uri: viewerUri }} style={styles.viewerImg} resizeMode="contain" />
+            )}
+          </TouchableOpacity>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 };
 
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F9FBFF',
-  },
+  container: { flex: 1, backgroundColor: '#EEF2F7' },
+
+  // Header
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
     backgroundColor: '#FFF',
     borderBottomWidth: 1,
     borderBottomColor: '#F0F2F5',
+    gap: 8,
   },
-  backButton: {
-    padding: Spacing.xs,
-    marginRight: Spacing.sm,
-  },
-  headerTitleContainer: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
+  headerAdmin: { backgroundColor: Colors.primary },   // dark navy, white text
+  backBtn: { padding: 4 },
+  headerMeta: { flex: 1, gap: 4 },
   headerTitle: {
     ...Typography.h3,
     color: Colors.onSurface,
-    flex: 1,
-    marginRight: Spacing.sm,
+    fontSize: 15,
   },
-  statusBadge: {
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xs,
+  headerTitleAdmin: { color: '#FFF' },
+  adminBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
     borderRadius: Radius.pill,
   },
-  statusBadgeText: {
+  adminBadgeText: {
     ...Typography.labelCaps,
-    fontSize: 10,
+    color: Colors.gold,
+    fontSize: 9,
+    letterSpacing: 1,
   },
-  adminActions: {
+  statusPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: Radius.pill,
+    gap: 4,
+  },
+  statusDot: { width: 6, height: 6, borderRadius: 3 },
+  statusText: { ...Typography.labelCaps, fontSize: 10 },
+
+  // Admin status bar
+  adminBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.sm,
-    backgroundColor: '#EEF2FF',
+    backgroundColor: '#F0F2FF',
     borderBottomWidth: 1,
-    borderBottomColor: '#E0E7FF',
+    borderBottomColor: '#D8DCF0',
   },
-  adminActionsLabel: {
-    ...Typography.bodySm,
-    color: Colors.primaryContainer,
-    fontFamily: 'Inter_600SemiBold',
-  },
-  adminButtons: {
-    flexDirection: 'row',
-    gap: Spacing.xs,
-  },
+  adminBarLabel: { ...Typography.bodySm, color: Colors.primary, fontFamily: 'Inter_600SemiBold' },
+  adminBtns: { flexDirection: 'row', gap: Spacing.xs },
   adminBtn: {
     paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.xs,
+    paddingVertical: 4,
     borderRadius: Radius.pill,
     backgroundColor: '#FFF',
     borderWidth: 1,
     borderColor: '#D1D5DB',
   },
-  adminBtnText: {
-    ...Typography.labelCaps,
-    color: Colors.onSurfaceVariant,
-    fontSize: 10,
+  adminBtnText: { ...Typography.labelCaps, color: Colors.onSurfaceVariant, fontSize: 10 },
+
+  // Message list
+  msgList: { flex: 1 },
+  msgListContent: {
+    padding: 12,
+    gap: 6,
+    paddingBottom: 8,
   },
-  messagesContainer: {
-    flex: 1,
-  },
-  messagesContent: {
-    padding: Spacing.lg,
-    gap: Spacing.md,
-  },
-  loadingContainer: {
-    padding: Spacing.xxxl,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  emptyContainer: {
-    padding: Spacing.xxxl,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  emptyText: {
-    ...Typography.bodyMd,
-    color: Colors.outline,
-    textAlign: 'center',
-  },
-  messageBubble: {
+  centered: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 48, gap: 12 },
+  emptyText: { ...Typography.bodyMd, color: Colors.outline },
+
+  // Message rows
+  msgRow: { flexDirection: 'row', marginBottom: 2 },
+  msgRowRight: { justifyContent: 'flex-end' },
+  msgRowLeft: { justifyContent: 'flex-start' },
+
+  // Bubbles
+  bubble: {
     maxWidth: '80%',
-    padding: Spacing.md,
-    borderRadius: Radius.lg,
-    ...Shadows.card,
+    borderRadius: 18,
+    overflow: 'hidden',
   },
   myBubble: {
-    alignSelf: 'flex-end',
     backgroundColor: Colors.primary,
-    borderBottomRightRadius: Radius.xs,
+    borderBottomRightRadius: 4,
   },
   theirBubble: {
-    alignSelf: 'flex-start',
     backgroundColor: '#FFF',
-    borderBottomLeftRadius: Radius.xs,
+    borderBottomLeftRadius: 4,
     borderWidth: 1,
-    borderColor: '#F0F2F5',
+    borderColor: '#E8EBF0',
+    ...Shadows.card,
   },
-  messageSender: {
-    ...Typography.bodySm,
-    color: Colors.outline,
+  mediaBubble: {
+    width: BUBBLE_MEDIA_W,
+    maxWidth: BUBBLE_MEDIA_W,
+  },
+
+  // Sender label
+  senderLabel: {
     fontSize: 10,
-    marginBottom: 2,
     fontFamily: 'Inter_600SemiBold',
+    paddingHorizontal: 12,
+    paddingTop: 8,
+    paddingBottom: 2,
   },
-  mySenderText: {
-    color: Colors.onPrimaryContainer,
+  mySenderLabel: { color: 'rgba(255,255,255,0.65)' },
+  theirSenderLabel: { color: Colors.outline },
+  labelPadded: { paddingHorizontal: 12 },
+
+  // Message text
+  msgText: { ...Typography.bodyMd, paddingHorizontal: 12, paddingBottom: 6 },
+  myMsgText: { color: '#FFF' },
+  theirMsgText: { color: Colors.onSurface },
+  textPadded: { paddingHorizontal: 12, paddingBottom: 4 },
+
+  // Images
+  imgStack: { gap: 2 },
+  msgImg: {
+    width: BUBBLE_MEDIA_W,
+    height: IMG_H,
   },
-  messageText: {
-    ...Typography.bodyMd,
-    color: Colors.onSurface,
+  imgFirst: {
+    borderTopLeftRadius: 14,
+    borderTopRightRadius: 14,
   },
-  myMessageText: {
-    color: '#FFF',
+  imgLastMine: {
+    borderBottomLeftRadius: 14,
+    borderBottomRightRadius: 4,
   },
-  attachmentGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.xs,
-    marginTop: Spacing.xs,
+  imgLastTheir: {
+    borderBottomLeftRadius: 4,
+    borderBottomRightRadius: 14,
   },
-  attachedImg: {
-    width: 150,
-    height: 150,
-    borderRadius: Radius.sm,
-  },
-  messageDate: {
-    ...Typography.bodySm,
-    color: Colors.outline,
+
+  // Time
+  timeText: {
     fontSize: 10,
+    fontFamily: 'Inter_400Regular',
+    paddingHorizontal: 12,
+    paddingBottom: 8,
+    paddingTop: 2,
     alignSelf: 'flex-end',
-    marginTop: Spacing.xs,
   },
-  myDateText: {
-    color: Colors.onPrimaryContainer,
-  },
+  myTimeText: { color: 'rgba(255,255,255,0.55)' },
+  theirTimeText: { color: Colors.outline },
+  timePadded: { paddingHorizontal: 12 },
+
+  // Closed banner
   closedBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: Spacing.lg,
+    gap: Spacing.sm,
+    padding: Spacing.md,
     backgroundColor: '#F3F4F6',
     borderTopWidth: 1,
     borderTopColor: '#E5E7EB',
-    gap: Spacing.sm,
   },
-  closedBannerText: {
-    ...Typography.bodySm,
-    color: Colors.outline,
-    flex: 1,
-  },
+  closedText: { ...Typography.bodySm, color: Colors.outline, flex: 1 },
+
+  // Input section
   inputSection: {
-    padding: Spacing.md,
     backgroundColor: '#FFF',
     borderTopWidth: 1,
-    borderTopColor: '#F0F2F5',
+    borderTopColor: '#E8EBF0',
+    paddingHorizontal: 10,
+    paddingVertical: 8,
   },
-  attachmentPreviewContainer: {
+  previewRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: Spacing.sm,
-    marginBottom: Spacing.sm,
+    gap: 8,
+    marginBottom: 8,
   },
-  attachmentPreview: {
-    position: 'relative',
-  },
-  previewImg: {
-    width: 60,
-    height: 60,
-    borderRadius: Radius.sm,
-  },
-  removeAttBtn: {
-    position: 'absolute',
-    top: -8,
-    right: -8,
-    backgroundColor: '#FFF',
-    borderRadius: Radius.pill,
-  },
+  previewWrap: { position: 'relative' },
+  previewImg: { width: 56, height: 56, borderRadius: 8 },
+  removeBtn: { position: 'absolute', top: -8, right: -8, backgroundColor: '#FFF', borderRadius: 10 },
+
   inputRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
+    alignItems: 'flex-end',
+    gap: 8,
   },
-  attachBtn: {
-    padding: Spacing.xs,
-  },
+  attachBtn: { padding: 4, marginBottom: 6 },
   input: {
     flex: 1,
-    backgroundColor: '#F3F4F6',
-    borderRadius: Radius.pill,
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: 10,
+    backgroundColor: '#F3F5F7',
+    borderRadius: 22,
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    paddingBottom: 10,
     ...Typography.bodyMd,
     color: Colors.onSurface,
-    maxHeight: 100,
+    maxHeight: 110,
+    lineHeight: 20,
   },
   sendBtn: {
-    backgroundColor: Colors.primary,
     width: 40,
     height: 40,
-    borderRadius: Radius.pill,
+    borderRadius: 20,
+    backgroundColor: Colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: 2,
     ...Shadows.button,
   },
-  sendBtnDisabled: {
+  sendBtnOff: {
     backgroundColor: Colors.outlineVariant,
     elevation: 0,
     shadowOpacity: 0,
+  },
+
+  // Image viewer
+  viewerBg: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.92)',
+    justifyContent: 'center',
+  },
+  viewerCloseBtn: {
+    position: 'absolute',
+    top: (StatusBar.currentHeight ?? 40) + 8,
+    right: 16,
+    zIndex: 10,
+  },
+  viewerCloseCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  viewerTouchable: { flex: 1, justifyContent: 'center' },
+  viewerImg: {
+    width: SCREEN_W,
+    height: SCREEN_W * 1.2,
+    alignSelf: 'center',
   },
 });

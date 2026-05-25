@@ -1,16 +1,109 @@
 /**
- * One-time migration: uploads static config to Firestore.
- * Triggered from admin panel in Settings (admin email only).
+ * Static config migration to Firestore.
+ * Triggered from Admin Tools in Settings (admin email only).
+ *
+ * Versioning:
+ *   - Bump CONFIG_VERSION whenever PSUs / Branches / Syllabus data changes.
+ *   - Add a matching entry to CONFIG_CHANGELOG so the admin sees what changed.
  */
 
+import Constants from 'expo-constants';
 import { db } from '../config/firebase';
-import { collection, doc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { PSUS } from '../config/psus';
 import { BRANCHES } from '../config/branches';
 import { domainTopicMap, quantTopics, reasoningTopics, englishTopics, gkTopics } from '../config/syllabus/index';
 
+// ─── Version registry ─────────────────────────────────────────────────────────
+
+/** Bump this number whenever the static config data files change. */
+export const CONFIG_VERSION = 1;
+
+/**
+ * Human-readable changelog per version.
+ * Add an entry here BEFORE bumping CONFIG_VERSION.
+ */
+export const CONFIG_CHANGELOG: Record<number, string[]> = {
+  1: [
+    'Initial migration — PSUs, Branches, Aptitude & Domain Syllabus uploaded',
+    'app_config docs seeded (maintenance, update, whats_new)',
+  ],
+  // 2: ['Added SAIL PSU', 'Updated HPCL negative marking to 0.33'],
+  // 3: ['New CS domain topics', 'Added instrumentation branch'],
+};
+
+// ─── Status check ─────────────────────────────────────────────────────────────
+
+export interface MigrationStatus {
+  /** Version stored in Firestore, or null if never migrated. */
+  firestoreConfigVersion: number | null;
+  /** App version stored in Firestore during last migration, or null. */
+  firestoreAppVersion: string | null;
+  /** Current CONFIG_VERSION constant in app code. */
+  localConfigVersion: number;
+  /** Current app version from app.json / expo config. */
+  localAppVersion: string;
+  /** Config data is behind — PSU/branch/syllabus needs re-upload. */
+  isConfigStale: boolean;
+  /** App version recorded in Firestore doesn't match current build. */
+  isAppVersionStale: boolean;
+  /** List of changelog lines not yet in Firestore. */
+  pendingChanges: string[];
+  /** ISO timestamp of last migration, or null. */
+  lastMigratedAt: string | null;
+}
+
+export async function checkMigrationStatus(): Promise<MigrationStatus> {
+  const localAppVersion = Constants.expoConfig?.version ?? '1.0.0';
+
+  const snap = await getDoc(doc(db, 'metadata', 'config_version'));
+
+  if (!snap.exists()) {
+    // Never migrated — all changes pending
+    const pendingChanges: string[] = [];
+    for (let v = 1; v <= CONFIG_VERSION; v++) {
+      (CONFIG_CHANGELOG[v] ?? []).forEach(c => pendingChanges.push(`v${v}: ${c}`));
+    }
+    return {
+      firestoreConfigVersion: null,
+      firestoreAppVersion: null,
+      localConfigVersion: CONFIG_VERSION,
+      localAppVersion,
+      isConfigStale: true,
+      isAppVersionStale: true,
+      pendingChanges,
+      lastMigratedAt: null,
+    };
+  }
+
+  const d = snap.data();
+  const firestoreConfigVersion: number = typeof d.version === 'number' ? d.version : 0;
+  const firestoreAppVersion: string | null = d.appVersion ?? null;
+  const isConfigStale = CONFIG_VERSION > firestoreConfigVersion;
+  const isAppVersionStale = firestoreAppVersion !== localAppVersion;
+
+  // Collect changelog items for versions not yet in Firestore
+  const pendingChanges: string[] = [];
+  for (let v = firestoreConfigVersion + 1; v <= CONFIG_VERSION; v++) {
+    (CONFIG_CHANGELOG[v] ?? []).forEach(c => pendingChanges.push(`v${v}: ${c}`));
+  }
+
+  return {
+    firestoreConfigVersion,
+    firestoreAppVersion,
+    localConfigVersion: CONFIG_VERSION,
+    localAppVersion,
+    isConfigStale,
+    isAppVersionStale,
+    pendingChanges,
+    lastMigratedAt: d.updatedAt ?? null,
+  };
+}
+
+// ─── Migration runner ─────────────────────────────────────────────────────────
+
 export const migrateStaticToFirebase = async () => {
-  console.log('[Migration] Starting...');
+  console.log('[Migration] Starting... CONFIG_VERSION =', CONFIG_VERSION);
 
   // 1. Upload PSUs
   for (const psu of PSUS) {
@@ -53,11 +146,30 @@ export const migrateStaticToFirebase = async () => {
   }
   console.log('[Migration] Domain syllabus done');
 
-  // 5. Set version metadata
+  // 5. Write version metadata (includes app version for status tracking)
   await setDoc(doc(db, 'metadata', 'config_version'), {
-    version: 1,
+    version: CONFIG_VERSION,
+    appVersion: Constants.expoConfig?.version ?? '1.0.0',
     updatedAt: new Date().toISOString(),
   });
 
+  // 6. Seed app_config (merge — won't overwrite existing values)
+  await setDoc(doc(db, 'app_config', 'maintenance'), {
+    maintenance_mode: false,
+    maintenance_message: 'We are making improvements. Please check back shortly.',
+  }, { merge: true });
+
+  await setDoc(doc(db, 'app_config', 'update'), {
+    version: '',
+    apk_url: '',
+    force_update: false,
+    release_notes: '',
+  }, { merge: true });
+
+  await setDoc(doc(db, 'app_config', 'whats_new'), {
+    items: [],
+  }, { merge: true });
+
+  console.log('[Migration] app_config seeded');
   console.log('[Migration] Complete!');
 };

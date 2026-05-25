@@ -11,6 +11,7 @@ import { useConfigStore } from '@/stores/configStore';
 import { useActivityStore } from '@/stores/activityStore';
 import { FlagsProvider } from '@/context/FlagsContext';
 import { FlagsModals } from '@/components/FlagsModals';
+import { ToastProvider } from '@/context/ToastContext';
 import { Colors } from '@/theme';
 
 SplashScreen.preventAutoHideAsync();
@@ -46,6 +47,7 @@ export default function RootLayout() {
 
   return (
     <FlagsProvider>
+      <ToastProvider>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <StatusBar style="dark" backgroundColor={Colors.surface} />
         <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: Colors.surface } }}>
@@ -65,6 +67,7 @@ export default function RootLayout() {
         </Stack>
         <FlagsModals />
       </GestureHandlerRootView>
+      </ToastProvider>
     </FlagsProvider>
   );
 }

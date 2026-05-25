@@ -14,7 +14,11 @@ import { testApiKey } from '@/services/gemini';
 import { AppHeader } from '@/components/AppHeader';
 import { signOut } from 'firebase/auth';
 import { auth as firebaseAuth } from '@/config/firebase';
-import { migrateStaticToFirebase } from '@/services/migration';
+import {
+  migrateStaticToFirebase,
+  checkMigrationStatus,
+  type MigrationStatus,
+} from '@/services/migration';
 
 const ADMIN_EMAIL = 'ps671248@gmail.com';
 
@@ -32,21 +36,36 @@ export default function SettingsScreen() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
   const [isMigrating, setIsMigrating] = useState(false);
+  const [migrationStatus, setMigrationStatus] = useState<MigrationStatus | null>(null);
+  const [isCheckingStatus, setIsCheckingStatus] = useState(false);
+  const [statusError, setStatusError] = useState<string | null>(null);
 
   const isAdmin = user?.email === ADMIN_EMAIL;
 
   const handleMigrate = () => {
+    const summary = migrationStatus
+      ? [
+          migrationStatus.isConfigStale
+            ? `Exam config: v${migrationStatus.firestoreConfigVersion ?? 0} → v${migrationStatus.localConfigVersion}`
+            : null,
+          migrationStatus.isAppVersionStale
+            ? `App version: ${migrationStatus.firestoreAppVersion ?? 'none'} → ${migrationStatus.localAppVersion}`
+            : null,
+        ].filter(Boolean).join('\n')
+      : 'Upload PSUs, Branches, and Syllabus to Firestore.';
+
     Alert.alert(
       'Run Config Migration',
-      'Upload PSUs, Branches, and Syllabus to Firestore. Only run once (or when config changes).',
+      summary || 'Re-upload all static config to Firestore.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Run Migration',
+          text: 'Migrate',
           onPress: async () => {
             setIsMigrating(true);
             try {
               await migrateStaticToFirebase();
+              await loadMigrationStatus(); // refresh badges
               Alert.alert('Done', 'Config migrated to Firestore ✓');
             } catch (e: any) {
               Alert.alert('Migration Failed', e.message);
@@ -63,6 +82,25 @@ export default function SettingsScreen() {
     setLocalKey(geminiApiKey);
     setLocalName(fullName);
   }, [geminiApiKey, fullName]);
+
+  // Load migration status for admin only
+  useEffect(() => {
+    if (!isAdmin) return;
+    loadMigrationStatus();
+  }, [isAdmin]);
+
+  const loadMigrationStatus = async () => {
+    setIsCheckingStatus(true);
+    setStatusError(null);
+    try {
+      const status = await checkMigrationStatus();
+      setMigrationStatus(status);
+    } catch (e: any) {
+      setStatusError(e?.message ?? 'Failed to check status');
+    } finally {
+      setIsCheckingStatus(false);
+    }
+  };
 
   const handleSave = async () => {
     await setApiKey(localKey);
@@ -290,27 +328,120 @@ export default function SettingsScreen() {
             <View style={styles.card}>
               <View style={[styles.cardAccent, { backgroundColor: '#7B2FBE' }]} />
               <View style={styles.cardInner}>
+
+                {/* Header row */}
                 <View style={styles.cardTitleRow}>
                   <Ionicons name="construct-outline" size={20} color="#7B2FBE" />
-                  <Text style={[styles.cardTitle, { color: '#7B2FBE' }]}>Admin Tools</Text>
+                  <Text style={[styles.cardTitle, { color: '#7B2FBE', flex: 1 }]}>Admin Tools</Text>
+                  <TouchableOpacity onPress={loadMigrationStatus} disabled={isCheckingStatus} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                    {isCheckingStatus
+                      ? <ActivityIndicator size="small" color="#7B2FBE" />
+                      : <Ionicons name="refresh-outline" size={18} color="#7B2FBE" />
+                    }
+                  </TouchableOpacity>
                 </View>
-                <Text style={styles.supportDesc}>
-                  Upload static config (PSUs, branches, syllabus) to Firestore. Run once, or after config changes.
-                </Text>
-                <TouchableOpacity
-                  style={[styles.supportBtn, { backgroundColor: '#7B2FBE' }, isMigrating && { opacity: 0.6 }]}
-                  onPress={handleMigrate}
-                  disabled={isMigrating}
-                >
-                  {isMigrating ? (
-                    <ActivityIndicator color="#FFF" size="small" />
-                  ) : (
-                    <Ionicons name="cloud-upload-outline" size={18} color="#FFF" />
-                  )}
-                  <Text style={styles.supportBtnText}>
-                    {isMigrating ? 'Migrating...' : 'Run Config Migration'}
-                  </Text>
-                </TouchableOpacity>
+
+                {/* Status panel */}
+                {statusError ? (
+                  <View style={styles.statusRow}>
+                    <Ionicons name="warning-outline" size={14} color="#B71C1C" />
+                    <Text style={[styles.statusText, { color: '#B71C1C' }]}>{statusError}</Text>
+                  </View>
+                ) : isCheckingStatus && !migrationStatus ? (
+                  <Text style={styles.statusLoading}>Checking Firestore status…</Text>
+                ) : migrationStatus ? (
+                  <View style={styles.statusBox}>
+                    {/* Exam config row */}
+                    <View style={styles.statusRow}>
+                      <Ionicons
+                        name={migrationStatus.isConfigStale ? 'alert-circle-outline' : 'checkmark-circle-outline'}
+                        size={16}
+                        color={migrationStatus.isConfigStale ? '#E65100' : '#2E7D32'}
+                      />
+                      <Text style={styles.statusLabel}>Exam Config</Text>
+                      <View style={[styles.statusBadge, migrationStatus.isConfigStale ? styles.badgeWarn : styles.badgeOk]}>
+                        <Text style={styles.statusBadgeText}>
+                          {migrationStatus.firestoreConfigVersion == null
+                            ? 'Not Migrated'
+                            : migrationStatus.isConfigStale
+                              ? `v${migrationStatus.firestoreConfigVersion} → v${migrationStatus.localConfigVersion}`
+                              : `v${migrationStatus.localConfigVersion} ✓`
+                          }
+                        </Text>
+                      </View>
+                    </View>
+
+                    {/* App version row */}
+                    <View style={styles.statusRow}>
+                      <Ionicons
+                        name={migrationStatus.isAppVersionStale ? 'alert-circle-outline' : 'checkmark-circle-outline'}
+                        size={16}
+                        color={migrationStatus.isAppVersionStale ? '#E65100' : '#2E7D32'}
+                      />
+                      <Text style={styles.statusLabel}>App Version</Text>
+                      <View style={[styles.statusBadge, migrationStatus.isAppVersionStale ? styles.badgeWarn : styles.badgeOk]}>
+                        <Text style={styles.statusBadgeText}>
+                          {migrationStatus.isAppVersionStale
+                            ? `${migrationStatus.firestoreAppVersion ?? 'none'} → ${migrationStatus.localAppVersion}`
+                            : `${migrationStatus.localAppVersion} ✓`
+                          }
+                        </Text>
+                      </View>
+                    </View>
+
+                    {/* Last migrated */}
+                    {migrationStatus.lastMigratedAt && (
+                      <Text style={styles.lastMigrated}>
+                        Last run: {new Date(migrationStatus.lastMigratedAt).toLocaleString()}
+                      </Text>
+                    )}
+
+                    {/* Pending changes */}
+                    {migrationStatus.pendingChanges.length > 0 && (
+                      <View style={styles.changelogBox}>
+                        <Text style={styles.changelogTitle}>PENDING CHANGES</Text>
+                        {migrationStatus.pendingChanges.map((item, i) => (
+                          <View key={i} style={styles.changelogRow}>
+                            <Text style={styles.changelogDot}>•</Text>
+                            <Text style={styles.changelogText}>{item}</Text>
+                          </View>
+                        ))}
+                      </View>
+                    )}
+                  </View>
+                ) : null}
+
+                {/* Migration button */}
+                {(() => {
+                  const needsMigration = !migrationStatus ||
+                    migrationStatus.isConfigStale ||
+                    migrationStatus.isAppVersionStale;
+                  return (
+                    <TouchableOpacity
+                      style={[
+                        styles.supportBtn,
+                        { backgroundColor: '#7B2FBE', marginTop: Spacing.lg },
+                        (isMigrating || (!needsMigration && !!migrationStatus)) && { opacity: 0.45 },
+                      ]}
+                      onPress={handleMigrate}
+                      disabled={isMigrating || (!needsMigration && !!migrationStatus)}
+                    >
+                      {isMigrating ? (
+                        <ActivityIndicator color="#FFF" size="small" />
+                      ) : (
+                        <Ionicons name="cloud-upload-outline" size={18} color="#FFF" />
+                      )}
+                      <Text style={styles.supportBtnText}>
+                        {isMigrating
+                          ? 'Migrating…'
+                          : needsMigration
+                            ? 'Run Migration'
+                            : 'Up to Date'
+                        }
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })()}
               </View>
             </View>
           )}
@@ -340,13 +471,15 @@ export default function SettingsScreen() {
                 />
               </TouchableOpacity>
 
-              <TouchableOpacity 
-                style={styles.adminLink} 
-                onPress={() => router.push('/admin-support' as any)}
-              >
-                <Ionicons name="shield-checkmark-outline" size={16} color={Colors.outline} />
-                <Text style={styles.adminLinkText}>Admin Portal</Text>
-              </TouchableOpacity>
+              {isAdmin && (
+                <TouchableOpacity
+                  style={styles.adminLink}
+                  onPress={() => router.push('/admin-support' as any)}
+                >
+                  <Ionicons name="shield-checkmark-outline" size={16} color={Colors.outline} />
+                  <Text style={styles.adminLinkText}>Admin Portal</Text>
+                </TouchableOpacity>
+              )}
             </View>
           </View>
         </ScrollView>
@@ -598,5 +731,93 @@ const styles = StyleSheet.create({
   supportBtnDisabled: {
     backgroundColor: Colors.outline,
     opacity: 0.8,
-  }
+  },
+
+  // ── Migration status ──────────────────────────────────────────────────────
+  statusBox: {
+    backgroundColor: '#F9F5FF',
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: '#E9D8FD',
+    padding: Spacing.lg,
+    marginBottom: Spacing.md,
+    gap: Spacing.sm,
+  },
+  statusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  statusLabel: {
+    ...Typography.bodyMd,
+    color: Colors.onSurface,
+    flex: 1,
+    fontFamily: 'Inter_600SemiBold',
+    fontSize: 13,
+  },
+  statusBadge: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 3,
+    borderRadius: Radius.pill,
+  },
+  badgeOk: {
+    backgroundColor: '#E8F5E9',
+  },
+  badgeWarn: {
+    backgroundColor: '#FFF3E0',
+  },
+  statusBadgeText: {
+    ...Typography.bodySm,
+    fontSize: 11,
+    fontFamily: 'Inter_600SemiBold',
+    color: Colors.onSurface,
+  },
+  statusLoading: {
+    ...Typography.bodySm,
+    color: Colors.outline,
+    fontStyle: 'italic',
+    marginBottom: Spacing.md,
+  },
+  statusText: {
+    ...Typography.bodySm,
+    flex: 1,
+  },
+  lastMigrated: {
+    ...Typography.bodySm,
+    color: Colors.outline,
+    fontSize: 10,
+    fontStyle: 'italic',
+    marginTop: Spacing.xs,
+  },
+  changelogBox: {
+    marginTop: Spacing.sm,
+    backgroundColor: '#FFF8E1',
+    borderRadius: Radius.sm,
+    borderWidth: 1,
+    borderColor: '#FFE082',
+    padding: Spacing.md,
+    gap: 4,
+  },
+  changelogTitle: {
+    ...Typography.labelCaps,
+    color: '#E65100',
+    fontSize: 9,
+    marginBottom: 4,
+  },
+  changelogRow: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  changelogDot: {
+    ...Typography.bodySm,
+    color: '#E65100',
+    lineHeight: 18,
+  },
+  changelogText: {
+    ...Typography.bodySm,
+    color: Colors.onSurface,
+    flex: 1,
+    lineHeight: 18,
+    fontSize: 12,
+  },
 });

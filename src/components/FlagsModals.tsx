@@ -1,17 +1,21 @@
-import React, { useState } from 'react';
-import { 
-  View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView, 
-  TextInput, Alert, Platform, ActivityIndicator 
+import React, { useState, useRef } from 'react';
+import {
+  View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView,
+  TextInput, ActivityIndicator, Linking, Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFlagsContext } from '@/context/FlagsContext';
 import { Colors, Typography, Spacing, Radius, Shadows } from '@/theme';
 import { useAuthStore } from '@/stores/authStore';
+import { useToast } from '@/context/ToastContext';
+import * as FileSystem from 'expo-file-system';
+import * as IntentLauncher from 'expo-intent-launcher';
 
 export const FlagsModals: React.FC = () => {
   const {
     isMaintenanceMode,
     maintenanceMessage,
+    retryMaintenance,
     showPermissionExplainer,
     dismissPermissionExplainer,
     handlePermissionAllow,
@@ -21,71 +25,256 @@ export const FlagsModals: React.FC = () => {
     showAppRate,
     markRated,
     scheduleRateReminder,
+    showAppUpdate,
+    updateVersion,
+    updateApkUrl,
+    updateReleaseNotes,
+    forceUpdate,
+    dismissUpdate,
   } = useFlagsContext();
 
   const { user } = useAuthStore();
+  const { showToast } = useToast();
+
+  // ── Maintenance state ─────────────────────────────────────────────────────
+  const [isRetrying, setIsRetrying] = useState(false);
+
+  // ── Rate modal state ──────────────────────────────────────────────────────
   const [rating, setRating] = useState(0);
   const [reviewText, setReviewText] = useState('');
   const [isSubmittingRate, setIsSubmittingRate] = useState(false);
 
+  // ── Update modal state ────────────────────────────────────────────────────
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState(0);
+  const downloadResumable = useRef<FileSystem.DownloadResumable | null>(null);
+
+  // ── Handlers ──────────────────────────────────────────────────────────────
+
   const handleRateSubmit = async () => {
     if (rating === 0) {
-      Alert.alert('Rating Required', 'Please select a star rating first.');
+      showToast('Please select a star rating first.', 'warning');
       return;
     }
     setIsSubmittingRate(true);
-    await markRated(rating, reviewText, user?.uid || null);
-    setIsSubmittingRate(false);
-    setRating(0);
-    setReviewText('');
-    if (rating > 3) {
-      Alert.alert('Thank You!', 'We appreciate your stellar support!');
-    } else {
-      Alert.alert('Feedback Received', 'Thank you for helping us improve.');
+    try {
+      await markRated(rating, reviewText, user?.uid ?? null);
+      showToast(rating > 3 ? 'Thanks for the love! 🎉' : 'Feedback received — thank you!', 'success');
+    } catch {
+      showToast('Failed to submit rating. Please try again.', 'error');
+    } finally {
+      setIsSubmittingRate(false);
+      setRating(0);
+      setReviewText('');
     }
   };
 
+  const handleCancelDownload = async () => {
+    try {
+      await downloadResumable.current?.pauseAsync();
+    } catch { /* ignore */ }
+    setIsDownloading(false);
+    setDownloadProgress(0);
+  };
+
+  const installAPK = async (fileUri: string) => {
+    try {
+      const contentUri = await FileSystem.getContentUriAsync(fileUri);
+      // FLAG_GRANT_READ_URI_PERMISSION = 1 | FLAG_ACTIVITY_NEW_TASK = 268435456
+      await IntentLauncher.startActivityAsync('android.intent.action.VIEW', {
+        data: contentUri,
+        flags: 1 | 268435456,
+        type: 'application/vnd.android.package-archive',
+      });
+    } catch (e: any) {
+      // Fallback: expo-sharing
+      try {
+        const { shareAsync } = await import('expo-sharing');
+        await shareAsync(fileUri, {
+          mimeType: 'application/vnd.android.package-archive',
+          dialogTitle: 'Install Aspirant Arcade Update',
+        });
+      } catch {
+        showToast('Install failed. Open the APK from your Downloads folder.', 'error');
+        Linking.openURL(updateApkUrl);
+      }
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  const handleDownloadUpdate = async () => {
+    if (!updateApkUrl || isDownloading) return;
+    if (Platform.OS !== 'android') {
+      // iOS: just open URL
+      Linking.openURL(updateApkUrl);
+      return;
+    }
+    try {
+      setIsDownloading(true);
+      setDownloadProgress(0);
+
+      const rawName = updateApkUrl.split('/').pop() ?? 'aspirant_arcade_update.apk';
+      const filename = rawName.split('?')[0].replace(/[^a-zA-Z0-9._-]/g, '_');
+      const fileUri = `${FileSystem.cacheDirectory}${filename}`;
+
+      downloadResumable.current = FileSystem.createDownloadResumable(
+        updateApkUrl,
+        fileUri,
+        {},
+        (progress) => {
+          const pct = progress.totalBytesExpectedToWrite > 0
+            ? progress.totalBytesWritten / progress.totalBytesExpectedToWrite
+            : 0;
+          setDownloadProgress(isNaN(pct) ? 0 : pct);
+        }
+      );
+
+      const result = await downloadResumable.current.downloadAsync();
+      if (!result || result.status !== 200) {
+        throw new Error(`Status ${result?.status ?? 'unknown'}`);
+      }
+      await installAPK(result.uri);
+    } catch (e: any) {
+      setIsDownloading(false);
+      setDownloadProgress(0);
+      showToast('Download failed — ' + (e.message ?? 'try again'), 'error');
+      Linking.openURL(updateApkUrl); // fallback
+    }
+  };
+
+  // ── Visibility guards (priority order) ────────────────────────────────────
+  const noMaint  = !isMaintenanceMode;
+  const noUpdate = noMaint && !showAppUpdate;
+  const noPerm   = noUpdate && !showPermissionExplainer;
+  const noNew    = noPerm  && !showWhatsNew;
+
   return (
     <>
-      {/* 1. Maintenance Modal */}
+      {/* ── 1. Maintenance (blocks everything, non-dismissible) ── */}
       <Modal
         visible={isMaintenanceMode}
-        animationType="fade"
-        transparent={true}
+        animationType="slide"
+        transparent
+        onRequestClose={() => {/* intentionally blocked */}}
       >
         <View style={styles.maintenanceOverlay}>
           <View style={styles.maintenanceCard}>
-            <View style={styles.maintenanceIconBg}>
-              <Ionicons name="construct-outline" size={48} color={Colors.primary} />
+            <View style={styles.iconBg}>
+              <Ionicons name="construct-outline" size={52} color={Colors.primary} />
             </View>
             <Text style={styles.maintenanceTitle}>Under Maintenance</Text>
-            <Text style={styles.maintenanceText}>{maintenanceMessage}</Text>
+            <Text style={styles.maintenanceBody}>{maintenanceMessage}</Text>
+            <TouchableOpacity
+              style={[styles.primaryBtn, styles.retryBtn, isRetrying && { opacity: 0.7 }]}
+              onPress={async () => {
+                setIsRetrying(true);
+                await retryMaintenance();
+                setIsRetrying(false);
+              }}
+              disabled={isRetrying}
+            >
+              {isRetrying
+                ? <ActivityIndicator size="small" color="#FFF" />
+                : <>
+                    <Ionicons name="refresh-outline" size={18} color="#FFF" />
+                    <Text style={styles.primaryBtnText}>Check Again</Text>
+                  </>
+              }
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>
 
-      {/* 2. Permission Explainer Modal */}
+      {/* ── 2. App Update ── */}
+      <Modal visible={noMaint && showAppUpdate} animationType="slide" transparent onRequestClose={forceUpdate ? undefined : dismissUpdate}>
+        <View style={styles.overlay}>
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <View style={[styles.iconCircle, { backgroundColor: '#E3F2FD' }]}>
+                <Ionicons name="arrow-up-circle-outline" size={36} color="#1565C0" />
+              </View>
+              <Text style={styles.cardTitle}>Update Available</Text>
+              <Text style={styles.cardSubtitle}>Version {updateVersion} is ready</Text>
+            </View>
+
+            {!!updateReleaseNotes && (
+              <Text style={styles.cardDesc}>{updateReleaseNotes}</Text>
+            )}
+
+            <View style={styles.updateNotes}>
+              <View style={styles.updateNote}>
+                <Ionicons name="shield-checkmark-outline" size={16} color="#1565C0" />
+                <Text style={styles.updateNoteText}>Security &amp; performance improvements</Text>
+              </View>
+              <View style={styles.updateNote}>
+                <Ionicons name="download-outline" size={16} color="#1565C0" />
+                <Text style={styles.updateNoteText}>Downloaded directly from our servers</Text>
+              </View>
+            </View>
+
+            {/* Progress bar */}
+            {isDownloading && (
+              <View style={styles.progressWrap}>
+                <View style={styles.progressTrack}>
+                  <View style={[styles.progressFill, { width: `${Math.round(downloadProgress * 100)}%` as any }]} />
+                </View>
+                <Text style={styles.progressLabel}>{Math.round(downloadProgress * 100)}%</Text>
+              </View>
+            )}
+
+            <View style={styles.footer}>
+              {isDownloading ? (
+                <TouchableOpacity style={styles.secondaryBtn} onPress={handleCancelDownload}>
+                  <Text style={styles.secondaryBtnText}>Cancel</Text>
+                </TouchableOpacity>
+              ) : !forceUpdate ? (
+                <TouchableOpacity style={styles.secondaryBtn} onPress={dismissUpdate}>
+                  <Text style={styles.secondaryBtnText}>Later</Text>
+                </TouchableOpacity>
+              ) : null}
+
+              <TouchableOpacity
+                style={[styles.primaryBtn, { backgroundColor: '#1565C0' }, isDownloading && { opacity: 0.7 }]}
+                onPress={handleDownloadUpdate}
+                disabled={isDownloading}
+              >
+                {isDownloading
+                  ? <ActivityIndicator size="small" color="#FFF" />
+                  : <Text style={styles.primaryBtnText}>Download & Install</Text>
+                }
+              </TouchableOpacity>
+            </View>
+            {forceUpdate && (
+              <Text style={styles.forceNotice}>This update is required to continue using the app.</Text>
+            )}
+          </View>
+        </View>
+      </Modal>
+
+      {/* ── 3. Permission Explainer ── */}
       <Modal
-        visible={showPermissionExplainer && !isMaintenanceMode}
+        visible={noUpdate && showPermissionExplainer}
         animationType="slide"
-        transparent={true}
+        transparent
         onRequestClose={dismissPermissionExplainer}
       >
         <View style={styles.overlay}>
-          <View style={styles.modalCard}>
-            <View style={styles.modalHeader}>
-              <Ionicons name="notifications-outline" size={32} color={Colors.primary} />
-              <Text style={styles.modalTitle}>Stay on Track!</Text>
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <View style={[styles.iconCircle, { backgroundColor: '#E8F5E9' }]}>
+                <Ionicons name="notifications-outline" size={32} color="#2E7D32" />
+              </View>
+              <Text style={styles.cardTitle}>Stay on Track!</Text>
             </View>
-            <Text style={styles.modalDesc}>
+            <Text style={styles.cardDesc}>
               Enable notifications to receive daily exam prep reminders, new mock test alerts, and syllabus updates directly on your device.
             </Text>
-
-            <View style={styles.modalFooter}>
+            <View style={styles.footer}>
               <TouchableOpacity style={styles.secondaryBtn} onPress={dismissPermissionExplainer}>
                 <Text style={styles.secondaryBtnText}>Not Now</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.primaryBtn} onPress={() => handlePermissionAllow(user?.uid || 'guest')}>
+              <TouchableOpacity style={styles.primaryBtn} onPress={() => handlePermissionAllow(user?.uid ?? 'guest')}>
                 <Text style={styles.primaryBtnText}>Enable Notifications</Text>
               </TouchableOpacity>
             </View>
@@ -93,77 +282,75 @@ export const FlagsModals: React.FC = () => {
         </View>
       </Modal>
 
-      {/* 3. What's New Modal */}
+      {/* ── 4. What's New ── */}
       <Modal
-        visible={showWhatsNew && !isMaintenanceMode && !showPermissionExplainer}
+        visible={noPerm && showWhatsNew}
         animationType="slide"
-        transparent={true}
+        transparent
         onRequestClose={dismissWhatsNew}
       >
         <View style={styles.overlay}>
-          <View style={styles.modalCard}>
-            <View style={styles.modalHeader}>
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
               <Ionicons name="sparkles-outline" size={32} color={Colors.gold} />
-              <Text style={styles.modalTitle}>What's New in Aspirant Arcade</Text>
+              <Text style={styles.cardTitle}>What's New</Text>
             </View>
-
-            <ScrollView style={styles.whatsNewList} showsVerticalScrollIndicator={false}>
-              {whatsNewItems.map((item, index) => (
-                <View key={index} style={styles.whatsNewItem}>
-                  <Ionicons name="checkmark-circle" size={20} color={Colors.success} />
-                  <Text style={styles.whatsNewItemText}>{item}</Text>
+            <ScrollView style={styles.listScroll} showsVerticalScrollIndicator={false}>
+              {whatsNewItems.map((item, i) => (
+                <View key={i} style={styles.listItem}>
+                  <Ionicons name="checkmark-circle" size={18} color={Colors.success ?? '#2E7D32'} />
+                  <Text style={styles.listItemText}>{item}</Text>
                 </View>
               ))}
             </ScrollView>
-
-            <TouchableOpacity style={styles.fullWidthBtn} onPress={dismissWhatsNew}>
-              <Text style={styles.fullWidthBtnText}>Got it, let's explore!</Text>
+            <TouchableOpacity style={[styles.primaryBtn, styles.fullBtn]} onPress={dismissWhatsNew}>
+              <Text style={styles.primaryBtnText}>Got it, let's go!</Text>
             </TouchableOpacity>
           </View>
         </View>
       </Modal>
 
-      {/* 4. App Rate Modal */}
+      {/* ── 5. App Rate ── */}
       <Modal
-        visible={showAppRate && !isMaintenanceMode && !showPermissionExplainer && !showWhatsNew}
+        visible={noNew && showAppRate}
         animationType="slide"
-        transparent={true}
+        transparent
         onRequestClose={() => scheduleRateReminder(7)}
       >
         <View style={styles.overlay}>
-          <View style={styles.modalCard}>
-            <View style={styles.modalHeader}>
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
               <Ionicons name="star-half-outline" size={32} color={Colors.gold} />
-              <Text style={styles.modalTitle}>Enjoying Aspirant Arcade?</Text>
+              <Text style={styles.cardTitle}>Enjoying Aspirant Arcade?</Text>
             </View>
-            <Text style={styles.modalDesc}>
-              Tap a star to rate your experience. Your feedback fuels our mission to help you ace your exams!
+            <Text style={styles.cardDesc}>
+              Your rating helps more students find us. Takes 5 seconds!
             </Text>
 
-            {/* Star Rating */}
-            <View style={styles.starsContainer}>
-              {[1, 2, 3, 4, 5].map((star) => (
-                <TouchableOpacity key={star} onPress={() => setRating(star)}>
-                  <Ionicons 
-                    name={star <= rating ? "star" : "star-outline"} 
-                    size={36} 
-                    color={Colors.gold} 
+            {/* Stars */}
+            <View style={styles.starsRow}>
+              {[1, 2, 3, 4, 5].map(star => (
+                <TouchableOpacity key={star} onPress={() => setRating(star)} hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}>
+                  <Ionicons
+                    name={star <= rating ? 'star' : 'star-outline'}
+                    size={38}
+                    color={Colors.gold}
                   />
                 </TouchableOpacity>
               ))}
             </View>
 
-            {/* Optional Review Text */}
+            {/* Optional review */}
             {rating > 0 && (
-              <View style={styles.reviewContainer}>
+              <View style={styles.reviewBox}>
                 <Text style={styles.reviewLabel}>
-                  {rating <= 3 ? "How can we improve?" : "What do you love about it?"}
+                  {rating <= 3 ? 'What can we improve?' : 'What do you love most?'}
                 </Text>
                 <TextInput
                   style={styles.reviewInput}
                   value={reviewText}
                   onChangeText={setReviewText}
-                  placeholder="Tell us your thoughts (optional)..."
+                  placeholder="Optional — tell us your thoughts…"
                   placeholderTextColor={Colors.outlineVariant}
                   multiline
                   numberOfLines={3}
@@ -172,20 +359,19 @@ export const FlagsModals: React.FC = () => {
               </View>
             )}
 
-            <View style={styles.modalFooter}>
+            <View style={styles.footer}>
               <TouchableOpacity style={styles.secondaryBtn} onPress={() => scheduleRateReminder(7)}>
-                <Text style={styles.secondaryBtnText}>Remind Me Later</Text>
+                <Text style={styles.secondaryBtnText}>Remind Later</Text>
               </TouchableOpacity>
-              <TouchableOpacity 
-                style={[styles.primaryBtn, rating === 0 && styles.primaryBtnDisabled]} 
+              <TouchableOpacity
+                style={[styles.primaryBtn, rating === 0 && styles.primaryBtnOff]}
                 onPress={handleRateSubmit}
                 disabled={rating === 0 || isSubmittingRate}
               >
-                {isSubmittingRate ? (
-                  <ActivityIndicator size="small" color="#FFF" />
-                ) : (
-                  <Text style={styles.primaryBtnText}>Submit Rating</Text>
-                )}
+                {isSubmittingRate
+                  ? <ActivityIndicator size="small" color="#FFF" />
+                  : <Text style={styles.primaryBtnText}>Submit</Text>
+                }
               </TouchableOpacity>
             </View>
           </View>
@@ -195,16 +381,18 @@ export const FlagsModals: React.FC = () => {
   );
 };
 
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0,0,0,0.52)',
     justifyContent: 'center',
     padding: Spacing.xl,
   },
   maintenanceOverlay: {
     flex: 1,
-    backgroundColor: Colors.primaryContainer,
+    backgroundColor: 'rgba(0,0,0,0.52)',
     justifyContent: 'center',
     padding: Spacing.xl,
   },
@@ -215,13 +403,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     ...Shadows.cardHover,
   },
-  maintenanceIconBg: {
-    width: 96,
-    height: 96,
+  iconBg: {
+    width: 96, height: 96,
     borderRadius: Radius.pill,
     backgroundColor: '#EEF2FF',
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: 'center', justifyContent: 'center',
     marginBottom: Spacing.xl,
   },
   maintenanceTitle: {
@@ -230,65 +416,111 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.sm,
     textAlign: 'center',
   },
-  maintenanceText: {
+  maintenanceBody: {
     ...Typography.bodyMd,
     color: Colors.outline,
     textAlign: 'center',
     lineHeight: 22,
+    marginBottom: Spacing.xl,
   },
-  modalCard: {
+  retryBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    flex: 0,
+    paddingHorizontal: Spacing.xxl,
+  },
+
+  card: {
     backgroundColor: '#FFF',
     borderRadius: Radius.lg,
     padding: Spacing.xl,
     ...Shadows.cardHover,
-    maxHeight: '80%',
+    maxHeight: '85%',
   },
-  modalHeader: {
+  cardHeader: {
     alignItems: 'center',
     marginBottom: Spacing.md,
     gap: Spacing.sm,
   },
-  modalTitle: {
+  iconCircle: {
+    width: 72, height: 72,
+    borderRadius: 36,
+    alignItems: 'center', justifyContent: 'center',
+    marginBottom: 4,
+  },
+  cardTitle: {
     ...Typography.h3,
     color: Colors.onSurface,
     textAlign: 'center',
   },
-  modalDesc: {
+  cardSubtitle: {
     ...Typography.bodyMd,
     color: Colors.outline,
     textAlign: 'center',
-    marginBottom: Spacing.xl,
+  },
+  cardDesc: {
+    ...Typography.bodyMd,
+    color: Colors.outline,
+    textAlign: 'center',
     lineHeight: 22,
+    marginBottom: Spacing.lg,
   },
-  whatsNewList: {
-    maxHeight: 250,
-    marginBottom: Spacing.xl,
+
+  progressWrap: {
+    marginBottom: Spacing.lg,
+    gap: 6,
   },
-  whatsNewItem: {
+  progressTrack: {
+    height: 8,
+    backgroundColor: '#E3EAF5',
+    borderRadius: Radius.pill,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: '#1565C0',
+    borderRadius: Radius.pill,
+  },
+  progressLabel: {
+    ...Typography.bodySm,
+    color: '#1565C0',
+    fontFamily: 'Inter_600SemiBold',
+    textAlign: 'center',
+  },
+
+  updateNotes: { gap: 8, marginBottom: Spacing.xl },
+  updateNote: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  updateNoteText: { ...Typography.bodyMd, color: Colors.onSurface },
+  forceNotice: {
+    ...Typography.bodySm,
+    color: '#B71C1C',
+    textAlign: 'center',
+    marginTop: Spacing.sm,
+    fontStyle: 'italic',
+  },
+
+  listScroll: { maxHeight: 240, marginBottom: Spacing.lg },
+  listItem: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.md,
-    marginBottom: Spacing.md,
+    marginBottom: Spacing.sm,
     backgroundColor: '#F9FBFF',
     padding: Spacing.md,
     borderRadius: Radius.sm,
     borderWidth: 1,
     borderColor: '#E0E7FF',
   },
-  whatsNewItemText: {
-    ...Typography.bodyMd,
-    color: Colors.onSurface,
-    flex: 1,
-  },
-  starsContainer: {
+  listItemText: { ...Typography.bodyMd, color: Colors.onSurface, flex: 1 },
+
+  starsRow: {
     flexDirection: 'row',
     justifyContent: 'center',
     gap: Spacing.md,
     marginBottom: Spacing.xl,
   },
-  reviewContainer: {
-    marginBottom: Spacing.xl,
-  },
+  reviewBox: { marginBottom: Spacing.xl },
   reviewLabel: {
     ...Typography.labelCaps,
     color: Colors.outline,
@@ -304,52 +536,30 @@ const styles = StyleSheet.create({
     color: Colors.onSurface,
     minHeight: 80,
   },
-  modalFooter: {
-    flexDirection: 'row',
-    gap: Spacing.md,
-  },
+
+  footer: { flexDirection: 'row', gap: Spacing.md },
+  fullBtn: { width: '100%' },
   secondaryBtn: {
     flex: 1,
     paddingVertical: Spacing.md,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: 'center', justifyContent: 'center',
     borderRadius: Radius.md,
     borderWidth: 1,
     borderColor: '#E2E8F0',
   },
-  secondaryBtnText: {
-    ...Typography.button,
-    color: Colors.outline,
-  },
+  secondaryBtnText: { ...Typography.button, color: Colors.outline },
   primaryBtn: {
     flex: 1,
     paddingVertical: Spacing.md,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: 'center', justifyContent: 'center',
     borderRadius: Radius.md,
     backgroundColor: Colors.primary,
     ...Shadows.button,
   },
-  primaryBtnDisabled: {
+  primaryBtnOff: {
     backgroundColor: Colors.outlineVariant,
     elevation: 0,
     shadowOpacity: 0,
   },
-  primaryBtnText: {
-    ...Typography.button,
-    color: '#FFF',
-  },
-  fullWidthBtn: {
-    width: '100%',
-    paddingVertical: Spacing.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: Radius.md,
-    backgroundColor: Colors.primary,
-    ...Shadows.button,
-  },
-  fullWidthBtnText: {
-    ...Typography.button,
-    color: '#FFF',
-  },
+  primaryBtnText: { ...Typography.button, color: '#FFF' },
 });

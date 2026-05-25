@@ -2,29 +2,50 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import { db } from '@/config/firebase';
-import { collection, doc, getDoc, getDocs, query, where } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, query, setDoc, where } from 'firebase/firestore';
 import { useAuthStore } from '@/stores/authStore';
+import { useActivityStore } from '@/stores/activityStore';
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 interface FlagsContextType {
+  // Maintenance
   isMaintenanceMode: boolean;
   maintenanceMessage: string;
+  retryMaintenance: () => Promise<void>;
+
+  // Permission explainer
   showPermissionExplainer: boolean;
   dismissPermissionExplainer: () => Promise<void>;
   handlePermissionAllow: (userId: string) => Promise<void>;
+
+  // What's New
   showWhatsNew: boolean;
   whatsNewItems: string[];
   dismissWhatsNew: () => Promise<void>;
+
+  // App Rate
   showAppRate: boolean;
   markRated: (rating?: number, review?: string, userId?: string | null) => Promise<void>;
   scheduleRateReminder: (days?: number) => Promise<void>;
-  checkAndShowRate: (userId: string) => Promise<void>;
+  checkAndShowRate: (userId?: string) => Promise<void>;
+
+  // App Update
+  showAppUpdate: boolean;
+  updateVersion: string;
+  updateApkUrl: string;
+  updateReleaseNotes: string;
+  forceUpdate: boolean;
+  dismissUpdate: () => void;
 }
 
 const FlagsContext = createContext<FlagsContextType | undefined>(undefined);
 
+// ─── Provider ─────────────────────────────────────────────────────────────────
+
 export const FlagsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuthStore();
-  const lastInitializedId = useRef<string | null>(null);
+  const lastInitializedUid = useRef<string | null>(null);
 
   // ── Maintenance ────────────────────────────────────────────────────────────
   const [isMaintenanceMode, setIsMaintenanceMode] = useState(false);
@@ -42,82 +63,101 @@ export const FlagsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // ── App Rate ──────────────────────────────────────────────────────────────
   const [showAppRate, setShowAppRate] = useState(false);
 
-  // ── Init — runs once when profile is loaded ────────────────────────────────
+  // ── App Update ────────────────────────────────────────────────────────────
+  const [showAppUpdate, setShowAppUpdate] = useState(false);
+  const [updateVersion, setUpdateVersion] = useState('');
+  const [updateApkUrl, setUpdateApkUrl] = useState('');
+  const [updateReleaseNotes, setUpdateReleaseNotes] = useState('');
+  const [forceUpdate, setForceUpdate] = useState(false);
+
+  // ── Init on mount — runs for all users (guest + logged-in) ─────────────────
   useEffect(() => {
-    if (!user?.uid || lastInitializedId.current === user.uid) return;
-    lastInitializedId.current = user.uid;
-    initFlags(user.uid);
+    initGlobalFlags();
+  }, []);
+
+  // ── Init on login — user-specific flags ───────────────────────────────────
+  useEffect(() => {
+    if (!user?.uid || lastInitializedUid.current === user.uid) return;
+    lastInitializedUid.current = user.uid;
+    checkPermission(user.uid);
   }, [user?.uid]);
 
-  async function initFlags(userId: string) {
+  // ── Global checks (no auth required) ─────────────────────────────────────
+
+  async function initGlobalFlags() {
     const inMaintenance = await checkMaintenance();
-    if (inMaintenance) return; // skip rest while under maintenance
-    await Promise.all([checkPermission(userId), checkWhatsNew()]);
+    if (inMaintenance) return;
+    await Promise.all([checkUpdate(), checkWhatsNew()]);
   }
 
-  // 1. Maintenance mode — returns true if app is in maintenance
-  async function checkMaintenance() {
+  /** Returns true if app is in maintenance mode */
+  async function checkMaintenance(): Promise<boolean> {
     try {
-      const docRef = doc(db, 'app_config', 'maintenance');
-      const snap = await getDoc(docRef);
-
+      const snap = await getDoc(doc(db, 'app_config', 'maintenance'));
       if (snap.exists()) {
-        const data = snap.data();
-        if (data.maintenance_message) setMaintenanceMessage(data.maintenance_message);
-        if (data.maintenance_mode === true || data.maintenance_mode === 'true') {
+        const d = snap.data();
+        if (d.maintenance_message) setMaintenanceMessage(d.maintenance_message);
+        if (d.maintenance_mode === true || d.maintenance_mode === 'true') {
           setIsMaintenanceMode(true);
           return true;
         }
       }
-    } catch (e) {
-      // silent fail
-    }
+    } catch { /* offline — skip */ }
     return false;
   }
 
-  // 2. Notification permission
-  async function checkPermission(userId: string) {
+  /**
+   * Firestore schema: app_config/update
+   * { version: "1.1.0", apk_url: "https://...", force_update: false, release_notes: "..." }
+   */
+  async function checkUpdate() {
+    try {
+      const currentVersion = Constants.expoConfig?.version ?? '1.0.0';
+      const snap = await getDoc(doc(db, 'app_config', 'update'));
+      if (!snap.exists()) return;
+      const d = snap.data();
+      const latest: string = d.version ?? '';
+      const apkUrl: string = d.apk_url ?? '';
+      if (!latest || !apkUrl || latest === currentVersion) return;
+      setUpdateVersion(latest);
+      setUpdateApkUrl(apkUrl);
+      setUpdateReleaseNotes(d.release_notes ?? '');
+      setForceUpdate(d.force_update === true);
+      setShowAppUpdate(true);
+    } catch { /* offline — skip */ }
+  }
+
+  async function checkWhatsNew() {
+    try {
+      const currentVersion = Constants.expoConfig?.version ?? '1.0.0';
+      const lastSeen = await AsyncStorage.getItem('@last_seen_version');
+      if (lastSeen === currentVersion) return;
+
+      const snap = await getDoc(doc(db, 'app_config', 'whats_new'));
+      if (!snap.exists()) return;
+      const d = snap.data();
+      let items = d.items ?? d.value;
+      if (typeof items === 'string') {
+        try { items = JSON.parse(items); } catch { return; }
+      }
+      if (Array.isArray(items) && items.length > 0) {
+        setWhatsNewItems(items);
+        setShowWhatsNew(true);
+      }
+    } catch (e: any) {
+      console.warn('[Flags] whats_new check failed:', e.message);
+    }
+  }
+
+  // ── User-specific checks ──────────────────────────────────────────────────
+
+  async function checkPermission(_userId: string) {
     try {
       const remindAt = await AsyncStorage.getItem('@permission_remind_at');
       if (!remindAt || Date.now() >= parseInt(remindAt, 10)) {
         setShowPermissionExplainer(true);
       }
-    } catch (e) {
-      // silent fail
-    }
-  }
-
-  // 3. What's New
-  async function checkWhatsNew() {
-    try {
-      const currentVersion = Constants.expoConfig?.version || '1.0.0';
-      const lastSeen = await AsyncStorage.getItem('@last_seen_version');
-      if (lastSeen === currentVersion) return;
-
-      const docRef = doc(db, 'app_config', 'whats_new');
-      const snap = await getDoc(docRef);
-
-      if (snap.exists()) {
-        const data = snap.data();
-        let items = data.items || data.value;
-
-        if (typeof items === 'string') {
-          try {
-            items = JSON.parse(items);
-          } catch (e) {
-            console.error('FlagsContext: Failed to parse whats_new JSON:', e);
-            return;
-          }
-        }
-
-        if (Array.isArray(items) && items.length > 0) {
-          setWhatsNewItems(items);
-          setShowWhatsNew(true);
-        }
-      }
-    } catch (e: any) {
-      console.warn('FlagsContext: whats_new check failed:', e.message);
-    }
+    } catch { /* skip */ }
   }
 
   // ── Actions ────────────────────────────────────────────────────────────────
@@ -125,58 +165,67 @@ export const FlagsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const dismissPermissionExplainer = useCallback(async () => {
     setShowPermissionExplainer(false);
     try {
-      const remindAt = (Date.now() + 7 * 86400000).toString();
-      await AsyncStorage.setItem('@permission_remind_at', remindAt);
+      await AsyncStorage.setItem('@permission_remind_at', String(Date.now() + 7 * 86_400_000));
     } catch (e: any) {
-      console.warn('FlagsContext: save permission_remind_at failed:', e.message);
+      console.warn('[Flags] save permission_remind_at failed:', e.message);
     }
   }, []);
 
-  const handlePermissionAllow = useCallback(async (userId: string) => {
+  const handlePermissionAllow = useCallback(async (_userId: string) => {
     setShowPermissionExplainer(false);
     try {
-      const remindAt = (Date.now() + 365 * 86400000).toString();
-      await AsyncStorage.setItem('@permission_remind_at', remindAt);
+      await AsyncStorage.setItem('@permission_remind_at', String(Date.now() + 365 * 86_400_000));
     } catch (e: any) {
-      console.warn('FlagsContext: handlePermissionAllow failed:', e.message);
+      console.warn('[Flags] handlePermissionAllow failed:', e.message);
     }
   }, []);
 
   const dismissWhatsNew = useCallback(async () => {
     setShowWhatsNew(false);
     try {
-      const currentVersion = Constants.expoConfig?.version || '1.0.0';
-      await AsyncStorage.setItem('@last_seen_version', currentVersion);
+      const v = Constants.expoConfig?.version ?? '1.0.0';
+      await AsyncStorage.setItem('@last_seen_version', v);
     } catch (e: any) {
-      console.warn('FlagsContext: save last_seen_version failed:', e.message);
+      console.warn('[Flags] save last_seen_version failed:', e.message);
     }
   }, []);
 
+  /** Save rating to Firestore `ratings/{ts}_{userId}` + mark locally */
   const markRated = useCallback(async (rating = 0, review = '', userId: string | null = null) => {
     setShowAppRate(false);
     try {
       await AsyncStorage.setItem('@app_rated', 'true');
-      // In a real app, save rating to Firestore if needed
+      if (rating > 0) {
+        const ratingId = `${Date.now()}_${userId ?? 'guest'}`;
+        await setDoc(doc(db, 'ratings', ratingId), {
+          rating,
+          review: review ?? '',
+          userId: userId ?? 'guest',
+          timestamp: Date.now(),
+          createdAt: new Date().toISOString(),
+        });
+      }
     } catch (e: any) {
-      console.warn('FlagsContext: markRated failed:', e.message);
+      console.warn('[Flags] markRated failed:', e.message);
     }
   }, []);
 
   const scheduleRateReminder = useCallback(async (days = 7) => {
     setShowAppRate(false);
     try {
-      const remindAt = (Date.now() + days * 86400000).toString();
-      await AsyncStorage.setItem('@app_rate_remind_at', remindAt);
+      await AsyncStorage.setItem('@app_rate_remind_at', String(Date.now() + days * 86_400_000));
     } catch (e: any) {
-      console.warn('FlagsContext: scheduleRateReminder failed:', e.message);
+      console.warn('[Flags] scheduleRateReminder failed:', e.message);
     }
   }, []);
 
   /**
-   * Call after a mock attempt is saved. Checks if AppRate modal should appear.
-   * Skips if: already rated, within remind window, or mock count < 3.
+   * Call after a game ends. Shows rate modal when:
+   *   - Not already rated
+   *   - Not within remind window
+   *   - User has ≥3 sessions (local activityStore — works for guests too)
    */
-  const checkAndShowRate = useCallback(async (userId: string) => {
+  const checkAndShowRate = useCallback(async (_userId?: string) => {
     try {
       const rated = await AsyncStorage.getItem('@app_rated');
       if (rated === 'true') return;
@@ -184,20 +233,34 @@ export const FlagsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const remindAt = await AsyncStorage.getItem('@app_rate_remind_at');
       if (remindAt && Date.now() < parseInt(remindAt, 10)) return;
 
-      const q = query(collection(db, 'mock_attempts'), where('userId', '==', userId));
-      const snap = await getDocs(q);
-
-      if (snap.size >= 3) {
+      const { sessions } = useActivityStore.getState();
+      if (sessions.length >= 3) {
         setShowAppRate(true);
       }
     } catch (e: any) {
-      console.warn('FlagsContext: checkAndShowRate failed:', e.message);
+      console.warn('[Flags] checkAndShowRate failed:', e.message);
     }
   }, []);
 
-  const value = useMemo(() => ({
+  const dismissUpdate = useCallback(() => {
+    if (!forceUpdate) setShowAppUpdate(false);
+  }, [forceUpdate]);
+
+  /** Re-check maintenance status — used by "Check Again" button in modal */
+  const retryMaintenance = useCallback(async () => {
+    const inMaint = await checkMaintenance();
+    if (!inMaint) {
+      // App back online — load the rest of global flags
+      await Promise.all([checkUpdate(), checkWhatsNew()]);
+    }
+  }, []);
+
+  // ── Context value ─────────────────────────────────────────────────────────
+
+  const value = useMemo<FlagsContextType>(() => ({
     isMaintenanceMode,
     maintenanceMessage,
+    retryMaintenance,
     showPermissionExplainer,
     dismissPermissionExplainer,
     handlePermissionAllow,
@@ -208,23 +271,24 @@ export const FlagsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     markRated,
     scheduleRateReminder,
     checkAndShowRate,
+    showAppUpdate,
+    updateVersion,
+    updateApkUrl,
+    updateReleaseNotes,
+    forceUpdate,
+    dismissUpdate,
   }), [
-    isMaintenanceMode,
-    maintenanceMessage,
-    showPermissionExplainer,
-    dismissPermissionExplainer,
-    handlePermissionAllow,
-    showWhatsNew,
-    whatsNewItems,
-    dismissWhatsNew,
-    showAppRate,
-    markRated,
-    scheduleRateReminder,
-    checkAndShowRate,
+    isMaintenanceMode, maintenanceMessage, retryMaintenance,
+    showPermissionExplainer, dismissPermissionExplainer, handlePermissionAllow,
+    showWhatsNew, whatsNewItems, dismissWhatsNew,
+    showAppRate, markRated, scheduleRateReminder, checkAndShowRate,
+    showAppUpdate, updateVersion, updateApkUrl, updateReleaseNotes, forceUpdate, dismissUpdate,
   ]);
 
   return <FlagsContext.Provider value={value}>{children}</FlagsContext.Provider>;
 };
+
+// ─── Hook ─────────────────────────────────────────────────────────────────────
 
 export function useFlagsContext() {
   const ctx = useContext(FlagsContext);
