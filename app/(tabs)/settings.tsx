@@ -14,6 +14,8 @@ import { testApiKey } from '@/services/gemini';
 import { AppHeader } from '@/components/AppHeader';
 import { signOut } from 'firebase/auth';
 import { auth as firebaseAuth } from '@/config/firebase';
+import * as DocumentPicker from 'expo-document-picker';
+import * as FileSystem from 'expo-file-system';
 import {
   migrateStaticToFirebase,
   checkMigrationStatus,
@@ -25,13 +27,17 @@ const ADMIN_EMAIL = 'ps671248@gmail.com';
 export default function SettingsScreen() {
   const router = useRouter();
   const { user } = useAuthStore();
-  const { 
-    geminiApiKey, geminiModel, fullName,
-    setApiKey, setModel, setFullName 
+  const {
+    geminiApiKey, geminiModel, fullName, userIntroduction,
+    setApiKey, setModel, setFullName, setUserIntroduction,
   } = useSettingsStore();
-  
+
   const [localKey, setLocalKey] = useState(geminiApiKey || '');
   const [localName, setLocalName] = useState(fullName || '');
+  const [localIntro, setLocalIntro] = useState(userIntroduction || '');
+  const [resumePasteText, setResumePasteText] = useState('');
+  const [showResumePaste, setShowResumePaste] = useState(false);
+  const [isGeneratingIntro, setIsGeneratingIntro] = useState(false);
   const [showKey, setShowKey] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
@@ -81,7 +87,69 @@ export default function SettingsScreen() {
   useEffect(() => {
     setLocalKey(geminiApiKey);
     setLocalName(fullName);
-  }, [geminiApiKey, fullName]);
+    setLocalIntro(userIntroduction);
+  }, [geminiApiKey, fullName, userIntroduction]);
+
+  // ── Generate intro from text or PDF via Gemini ─────────────────────────────
+  const INTRO_PROMPT = `From the following resume content, write a natural 3–5 sentence professional introduction as if the candidate is speaking in a PSU interview. First-person voice. Emphasize engineering branch, key project/experience, core strengths, and career goal. Under 100 words. No bullet points.\n\n`;
+
+  const generateIntroFromText = async (resumeText: string) => {
+    if (!geminiApiKey) { Alert.alert('API Key Required', 'Add your Gemini API key first.'); return; }
+    setIsGeneratingIntro(true);
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${geminiApiKey}`;
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: [{ parts: [{ text: INTRO_PROMPT + resumeText }] }] }),
+      });
+      const data = await res.json();
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (text) { setLocalIntro(text.trim()); setShowResumePaste(false); setResumePasteText(''); }
+      else Alert.alert('No Response', 'Gemini did not return an introduction. Try again.');
+    } catch (e) {
+      Alert.alert('Error', 'Failed to generate introduction. Check your connection.');
+    } finally {
+      setIsGeneratingIntro(false);
+    }
+  };
+
+  const generateIntroFromPDF = async () => {
+    if (!geminiApiKey) { Alert.alert('API Key Required', 'Add your Gemini API key first.'); return; }
+    try {
+      const result = await DocumentPicker.getDocumentAsync({ type: 'application/pdf', copyToCacheDirectory: true });
+      if (result.canceled || !result.assets?.[0]?.uri) return;
+      const uri = result.assets[0].uri;
+      setIsGeneratingIntro(true);
+      const base64 = await FileSystem.readAsStringAsync(uri, { encoding: 'base64' as any });
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${geminiApiKey}`;
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{
+            parts: [
+              { text: INTRO_PROMPT },
+              { inlineData: { mimeType: 'application/pdf', data: base64 } },
+            ],
+          }],
+        }),
+      });
+      const data = await res.json();
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (text) setLocalIntro(text.trim());
+      else Alert.alert('No Response', 'Gemini could not read the PDF. Try pasting text instead.');
+    } catch (e: any) {
+      Alert.alert('Error', e?.message ?? 'Failed to process PDF.');
+    } finally {
+      setIsGeneratingIntro(false);
+    }
+  };
+
+  const handleSaveIntro = async () => {
+    await setUserIntroduction(localIntro.trim());
+    Alert.alert('Saved', 'Career profile introduction saved!');
+  };
 
   // Load migration status for admin only
   useEffect(() => {
@@ -238,6 +306,98 @@ export default function SettingsScreen() {
               </View>
             </View>
           )}
+
+          {/* Career Profile Card */}
+          <View style={styles.card}>
+            <View style={styles.cardAccent} />
+            <View style={styles.cardInner}>
+              <View style={styles.cardTitleRow}>
+                <Ionicons name="mic-outline" size={20} color={Colors.primary} />
+                <Text style={styles.cardTitle}>Career Profile</Text>
+              </View>
+
+              <Text style={styles.fieldLabel}>YOUR INTRODUCTION</Text>
+              <Text style={[styles.helperText, { marginBottom: Spacing.sm }]}>
+                Used to personalise your AI-powered interview simulations. Write in first person as if introducing yourself to an interview panel.
+              </Text>
+              <View style={[styles.inputContainer, { alignItems: 'flex-start', paddingVertical: Spacing.md }]}>
+                <TextInput
+                  style={[styles.input, { minHeight: 100, textAlignVertical: 'top' }]}
+                  value={localIntro}
+                  onChangeText={setLocalIntro}
+                  placeholder="E.g., I'm Priya, a Mechanical Engineering graduate from NIT Trichy with a project in thermodynamic system optimization. My strengths are in Fluid Mechanics and Heat Transfer, and I aim to contribute to HPCL's refinery efficiency initiatives..."
+                  placeholderTextColor={Colors.outline}
+                  multiline
+                  maxLength={1600}
+                />
+              </View>
+              <Text style={[styles.helperText, { textAlign: 'right' }]}>{localIntro.length}/1600</Text>
+
+              {/* Generate from resume options */}
+              <View style={styles.resumeRow}>
+                <TouchableOpacity
+                  style={styles.resumeBtn}
+                  onPress={() => { LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); setShowResumePaste(!showResumePaste); }}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="document-text-outline" size={16} color={Colors.primary} />
+                  <Text style={styles.resumeBtnText}>Paste Resume Text</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.resumeBtn}
+                  onPress={generateIntroFromPDF}
+                  disabled={isGeneratingIntro}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="attach-outline" size={16} color={Colors.primary} />
+                  <Text style={styles.resumeBtnText}>Upload PDF Resume</Text>
+                </TouchableOpacity>
+              </View>
+
+              {showResumePaste && (
+                <View style={styles.resumePasteBox}>
+                  <Text style={styles.fieldLabel}>PASTE RESUME / CV TEXT</Text>
+                  <View style={[styles.inputContainer, { alignItems: 'flex-start', paddingVertical: Spacing.md }]}>
+                    <TextInput
+                      style={[styles.input, { minHeight: 80, textAlignVertical: 'top' }]}
+                      value={resumePasteText}
+                      onChangeText={setResumePasteText}
+                      placeholder="Paste your CV or resume text here…"
+                      placeholderTextColor={Colors.outline}
+                      multiline
+                    />
+                  </View>
+                  <TouchableOpacity
+                    style={[styles.saveBtn, { marginTop: Spacing.sm }]}
+                    onPress={() => generateIntroFromText(resumePasteText)}
+                    disabled={isGeneratingIntro || !resumePasteText.trim()}
+                    activeOpacity={0.8}
+                  >
+                    {isGeneratingIntro
+                      ? <ActivityIndicator size="small" color="#FFF" />
+                      : <Text style={styles.saveBtnText}>Generate Introduction</Text>
+                    }
+                  </TouchableOpacity>
+                </View>
+              )}
+
+              {isGeneratingIntro && !showResumePaste && (
+                <View style={styles.generatingRow}>
+                  <ActivityIndicator size="small" color={Colors.primary} />
+                  <Text style={styles.generatingText}>Gemini is reading your resume…</Text>
+                </View>
+              )}
+
+              <TouchableOpacity
+                style={[styles.saveBtn, { marginTop: Spacing.md }]}
+                onPress={handleSaveIntro}
+                disabled={!localIntro.trim()}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.saveBtnText}>Save Introduction</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
 
           {/* API Configuration Card */}
           <View style={styles.card}>
@@ -731,6 +891,51 @@ const styles = StyleSheet.create({
   supportBtnDisabled: {
     backgroundColor: Colors.outline,
     opacity: 0.8,
+  },
+
+  // ── Career Profile ─────────────────────────────────────────────────────────
+  resumeRow: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+    marginTop: Spacing.sm,
+    flexWrap: 'wrap',
+  },
+  resumeBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#E0E7FF',
+    borderRadius: Radius.pill,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: Colors.outlineVariant,
+  },
+  resumeBtnText: {
+    ...Typography.bodySm,
+    color: Colors.primary,
+    fontFamily: 'Inter_600SemiBold',
+    fontSize: 12,
+  },
+  resumePasteBox: {
+    backgroundColor: '#F9FBFF',
+    borderRadius: Radius.md,
+    padding: Spacing.md,
+    marginTop: Spacing.sm,
+    borderWidth: 1,
+    borderColor: '#E0E7FF',
+    gap: Spacing.sm,
+  },
+  generatingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    marginTop: Spacing.md,
+  },
+  generatingText: {
+    ...Typography.bodySm,
+    color: Colors.primary,
+    fontStyle: 'italic',
   },
 
   // ── Migration status ──────────────────────────────────────────────────────

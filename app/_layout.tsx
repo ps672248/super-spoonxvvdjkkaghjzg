@@ -64,6 +64,8 @@ export default function RootLayout() {
           <Stack.Screen name="api-setup" options={{ presentation: 'modal' }} />
           <Stack.Screen name="auth/login" options={{ presentation: 'modal', headerShown: false }} />
           <Stack.Screen name="auth/register" options={{ presentation: 'modal', headerShown: false }} />
+          <Stack.Screen name="interview-prep" options={{ presentation: 'card' }} />
+          <Stack.Screen name="interview-mock" options={{ presentation: 'fullScreenModal' }} />
         </Stack>
         <FlagsModals />
       </GestureHandlerRootView>

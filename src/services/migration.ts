@@ -17,7 +17,7 @@ import { domainTopicMap, quantTopics, reasoningTopics, englishTopics, gkTopics }
 // ─── Version registry ─────────────────────────────────────────────────────────
 
 /** Bump this number whenever the static config data files change. */
-export const CONFIG_VERSION = 1;
+export const CONFIG_VERSION = 3;
 
 /**
  * Human-readable changelog per version.
@@ -28,8 +28,20 @@ export const CONFIG_CHANGELOG: Record<number, string[]> = {
     'Initial migration — PSUs, Branches, Aptitude & Domain Syllabus uploaded',
     'app_config docs seeded (maintenance, update, whats_new)',
   ],
-  // 2: ['Added SAIL PSU', 'Updated HPCL negative marking to 0.33'],
-  // 3: ['New CS domain topics', 'Added instrumentation branch'],
+  2: [
+    'Added NTPC, POWERGRID, GAIL, NALCO PSUs (4 new)',
+    'Added prepTips (per-branch strategy) to all 12 PSUs',
+    'Added generalTip + coreSubjects + allCoreSubjects to all 11 branches',
+    'Added importance field to all 110 syllabus topics',
+    'Added 21 new domain topics from 2023–2025 PSU job notifications',
+  ],
+  3: [
+    'Added hasInterview + interviewStages + interviewTip to all 12 PSUs',
+    'Interview Preparation feature: AI-driven GD, Technical PI, HR PI simulations',
+    'Career Profile (userIntroduction) added to settingsStore',
+    'InterviewSession tracking added to activityStore (Firestore + AsyncStorage)',
+    'Interview analytics section added to Insights tab',
+  ],
 };
 
 // ─── Status check ─────────────────────────────────────────────────────────────

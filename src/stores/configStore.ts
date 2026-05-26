@@ -4,6 +4,7 @@ import { db, firebaseConfig } from '../config/firebase';
 import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
 import { PSUConfig, PSUS } from '../config/psus';
 import { BranchConfig, BRANCHES } from '../config/branches';
+import { CONFIG_VERSION } from '../services/migration';
 
 interface ConfigState {
   psus: PSUConfig[];
@@ -60,35 +61,39 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
         return;
       }
 
-      // 2. Check remote version to see if we need an update
+      // 2. Check remote version against both local cache AND bundled CONFIG_VERSION
       const versionDoc = await getDoc(doc(db, 'metadata', 'config_version'));
       const remoteVersion = versionDoc.exists() ? versionDoc.data().version : 0;
+      const cachedVersion = localVersion ? parseInt(localVersion) : 0;
 
-      if (!localVersion || remoteVersion > parseInt(localVersion)) {
-        // 3. Fetch fresh data from Firestore
+      if (remoteVersion > CONFIG_VERSION) {
+        // ── Firestore is ahead of bundled code → fetch from Firestore ──
         const [psuSnap, branchSnap] = await Promise.all([
           getDocs(collection(db, 'psus')),
           getDocs(collection(db, 'branches')),
         ]);
 
-        const freshPsus = psuSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as PSUConfig[];
-        const freshBranches = branchSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as BranchConfig[];
+        const freshPsus = psuSnap.docs.map(d => ({ id: d.id, ...d.data() })) as PSUConfig[];
+        const freshBranches = branchSnap.docs.map(d => ({ id: d.id, ...d.data() })) as BranchConfig[];
 
-        // 4. Update local storage and state — only if Firestore returned real data
         if (freshPsus.length > 0 && freshBranches.length > 0) {
           await Promise.all([
             AsyncStorage.setItem(STORAGE_KEYS.PSUS, JSON.stringify(freshPsus)),
             AsyncStorage.setItem(STORAGE_KEYS.BRANCHES, JSON.stringify(freshBranches)),
             AsyncStorage.setItem(STORAGE_KEYS.VERSION, remoteVersion.toString()),
           ]);
-
-          set({
-            psus: freshPsus,
-            branches: freshBranches,
-            isLoaded: true,
-          });
+          set({ psus: freshPsus, branches: freshBranches, isLoaded: true });
         }
+      } else if (CONFIG_VERSION > remoteVersion) {
+        // ── Bundled code is ahead of Firestore (migration not yet run) → use bundled ──
+        await Promise.all([
+          AsyncStorage.setItem(STORAGE_KEYS.PSUS, JSON.stringify(PSUS)),
+          AsyncStorage.setItem(STORAGE_KEYS.BRANCHES, JSON.stringify(BRANCHES)),
+          AsyncStorage.setItem(STORAGE_KEYS.VERSION, CONFIG_VERSION.toString()),
+        ]);
+        set({ psus: PSUS, branches: BRANCHES, isLoaded: true });
       }
+      // equal → cached copy is current, nothing to do
     } catch (error) {
       console.error('Failed to load remote config:', error);
       // Fallback is already handled by loading local data first

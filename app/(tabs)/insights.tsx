@@ -5,7 +5,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, Radius, Shadows } from '@/theme';
-import { useActivityStore, StudySession } from '@/stores/activityStore';
+import { useActivityStore, StudySession, InterviewSession } from '@/stores/activityStore';
 import { AppHeader } from '@/components/AppHeader';
 
 // ─── Label maps ───────────────────────────────────────────────────────────────
@@ -253,8 +253,36 @@ function AccuracyBar({ accuracy, label, sublabel, color }: {
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 
+// ─── Interview analytics helpers ──────────────────────────────────────────────
+
+const INTERVIEW_TYPE_LABELS: Record<string, string> = {
+  gd: 'Group Discussion',
+  technical: 'Technical PI',
+  hr: 'HR Interview',
+};
+
+const INTERVIEW_TYPE_COLORS: Record<string, string> = {
+  gd: '#2E7D32',
+  technical: '#1565C0',
+  hr: '#E65100',
+};
+
+function computeRecurringWeakAreas(sessions: InterviewSession[]): { area: string; count: number }[] {
+  const freq = new Map<string, number>();
+  for (const s of sessions) {
+    for (const imp of s.improvements) {
+      freq.set(imp, (freq.get(imp) ?? 0) + 1);
+    }
+  }
+  return Array.from(freq.entries())
+    .map(([area, count]) => ({ area, count }))
+    .filter(x => x.count >= 2)
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5);
+}
+
 export default function InsightsScreen() {
-  const { sessions, isLoaded } = useActivityStore();
+  const { sessions, interviewSessions, isLoaded } = useActivityStore();
 
   const streak = useMemo(() => computeStreak(sessions), [sessions]);
   const weekBars = useMemo(() => computeWeeklyBars(sessions), [sessions]);
@@ -272,6 +300,16 @@ export default function InsightsScreen() {
   }, [sessions, totalQuestions]);
 
   const barMax = Math.max(...weekBars.map(b => b.questions), 1);
+
+  const recurringWeakAreas = useMemo(() => computeRecurringWeakAreas(interviewSessions), [interviewSessions]);
+  const bestInterviewRating = useMemo(() =>
+    interviewSessions.length > 0 ? Math.max(...interviewSessions.map(s => s.overallRating)) : 0,
+    [interviewSessions]);
+  const lastInterviewDate = useMemo(() =>
+    interviewSessions.length > 0
+      ? new Date(Math.max(...interviewSessions.map(s => s.timestamp))).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
+      : null,
+    [interviewSessions]);
 
   if (!isLoaded) return null;
 
@@ -468,6 +506,74 @@ export default function InsightsScreen() {
                 />
               ))}
             </View>
+          </Card>
+        )}
+
+        {/* ── Interview Preparation ─────────────────────────────────── */}
+        {interviewSessions.length > 0 && (
+          <Card accent={Colors.primary}>
+            <CardTitle icon="mic-outline" label="Interview Preparation" color={Colors.primary} />
+
+            {/* Summary row */}
+            <View style={styles.interviewSummaryRow}>
+              <View style={styles.interviewStatBox}>
+                <Text style={styles.interviewStatValue}>{interviewSessions.length}</Text>
+                <Text style={styles.interviewStatLabel}>Sessions</Text>
+              </View>
+              {lastInterviewDate && (
+                <View style={styles.interviewStatBox}>
+                  <Text style={styles.interviewStatValue}>{lastInterviewDate}</Text>
+                  <Text style={styles.interviewStatLabel}>Last Session</Text>
+                </View>
+              )}
+              {bestInterviewRating > 0 && (
+                <View style={styles.interviewStatBox}>
+                  <Text style={styles.interviewStatValue}>{bestInterviewRating}<Text style={{ fontSize: 14, color: Colors.outline }}>/10</Text></Text>
+                  <Text style={styles.interviewStatLabel}>Best Rating</Text>
+                </View>
+              )}
+            </View>
+
+            {/* Session history */}
+            <Text style={styles.interviewSectionHeader}>RECENT SESSIONS</Text>
+            {interviewSessions.slice(0, 5).map(s => (
+              <View key={s.id} style={styles.interviewSessionCard}>
+                <View style={[styles.interviewTypeBadge, { backgroundColor: (INTERVIEW_TYPE_COLORS[s.type] ?? Colors.primary) + '20' }]}>
+                  <Text style={[styles.interviewTypeBadgeText, { color: INTERVIEW_TYPE_COLORS[s.type] ?? Colors.primary }]}>
+                    {INTERVIEW_TYPE_LABELS[s.type] ?? s.type}
+                  </Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.interviewSessionPsu}>{s.psuName} · {s.branchName}</Text>
+                  <Text style={styles.interviewSessionDate}>
+                    {new Date(s.timestamp).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                  </Text>
+                </View>
+                <View style={styles.interviewRatingBox}>
+                  <Text style={styles.interviewRatingText}>{s.overallRating}</Text>
+                  <Text style={styles.interviewRatingDenom}>/10</Text>
+                </View>
+              </View>
+            ))}
+
+            {/* Recurring weak areas */}
+            {recurringWeakAreas.length > 0 && (
+              <>
+                <Text style={styles.interviewSectionHeader}>RECURRING WEAK AREAS</Text>
+                {recurringWeakAreas.map((w, i) => (
+                  <View key={i} style={styles.weakRow}>
+                    <View style={styles.weakLeft}>
+                      <Text style={styles.weakTopic}>{w.area}</Text>
+                    </View>
+                    <View style={[styles.weakBadge, { backgroundColor: Colors.survivalRed + '20' }]}>
+                      <Text style={[styles.weakBadgeText, { color: Colors.survivalRed }]}>
+                        {w.count}×
+                      </Text>
+                    </View>
+                  </View>
+                ))}
+              </>
+            )}
           </Card>
         )}
 
@@ -740,6 +846,84 @@ const styles = StyleSheet.create({
     ...Typography.bodySm,
     color: Colors.outline,
     fontSize: 10,
+  },
+
+  // Interview section
+  interviewSummaryRow: {
+    flexDirection: 'row',
+    gap: Spacing.md,
+    backgroundColor: '#F9F5FF',
+    borderRadius: Radius.md,
+    padding: Spacing.md,
+  },
+  interviewStatBox: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 2,
+  },
+  interviewStatValue: {
+    fontFamily: 'Inter_700Bold',
+    fontSize: 22,
+    color: Colors.primary,
+    lineHeight: 28,
+  },
+  interviewStatLabel: {
+    ...Typography.bodySm,
+    color: Colors.onSurfaceVariant,
+    fontSize: 10,
+    textAlign: 'center',
+  },
+  interviewSectionHeader: {
+    ...Typography.labelCaps,
+    color: Colors.outline,
+    fontSize: 9,
+    marginTop: -Spacing.sm,
+  },
+  interviewSessionCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    paddingVertical: Spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F5F5F5',
+  },
+  interviewTypeBadge: {
+    borderRadius: Radius.pill,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  interviewTypeBadgeText: {
+    ...Typography.bodySm,
+    fontSize: 10,
+    fontFamily: 'Inter_600SemiBold',
+  },
+  interviewSessionPsu: {
+    ...Typography.bodyMd,
+    color: Colors.onSurface,
+    fontFamily: 'Inter_600SemiBold',
+    fontSize: 12,
+  },
+  interviewSessionDate: {
+    ...Typography.bodySm,
+    color: Colors.outline,
+    fontSize: 10,
+    marginTop: 1,
+  },
+  interviewRatingBox: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 1,
+  },
+  interviewRatingText: {
+    fontFamily: 'Inter_700Bold',
+    fontSize: 20,
+    color: Colors.primary,
+    lineHeight: 24,
+  },
+  interviewRatingDenom: {
+    ...Typography.bodySm,
+    color: Colors.outline,
+    marginBottom: 2,
   },
 
   // Empty state

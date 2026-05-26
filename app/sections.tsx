@@ -127,6 +127,26 @@ export default function SectionsScreen() {
           </View>
         </TouchableOpacity>
 
+        {/* Interview Preparation Card */}
+        {selectedPSU.hasInterview && (
+          <TouchableOpacity
+            style={styles.interviewCard}
+            onPress={() => router.push('/interview-prep' as any)}
+            activeOpacity={0.8}
+          >
+            <View style={styles.interviewCardLeft}>
+              <View style={styles.interviewIconBox}>
+                <Ionicons name="mic" size={22} color={Colors.white} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.interviewTitle}>Interview Preparation</Text>
+                <Text style={styles.interviewSub}>{selectedPSU.interviewStages.join(' → ')}</Text>
+              </View>
+            </View>
+            <Ionicons name="arrow-forward" size={18} color={Colors.outline} />
+          </TouchableOpacity>
+        )}
+
         {/* Sections List */}
         <View style={styles.sectionList}>
           {sections.map(section => (
@@ -143,16 +163,41 @@ export default function SectionsScreen() {
           ))}
         </View>
 
-        {/* Preparation Tip */}
+        {/* PSU Strategy Tip */}
         <View style={styles.tipCard}>
           <View style={styles.tipAccent} />
           <View style={styles.tipContent}>
-            <Text style={styles.tipTitle}>Preparation Tip</Text>
-            <Text style={styles.tipText}>
-              For {selectedPSU.name} {selectedBranch?.name}, Technical Knowledge carries 50% of the weightage. Focus on Thermal and Fluids for the preliminary round.
-            </Text>
+            <Text style={styles.tipTitle}>📋 {selectedPSU.name} Strategy</Text>
+            <Text style={styles.tipText}>{selectedPSU.tipText}</Text>
+            {selectedBranch && selectedPSU.prepTips?.[selectedBranch.id] && (
+              <Text style={[styles.tipText, { marginTop: 6, fontFamily: 'Inter_600SemiBold' }]}>
+                {selectedBranch.shortName}: {selectedPSU.prepTips[selectedBranch.id]}
+              </Text>
+            )}
           </View>
         </View>
+
+        {/* Branch Prep Tips */}
+        {selectedBranch?.generalTip && (
+          <View style={[styles.tipCard, { marginTop: Spacing.sm }]}>
+            <View style={[styles.tipAccent, { backgroundColor: Colors.gold }]} />
+            <View style={styles.tipContent}>
+              <Text style={[styles.tipTitle, { color: '#7B5800' }]}>🎯 {selectedBranch.name} Prep</Text>
+              <Text style={styles.tipText}>{selectedBranch.generalTip}</Text>
+              {selectedBranch.coreSubjects.length > 0 && (
+                <View style={styles.coreRow}>
+                  <Text style={styles.coreLabel}>CORE: </Text>
+                  {selectedBranch.coreSubjects.map((s, i) => (
+                    <View key={i} style={styles.coreTag}>
+                      <Text style={styles.coreTagText}>{s}</Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </View>
+          </View>
+        )}
+
       </ScrollView>
 
       {/* Footer */}
@@ -204,6 +249,12 @@ function SectionAccordion({
 
       {isExpanded && (
         <View style={styles.accordionContent}>
+          {section.studyTip && (
+            <View style={styles.studyTipBanner}>
+              <Ionicons name="bulb-outline" size={14} color="#7B5800" style={{ marginTop: 1 }} />
+              <Text style={styles.studyTipText}>{section.studyTip}</Text>
+            </View>
+          )}
           <View style={styles.subHeader}>
             <Text style={styles.subHeaderText}>SUB-TOPICS</Text>
             <TouchableOpacity onPress={onSelectAll} style={styles.selectAllBtn}>
@@ -340,6 +391,40 @@ const styles = StyleSheet.create({
   tipContent: { padding: Spacing.lg, flex: 1 },
   tipTitle: { ...Typography.h4, color: Colors.primary },
   tipText: { ...Typography.bodySm, color: Colors.onSurfaceVariant, marginTop: 4, lineHeight: 20 },
+  studyTipBanner: {
+    flexDirection: 'row', alignItems: 'flex-start', gap: 6,
+    backgroundColor: '#FFF8E1', borderRadius: Radius.sm, padding: Spacing.sm,
+    marginBottom: Spacing.md, borderLeftWidth: 3, borderLeftColor: Colors.gold,
+  },
+  studyTipText: { ...Typography.bodySm, color: '#7B5800', lineHeight: 18, flex: 1 },
+  coreRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', marginTop: 8, gap: 4 },
+  coreLabel: { ...Typography.labelCaps, color: Colors.outline, fontSize: 9 },
+  coreTag: { backgroundColor: '#FFF8E1', borderRadius: Radius.pill, paddingHorizontal: 8, paddingVertical: 2, borderWidth: 1, borderColor: Colors.gold },
+  coreTagText: { ...Typography.bodySm, fontSize: 10, color: '#7B5800', fontFamily: 'Inter_600SemiBold' },
+
+  interviewCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#EEF1FF',
+    borderRadius: Radius.md,
+    paddingVertical: Spacing.lg,
+    paddingHorizontal: Spacing.lg,
+    borderWidth: 1.5,
+    borderColor: Colors.primary,
+    ...Shadows.card,
+  },
+  interviewCardLeft: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, flex: 1 },
+  interviewIconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: Radius.md,
+    backgroundColor: Colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  interviewTitle: { ...Typography.h4, color: Colors.primary },
+  interviewSub: { ...Typography.bodySm, color: Colors.onSurfaceVariant, marginTop: 2 },
 
   footer: { padding: Spacing.xl, backgroundColor: '#FFF', borderTopWidth: 1, borderTopColor: '#F0F2F5' },
   proceedBtn: {

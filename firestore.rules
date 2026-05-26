@@ -73,6 +73,9 @@ service cloud.firestore {
       match /sessions/{sessionId} {
         allow read, write: if request.auth.uid == userId;
       }
+      match /interviewSessions/{sessionId} {
+        allow read, write: if request.auth.uid == userId;
+      }
     }
   }
 }

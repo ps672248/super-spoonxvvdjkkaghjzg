@@ -399,10 +399,19 @@ function BookmarkItem({
                       
                       {showResults && (
                         <View style={styles.markerRow}>
-                          {isPrevAnswer && (
-                            <View style={styles.prevMarker}>
-                              <Text style={styles.markerText}>PREV</Text>
+                          {isPrevAnswer && !attemptMode ? (
+                            <View style={[
+                              styles.youChip,
+                              { backgroundColor: isCorrect ? Colors.success : Colors.error }
+                            ]}>
+                              <Text style={styles.youChipText}>you</Text>
                             </View>
+                          ) : (
+                            isPrevAnswer && (
+                              <View style={styles.prevMarker}>
+                                <Text style={styles.markerText}>PREV</Text>
+                              </View>
+                            )
                           )}
                           {isCurrentAttempt && (
                             <View style={styles.currentMarker}>
@@ -595,6 +604,8 @@ const styles = StyleSheet.create({
   prevMarker: { backgroundColor: Colors.outline, paddingHorizontal: 4, paddingVertical: 2, borderRadius: 2 },
   currentMarker: { backgroundColor: Colors.primary, paddingHorizontal: 4, paddingVertical: 2, borderRadius: 2 },
   markerText: { color: '#FFF', fontSize: 7, fontFamily: 'Inter_700Bold' },
+  youChip: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: Radius.pill },
+  youChipText: { color: '#FFF', fontSize: 8, fontFamily: 'Inter_700Bold', letterSpacing: 0.3 },
 
   expandedContent: { marginTop: Spacing.md },
   divider: { height: 1, backgroundColor: '#F0F2F5', marginVertical: Spacing.md },

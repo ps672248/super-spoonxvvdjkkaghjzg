@@ -15,6 +15,24 @@ import type { GameMode } from './examStore';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
+export interface InterviewSession {
+  id: string;
+  psuId: string;
+  psuName: string;
+  branchId: string;
+  branchName: string;
+  type: 'gd' | 'technical' | 'hr';
+  timestamp: number;
+  /** 1–10 overall rating parsed from Gemini SUMMARY_JSON */
+  overallRating: number;
+  /** Top 2–3 strengths from Gemini summary */
+  strengths: string[];
+  /** Top 2–3 improvement areas from Gemini summary */
+  improvements: string[];
+  /** Full Gemini summary narrative (for display in insights) */
+  summaryText: string;
+}
+
 export interface StudySession {
   id: string;               // timestamp36 + random
   psuId: string;
@@ -79,10 +97,14 @@ export type ActivityGraph = PSUStat[];
 
 interface ActivityState {
   sessions: StudySession[];
+  interviewSessions: InterviewSession[];
   isLoaded: boolean;
 
   /** Call after every game ends */
   logSession: (data: Omit<StudySession, 'id' | 'timestamp'>) => Promise<void>;
+
+  /** Call after every interview session ends */
+  logInterviewSession: (data: Omit<InterviewSession, 'id' | 'timestamp'>) => Promise<void>;
 
   /** Load local; merge with Firestore if logged in */
   loadSessions: () => Promise<void>;
@@ -91,16 +113,22 @@ interface ActivityState {
   getGraph: () => ActivityGraph;
 }
 
-// ─── Firestore path ───────────────────────────────────────────────────────────
+// ─── Firestore paths ──────────────────────────────────────────────────────────
 
 const sessionsCol = (uid: string) =>
   collection(db, 'users', uid, 'sessions');
 const sessionDocRef = (uid: string, sessionId: string) =>
   doc(db, 'users', uid, 'sessions', sessionId);
 
+const interviewSessionsCol = (uid: string) =>
+  collection(db, 'users', uid, 'interviewSessions');
+const interviewSessionDocRef = (uid: string, sessionId: string) =>
+  doc(db, 'users', uid, 'interviewSessions', sessionId);
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const STORAGE_KEY = 'psuplus_activity';
+const INTERVIEW_STORAGE_KEY = 'psuplus_interview_activity';
 
 function genId(): string {
   return Date.now().toString(36) + Math.random().toString(36).slice(2);
@@ -265,6 +293,7 @@ function buildGraph(sessions: StudySession[]): ActivityGraph {
 
 export const useActivityStore = create<ActivityState>((set, get) => ({
   sessions: [],
+  interviewSessions: [],
   isLoaded: false,
 
   // ── Log one session ─────────────────────────────────────────────────────────
@@ -289,22 +318,52 @@ export const useActivityStore = create<ActivityState>((set, get) => ({
     }
   },
 
+  // ── Log one interview session ────────────────────────────────────────────────
+  logInterviewSession: async (data) => {
+    const session: InterviewSession = {
+      ...data,
+      id: genId(),
+      timestamp: Date.now(),
+    };
+
+    const updated = [...get().interviewSessions, session];
+    set({ interviewSessions: updated });
+    await AsyncStorage.setItem(INTERVIEW_STORAGE_KEY, JSON.stringify(updated));
+
+    const uid = auth.currentUser?.uid;
+    if (uid) {
+      try {
+        await setDoc(interviewSessionDocRef(uid, session.id), session);
+      } catch (e) {
+        console.warn('[Activity] Firestore interview write failed:', e);
+      }
+    }
+  },
+
   // ── Load + cloud merge ──────────────────────────────────────────────────────
   loadSessions: async () => {
-    const raw = await AsyncStorage.getItem(STORAGE_KEY);
-    const local: StudySession[] = raw ? JSON.parse(raw) : [];
+    const [rawStudy, rawInterview] = await Promise.all([
+      AsyncStorage.getItem(STORAGE_KEY),
+      AsyncStorage.getItem(INTERVIEW_STORAGE_KEY),
+    ]);
+    const local: StudySession[] = rawStudy ? JSON.parse(rawStudy) : [];
+    const localInterview: InterviewSession[] = rawInterview ? JSON.parse(rawInterview) : [];
 
     const uid = auth.currentUser?.uid;
     if (!uid) {
-      set({ sessions: local, isLoaded: true });
+      set({ sessions: local, interviewSessions: localInterview, isLoaded: true });
       return;
     }
 
     try {
-      const snap = await getDocs(sessionsCol(uid));
-      const cloud = snap.docs.map(d => d.data()) as StudySession[];
+      const [studySnap, interviewSnap] = await Promise.all([
+        getDocs(sessionsCol(uid)),
+        getDocs(interviewSessionsCol(uid)),
+      ]);
+      const cloud = studySnap.docs.map(d => d.data()) as StudySession[];
+      const cloudInterview = interviewSnap.docs.map(d => d.data()) as InterviewSession[];
 
-      // Merge: deduplicate by id, keep all unique
+      // ── Merge study sessions ──
       const idMap = new Map<string, StudySession>();
       for (const s of local) idMap.set(s.id, s);
       for (const s of cloud) {
@@ -313,7 +372,6 @@ export const useActivityStore = create<ActivityState>((set, get) => ({
       const merged = Array.from(idMap.values())
         .sort((a, b) => b.timestamp - a.timestamp);
 
-      // Batch-upload any local-only sessions to Firestore
       const cloudIds = new Set(cloud.map(s => s.id));
       const localOnly = local.filter(s => !cloudIds.has(s.id));
       if (localOnly.length > 0) {
@@ -322,11 +380,31 @@ export const useActivityStore = create<ActivityState>((set, get) => ({
         await batch.commit();
       }
 
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
-      set({ sessions: merged, isLoaded: true });
+      // ── Merge interview sessions ──
+      const interviewIdMap = new Map<string, InterviewSession>();
+      for (const s of localInterview) interviewIdMap.set(s.id, s);
+      for (const s of cloudInterview) {
+        if (!interviewIdMap.has(s.id)) interviewIdMap.set(s.id, s);
+      }
+      const mergedInterview = Array.from(interviewIdMap.values())
+        .sort((a, b) => b.timestamp - a.timestamp);
+
+      const cloudInterviewIds = new Set(cloudInterview.map(s => s.id));
+      const localInterviewOnly = localInterview.filter(s => !cloudInterviewIds.has(s.id));
+      if (localInterviewOnly.length > 0) {
+        const batch = writeBatch(db);
+        localInterviewOnly.forEach(s => batch.set(interviewSessionDocRef(uid, s.id), s));
+        await batch.commit();
+      }
+
+      await Promise.all([
+        AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(merged)),
+        AsyncStorage.setItem(INTERVIEW_STORAGE_KEY, JSON.stringify(mergedInterview)),
+      ]);
+      set({ sessions: merged, interviewSessions: mergedInterview, isLoaded: true });
     } catch (e) {
       console.warn('[Activity] Cloud sync failed, using local:', e);
-      set({ sessions: local, isLoaded: true });
+      set({ sessions: local, interviewSessions: localInterview, isLoaded: true });
     }
   },
 
