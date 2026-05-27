@@ -7,6 +7,7 @@ import { useBookmarkStore } from '../../stores/bookmarkStore';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { useExamStore } from '../../stores/examStore';
 import { useActivityStore } from '../../stores/activityStore';
+import { useSeenQuestionsStore } from '../../stores/seenQuestionsStore';
 import { UnifiedQuestion } from './UnifiedQuestion';
 import * as Haptics from 'expo-haptics';
 
@@ -59,6 +60,7 @@ export const GameResultScreen = ({
   const { selectedPSU, selectedBranch, selectedSections, selectedTopics, selectedMode } = useExamStore();
   const { addQuestionBookmark, isQuestionBookmarked, updateQuestionNote, removeQuestionBookmark, questionBookmarks } = useBookmarkStore();
   const { logSession } = useActivityStore();
+  const { markSeen } = useSeenQuestionsStore();
   const [noteModalItem, setNoteModalItem] = React.useState<GenericResultItem | null>(null);
   const [localNote, setLocalNote] = React.useState('');
 
@@ -79,6 +81,13 @@ export const GameResultScreen = ({
       questionsCorrect: results.filter(r => r.isCorrect).length,
       score,
     });
+    // Log question texts to seen store so Gemini avoids them next session
+    const questionTexts = results
+      .map(r => r.question)
+      .filter((q): q is string => typeof q === 'string' && q.length > 0);
+    if (questionTexts.length > 0) {
+      markSeen(selectedPSU.id, questionTexts);
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // fire once on mount only
 

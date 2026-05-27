@@ -6,11 +6,15 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '@/config/firebase';
+import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithCredential } from 'firebase/auth';
+import { auth, GOOGLE_WEB_CLIENT_ID } from '@/config/firebase';
+import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 import { Colors, Typography, Radius, Spacing, Shadows } from '@/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '@/stores/authStore';
+
+// Configure once when module loads
+GoogleSignin.configure({ webClientId: GOOGLE_WEB_CLIENT_ID });
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -113,12 +117,29 @@ export default function LoginScreen() {
 
             <TouchableOpacity
               style={styles.googleButton}
-              onPress={() => {
-                Alert.alert(
-                  'Google Sign-In Unavailable',
-                  'Google Sign-In requires an EAS production or dev-client build. Please use email/password login for now.',
-                  [{ text: 'OK' }]
-                );
+              onPress={async () => {
+                setIsLoading(true);
+                try {
+                  await GoogleSignin.hasPlayServices();
+                  const signInResult = await GoogleSignin.signIn();
+                  const idToken = signInResult.data?.idToken;
+                  if (!idToken) throw new Error('No ID token returned from Google');
+                  const credential = GoogleAuthProvider.credential(idToken);
+                  await signInWithCredential(auth, credential);
+                  router.replace('/(tabs)/settings');
+                } catch (error: any) {
+                  if (error.code === statusCodes.SIGN_IN_CANCELLED) {
+                    // user cancelled — do nothing
+                  } else if (error.code === statusCodes.IN_PROGRESS) {
+                    // already signing in — do nothing
+                  } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+                    Alert.alert('Error', 'Google Play Services not available on this device.');
+                  } else {
+                    Alert.alert('Google Sign-In Failed', error.message || 'Something went wrong');
+                  }
+                } finally {
+                  setIsLoading(false);
+                }
               }}
               disabled={isLoading}
             >

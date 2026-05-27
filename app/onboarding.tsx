@@ -56,6 +56,19 @@ const SLIDES: Slide[] = [
     ],
   },
   {
+    id: 'interview',
+    ionicon: 'mic',
+    accent: Colors.primary,
+    title: 'Ace the\nInterview Round',
+    body: 'For PSUs with GD/PI rounds — practice with a fully AI-powered simulation:',
+    bullets: [
+      { icon: 'people',       iconColor: '#2E7D32',        text: 'Group Discussion with 3 virtual candidates' },
+      { icon: 'code-slash',   iconColor: Colors.mcqBlue,   text: 'Technical PI — adaptive to your branch & profile' },
+      { icon: 'briefcase',    iconColor: '#E65100',        text: 'HR Interview — references your tech round performance' },
+      { icon: 'person',       iconColor: Colors.gold,      text: 'Set up your Career Profile once, personalises all rounds' },
+    ],
+  },
+  {
     id: 'gemini',
     ionicon: 'sparkles',
     accent: '#7B2FBE',

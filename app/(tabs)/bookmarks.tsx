@@ -359,9 +359,11 @@ function BookmarkItem({
               <View style={styles.optionsContainer}>
                 <Text style={styles.sectionLabel}>OPTIONS {attemptMode && !currentAttempt && "(TAP TO ATTEMPT)"}</Text>
                 {item.options.map((opt, index) => {
-                  const optKey = opt.charAt(0);
-                  const isCorrect = optKey === item.correct;
-                  const isPrevAnswer = optKey === item.yourAnswer;
+                  const optKey = opt.charAt(0).toUpperCase();
+                  const isCorrect = optKey === item.correct?.toUpperCase();
+                  // yourAnswer may be full option string ("A. text") or just key ("A")
+                  const isPrevAnswer = !!item.yourAnswer &&
+                    item.yourAnswer.trim().charAt(0).toUpperCase() === optKey;
                   const isCurrentAttempt = optKey === currentAttempt;
 
                   // Visibility logic

@@ -21,7 +21,9 @@ export const auth = initializeAuth(app, {
   persistence: getReactNativePersistence(ReactNativeAsyncStorage)
 });
 
-// TODO: Replace YOUR_WEB_CLIENT_ID_FROM_FIREBASE_CONSOLE once downloaded from Firebase Console
-export const GOOGLE_WEB_CLIENT_ID = 'YOUR_WEB_CLIENT_ID_FROM_FIREBASE_CONSOLE';
+// Web Client ID — from Firebase Console → Project Settings → Your Apps → Android → google-services.json
+// Look for oauth_client entry with "client_type": 3
+// Format: 7326957343-xxxx.apps.googleusercontent.com
+export const GOOGLE_WEB_CLIENT_ID = '7326957343-f22287e1p5peat7dqjoaulh9q60ldi5s.apps.googleusercontent.com';
 
 export default app;

@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useExamStore } from '../stores/examStore';
 import { useSettingsStore } from '../stores/settingsStore';
+import { useSeenQuestionsStore } from '../stores/seenQuestionsStore';
 export { MCQQuestion, MatchChallenge } from '../services/gemini';
 import { generateQuestions, generateMatchChallenges } from '../services/gemini';
 import { getSyllabusTopics } from '../config/syllabus';
@@ -15,7 +16,8 @@ export const useGameQuestions = () => {
   } = useExamStore();
   
   const { geminiApiKey, geminiModel } = useSettingsStore();
-  
+  const getSeenForPsu = useSeenQuestionsStore(s => s.getSeenForPsu);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -36,6 +38,8 @@ export const useGameQuestions = () => {
       const allTopics = getSyllabusTopics(sectionId, selectedBranch?.id);
       const topic = allTopics.find(t => selectedTopics.includes(t.id)) ?? allTopics[0];
 
+      const seenQuestions = getSeenForPsu(selectedPSU.id);
+
       const params = {
         apiKey: geminiApiKey || '',
         modelId: geminiModel,
@@ -52,6 +56,7 @@ export const useGameQuestions = () => {
         topicTitle: topic?.title || 'Mixed Topics',
         gameMode,
         count: countOverride || storeCount || 10,
+        seenQuestions,
       };
 
       if (gameMode === 'match') {
@@ -68,7 +73,7 @@ export const useGameQuestions = () => {
     } finally {
       setLoading(false);
     }
-  }, [selectedPSU, selectedBranch, selectedSections, selectedTopics, storeCount, geminiApiKey, geminiModel]);
+  }, [selectedPSU, selectedBranch, selectedSections, selectedTopics, storeCount, geminiApiKey, geminiModel, getSeenForPsu]);
 
   return {
     loadQuestions,

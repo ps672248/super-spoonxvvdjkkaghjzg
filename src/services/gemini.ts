@@ -1,7 +1,16 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const CACHE_PREFIX = 'psuplus_qcache_';
-const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+// ── Session-only in-memory cache (dies on app close) ─────────────────────────
+// Prevents double-fetching the same topic within a single app session.
+// No persistence — every new launch gets fresh questions from Gemini.
+const SESSION_CACHE_TTL = 10 * 60 * 1000; // 10 minutes
+const sessionCache = new Map<string, { data: MCQQuestion[]; timestamp: number }>();
+
+// One-time cleanup of legacy 7-day AsyncStorage cache keys
+AsyncStorage.getAllKeys().then(keys => {
+  const old = keys.filter(k => k.startsWith('psuplus_qcache_'));
+  if (old.length > 0) AsyncStorage.multiRemove(old).catch(() => {});
+}).catch(() => {});
 
 export type MCQQuestion = {
   id: string;
@@ -13,25 +22,22 @@ export type MCQQuestion = {
 };
 
 function buildCacheKey(psuId: string, branchId: string, sectionId: string, topicId: string, mode: string): string {
-  return `${CACHE_PREFIX}${psuId}_${branchId}_${sectionId}_${topicId}_${mode}`;
+  return `${psuId}_${branchId}_${sectionId}_${topicId}_${mode}`;
 }
 
-async function getCached(key: string): Promise<MCQQuestion[] | null> {
-  try {
-    const raw = await AsyncStorage.getItem(key);
-    if (!raw) return null;
-    const { data, timestamp } = JSON.parse(raw);
-    if (Date.now() - timestamp > CACHE_TTL_MS) return null;
-    return data;
-  } catch {
+function getCached(key: string, count: number): MCQQuestion[] | null {
+  const entry = sessionCache.get(key);
+  if (!entry) return null;
+  if (Date.now() - entry.timestamp > SESSION_CACHE_TTL) {
+    sessionCache.delete(key);
     return null;
   }
+  if (entry.data.length < count) return null;
+  return entry.data;
 }
 
-async function setCache(key: string, data: MCQQuestion[]): Promise<void> {
-  try {
-    await AsyncStorage.setItem(key, JSON.stringify({ data, timestamp: Date.now() }));
-  } catch { /* ignore cache errors */ }
+function setCache(key: string, data: MCQQuestion[]): void {
+  sessionCache.set(key, { data, timestamp: Date.now() });
 }
 
 export type GenerateParams = {
@@ -51,6 +57,7 @@ export type GenerateParams = {
   gameMode: string;
   count?: number;
   bypassCache?: boolean;
+  seenQuestions?: string[]; // question texts already seen for this PSU — injected into prompt as AVOID list
 };
 
 export async function testApiKey(apiKey: string, modelId: string): Promise<boolean> {
@@ -75,21 +82,26 @@ export async function generateQuestions(params: GenerateParams): Promise<MCQQues
   const {
     apiKey, modelId, psuName, branchName, sectionName, sectionDifficulty,
     negativeMarking, topicTitle, topicId, psuId, branchId, sectionId, gameMode,
-    count = 10, bypassCache = false,
+    count = 10, bypassCache = false, seenQuestions = [],
   } = params;
 
   const cacheKey = buildCacheKey(psuId, branchId, sectionId, topicId, gameMode);
 
   if (!bypassCache) {
-    const cached = await getCached(cacheKey);
-    if (cached && cached.length >= count) {
-      return cached.slice(0, count);
-    }
+    const cached = getCached(cacheKey, count);
+    if (cached) return cached.slice(0, count);
   }
 
   const nmText = negativeMarking === 0
     ? 'no negative marking'
     : `negative marking of ${negativeMarking} marks per wrong answer`;
+
+  // Build AVOID block from last 30 seen questions for this PSU
+  const avoidBlock = seenQuestions.length > 0
+    ? `\nIMPORTANT: Do NOT repeat or closely paraphrase these previously asked questions:\n${
+        seenQuestions.slice(-30).map((q, i) => `${i + 1}. ${q.substring(0, 100)}`).join('\n')
+      }\n`
+    : '';
 
   const prompt = `You are an expert question setter for Indian PSU (Public Sector Undertaking) competitive exams.
 
@@ -101,7 +113,7 @@ Context:
 - Section Difficulty: ${sectionDifficulty} (calibrated for real ${psuName} exam)
 - Marking: ${nmText}
 - Game Mode: ${gameMode}
-
+${avoidBlock}
 Generate exactly ${count} multiple-choice questions. Each question must:
 1. Match the exact difficulty level of real ${psuName} CBT exam (not GATE level unless stated high)
 2. Have exactly 4 options labeled A), B), C), D)
@@ -151,7 +163,7 @@ Return format:
       topicTitle: topicTitle
     }));
     if (!bypassCache) {
-      await setCache(cacheKey, questions);
+      setCache(cacheKey, questions);
     }
     return questions;
   } catch (err) {

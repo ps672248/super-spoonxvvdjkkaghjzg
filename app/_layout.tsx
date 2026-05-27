@@ -9,6 +9,7 @@ import { useBookmarkStore } from '@/stores/bookmarkStore';
 import { useAuthStore } from '@/stores/authStore';
 import { useConfigStore } from '@/stores/configStore';
 import { useActivityStore } from '@/stores/activityStore';
+import { useSeenQuestionsStore } from '@/stores/seenQuestionsStore';
 import { FlagsProvider } from '@/context/FlagsContext';
 import { FlagsModals } from '@/components/FlagsModals';
 import { ToastProvider } from '@/context/ToastContext';
@@ -24,12 +25,13 @@ export default function RootLayout() {
   const { initialize } = useAuthStore();
   const { loadConfig } = useConfigStore();
   const { loadSessions } = useActivityStore();
+  const { load: loadSeenQuestions } = useSeenQuestionsStore();
 
   // Load all stores on mount
   useEffect(() => {
     async function init() {
       initialize();
-      await Promise.all([loadSettings(), loadBookmarks(), loadConfig(), loadSessions()]);
+      await Promise.all([loadSettings(), loadBookmarks(), loadConfig(), loadSessions(), loadSeenQuestions()]);
     }
     init();
   }, []);
