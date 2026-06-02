@@ -1,45 +1,47 @@
-# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
-
-# dependencies
+# ── Dependencies ──────────────────────────────────────────
 node_modules/
+.pnp
+.pnp.js
 
-# Expo
+# ── Environment variables ──────────────────────────────────
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# ── Expo / React Native ────────────────────────────────────
 .expo/
 dist/
 web-build/
-expo-env.d.ts
-
-# Native
-.kotlin/
 *.orig.*
 *.jks
 *.p8
 *.p12
 *.key
 *.mobileprovision
+*.apk
+*.aab
+*.ipa
 
-# Metro
-.metro-health-check*
+# ── Next.js ────────────────────────────────────────────────
+.next/
+out/
 
-# debug
-npm-debug.*
-yarn-debug.*
-yarn-error.*
+# ── Build outputs ──────────────────────────────────────────
+build/
+android/build/
+ios/build/
 
-# macOS
+# ── OS ────────────────────────────────────────────────────
 .DS_Store
-*.pem
+Thumbs.db
 
-# local env files
-.env*.local
+# ── Logs ──────────────────────────────────────────────────
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
-# Firebase — never commit, injected via CI secret
-google-services.json
-GoogleService-Info.plist
-
-# typescript
-*.tsbuildinfo
-
-# generated native folders
-/ios
-/android
+# ── Misc ──────────────────────────────────────────────────
+.vercel
