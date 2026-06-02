@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
-const APK_URL = "https://aspirantarcade.in/download"; // update with real APK link
-const SITE_URL = "https://aspirantarcade.in";
-const OG_IMAGE = `${SITE_URL}/og-banner.jpg`;
+const SITE_URL = "https://aspirant-arcade.vercel.app";
+const OG_IMAGE = "https://cwhpybswvsmoiwzkyhlj.supabase.co/storage/v1/object/public/app-releases/aspirant-arcade/aspirant-arcade-banner.png";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -42,6 +42,13 @@ export const metadata: Metadata = {
     images: [OG_IMAGE],
   },
   robots: { index: true, follow: true },
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/favicon-large.ico", sizes: "48x48" },
+    ],
+    apple: "/favicon-large.ico",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -49,6 +56,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className={inter.variable}>
       <body className="min-h-screen bg-[#0A0E17] text-white antialiased font-sans">
         {children}
+        <Analytics />
       </body>
     </html>
   );

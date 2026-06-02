@@ -38,7 +38,7 @@ export default function Home() {
             href={APK_URL}
             className="flex-shrink-0 bg-[#FDC003] text-[#0A0E17] font-bold text-xs md:text-sm px-4 py-2 rounded-full hover:brightness-110 transition-all"
           >
-            Download Free
+            Download & Practice Free
           </a>
         </div>
       </nav>
@@ -97,7 +97,7 @@ export default function Home() {
               href={APK_URL}
               className="flex items-center gap-3 bg-[#FDC003] text-[#0A0E17] font-black text-base md:text-lg px-8 py-4 rounded-2xl hover:brightness-110 transition-all w-full sm:w-auto justify-center"
             >
-              <AndroidIcon size={20} color="#0A0E17" /> Download Free APK
+              <AndroidIcon size={20} color="#0A0E17" /> Download & Practice Free
             </a>
             <div className="flex items-center gap-2 text-gray-500 text-xs md:text-sm">
               <span className="w-2 h-2 bg-green-400 rounded-full inline-block flex-shrink-0" />
@@ -257,9 +257,10 @@ export default function Home() {
             href={APK_URL}
             className="flex items-center justify-center gap-3 bg-[#FDC003] text-[#0A0E17] font-black text-base md:text-xl px-6 md:px-10 py-4 md:py-5 rounded-2xl hover:brightness-110 transition-all w-full sm:w-auto sm:inline-flex"
           >
-            <AndroidIcon size={20} color="#0A0E17" /> Download Free — Android
+            <AndroidIcon size={20} color="#0A0E17" /> Download & Practice Free — Android
           </a>
           <p className="text-gray-600 text-xs md:text-sm mt-4">No login required to start practicing</p>
+          <p className="text-gray-600 text-xs mt-2">Free as long as Google AI Studio is free — your key, your data, no middleman.</p>
         </div>
       </section>
 

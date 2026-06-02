@@ -3,11 +3,19 @@ name: Android Build
 on:
   push:
     branches: [ main, master ]
+    paths:
+      - 'psu-plus/**'
   pull_request:
     branches: [ main, master ]
+    paths:
+      - 'psu-plus/**'
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+defaults:
+  run:
+    working-directory: ./psu-plus
 
 jobs:
   build:
@@ -21,6 +29,7 @@ jobs:
         with:
           node-version: 22
           cache: 'npm'
+          cache-dependency-path: '**/package-lock.json'
 
       - name: ☕ Setup JDK 17
         uses: actions/setup-java@v4
@@ -33,18 +42,19 @@ jobs:
 
       - name: 📦 Install dependencies
         run: npm ci
+        working-directory: ${{ github.workspace }}
 
       - name: 🔥 Inject Firebase Config
         run: |
           echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > google-services.json
-          echo "✅ google-services.json written to root."
+          echo "✅ google-services.json written to psu-plus/."
 
       - name: 📦 Cache Native Directory
         id: cache-android
         uses: actions/cache@v4
         with:
-          path: android
-          key: ${{ runner.os }}-android-v1-${{ hashFiles('package-lock.json', 'app.json', 'google-services.json') }}
+          path: psu-plus/android
+          key: ${{ runner.os }}-android-v1-${{ hashFiles('psu-plus/package-lock.json', 'psu-plus/app.json', 'psu-plus/google-services.json') }}
 
       - name: 🛠 Prebuild Android
         if: steps.cache-android.outputs.cache-hit != 'true'
@@ -128,6 +138,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: AspirantArcade-${{ env.APP_VERSION }}
-          path: build-artifacts/aspirant_arcade_*.apk
+          path: psu-plus/build-artifacts/aspirant_arcade_*.apk
           retention-days: 7
         continue-on-error: true
