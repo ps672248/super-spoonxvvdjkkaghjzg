@@ -49,7 +49,7 @@ export default function SurvivalScreen() {
   function handleAnswer(option: string | Record<string, string>) {
     if (typeof option !== 'string') return;
     const q = questions[currentIdx];
-    const isCorrect = option.trim().startsWith(q.correct.toUpperCase());
+    const isCorrect = option.trim()[0]?.toUpperCase() === q.correct.trim()[0]?.toUpperCase();
     
     if (isCorrect) {
       setScore(s => s + 10);
@@ -86,7 +86,7 @@ export default function SurvivalScreen() {
       isCorrect: r.correct,
       type: 'mcq',
       yourAnswer: r.chosen,
-      correctAnswer: r.q.options.find(o => o.trim().startsWith(r.q.correct.toUpperCase())),
+      correctAnswer: r.q.options.find(o => o.trim()[0]?.toUpperCase() === r.q.correct.trim()[0]?.toUpperCase()),
       rawQuestion: r.q
     }));
 

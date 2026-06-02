@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, Animated, Modal } from 'react-native';
+import { View, Text, StyleSheet, Animated, Modal, BackHandler } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -83,6 +83,16 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setToasts(prev => prev.filter(t => t.id !== id));
   }, []);
 
+  // Clear toasts on back press and let event propagate to underlying screen
+  useEffect(() => {
+    if (toasts.length === 0) return;
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      setToasts([]);
+      return false; // false = propagate back event to screen underneath
+    });
+    return () => sub.remove();
+  }, [toasts.length]);
+
   return (
     <ToastContext.Provider value={{ showToast }}>
       <View style={styles.root}>
@@ -94,7 +104,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         transparent
         animationType="none"
         statusBarTranslucent
-        onRequestClose={() => {}}
+        onRequestClose={() => setToasts([])}
       >
         <View style={styles.container} pointerEvents="none">
           {toasts.map(item => (

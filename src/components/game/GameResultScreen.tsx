@@ -2,6 +2,7 @@ import React from 'react';
 import { View, StyleSheet, Text, TouchableOpacity, ScrollView, Modal, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { Colors, Typography, Spacing, Radius, Shadows } from '../../theme';
 import { useBookmarkStore } from '../../stores/bookmarkStore';
 import { useSettingsStore } from '../../stores/settingsStore';
@@ -65,6 +66,7 @@ export const GameResultScreen = ({
   const [localNote, setLocalNote] = React.useState('');
 
   const firstName = fullName.split(' ')[0];
+  const router = useRouter();
 
   // Log session once when result screen mounts
   React.useEffect(() => {
@@ -159,6 +161,26 @@ export const GameResultScreen = ({
             );
           })}
         </View>
+
+        {/* Interview prep nudge — only for PSUs with interview rounds */}
+        {selectedPSU?.hasInterview && (
+          <TouchableOpacity
+            style={styles.interviewNudge}
+            onPress={() => { onHome(); router.push('/interview-prep' as any); }}
+            activeOpacity={0.85}
+          >
+            <View style={styles.interviewNudgeLeft}>
+              <View style={styles.interviewNudgeIcon}>
+                <Ionicons name="mic" size={22} color={Colors.white} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.interviewNudgeTitle}>Ready for the Interview Round?</Text>
+                <Text style={styles.interviewNudgeDesc}>{selectedPSU.name} has a {selectedPSU.interviewStages?.[0] ?? 'personal interview'} round. Practice with AI mock panels.</Text>
+              </View>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={Colors.primary} />
+          </TouchableOpacity>
+        )}
 
         <View style={styles.footerActions}>
           <TouchableOpacity style={styles.restartBtn} onPress={onRestart}>
@@ -267,6 +289,45 @@ const styles = StyleSheet.create({
   noteCancelText: { ...Typography.bodyMd, color: Colors.onSurfaceVariant, fontFamily: 'Inter_700Bold' },
   noteSaveBtn: { flex: 1, padding: Spacing.md, borderRadius: Radius.md, alignItems: 'center', backgroundColor: Colors.primary },
   noteSaveText: { ...Typography.bodyMd, color: '#FFF', fontFamily: 'Inter_700Bold' },
+  interviewNudge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF',
+    borderRadius: Radius.md,
+    marginHorizontal: Spacing.lg,
+    marginBottom: Spacing.lg,
+    padding: Spacing.lg,
+    gap: Spacing.md,
+    borderWidth: 1,
+    borderColor: Colors.primary + '25',
+    ...Shadows.card,
+  },
+  interviewNudgeLeft: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+  },
+  interviewNudgeIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: Radius.md,
+    backgroundColor: Colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  interviewNudgeTitle: {
+    ...Typography.bodyMd,
+    color: Colors.primary,
+    fontFamily: 'Inter_700Bold',
+    marginBottom: 2,
+  },
+  interviewNudgeDesc: {
+    ...Typography.bodySm,
+    color: Colors.onSurfaceVariant,
+    lineHeight: 16,
+  },
   footerActions: { flexDirection: 'row', padding: Spacing.lg, gap: Spacing.md },
   restartBtn: { flex: 1, backgroundColor: '#F2F4F7', paddingVertical: Spacing.lg, borderRadius: Radius.md, alignItems: 'center' },
   restartBtnText: { ...Typography.button, color: Colors.onSurfaceVariant },

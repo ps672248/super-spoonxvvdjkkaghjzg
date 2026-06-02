@@ -444,7 +444,7 @@ export default function MarioScreen() {
   function handleAnswer(option: string | Record<string, string> | null) {
     if (option && typeof option !== 'string') return;
     const q = questions[currentIdx];
-    const isCorrect = option ? option.charAt(0) === q.correct : false;
+    const isCorrect = option ? option.trim()[0]?.toUpperCase() === q.correct.trim()[0]?.toUpperCase() : false;
 
     setResults(prev => [...prev, { q, chosen: option as string | null, correct: isCorrect }]);
 
@@ -550,7 +550,7 @@ export default function MarioScreen() {
       isCorrect: r.correct,
       type: 'mcq',
       yourAnswer: r.chosen || undefined,
-      correctAnswer: r.q.options.find(o => o.startsWith(r.q.correct)),
+      correctAnswer: r.q.options.find(o => o.trim()[0]?.toUpperCase() === r.q.correct.trim()[0]?.toUpperCase()),
       rawQuestion: {
         ...r.q,
         psuName: psu.name,

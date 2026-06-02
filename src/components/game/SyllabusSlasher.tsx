@@ -409,7 +409,7 @@ export const SyllabusSlasher = ({ logic, onRestart, onHome }: { logic: SlasherLo
             id: r.q.id, question: r.q.question, explanation: r.q.explanation,
             topic: r.q.topicTitle, isCorrect: r.correct, type: 'mcq',
             yourAnswer: r.chosen,
-            correctAnswer: r.q.options.find(o => o.trim().startsWith(r.q.correct.toUpperCase())),
+            correctAnswer: r.q.options.find(o => o.trim()[0]?.toUpperCase() === r.q.correct.trim()[0]?.toUpperCase()),
             rawQuestion: r.q,
         }));
 

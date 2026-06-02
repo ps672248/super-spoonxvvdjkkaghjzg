@@ -56,7 +56,7 @@ export default function MCQScreen() {
     if (typeof option !== 'string') return;
     const q = questions[current];
     // Check if the first letter of the option matches q.correct
-    const isCorrect = option.trim().startsWith(q.correct.toUpperCase());
+    const isCorrect = option.trim()[0]?.toUpperCase() === q.correct.trim()[0]?.toUpperCase();
     
     if (isCorrect) {
       setScore(s => s + 1);
@@ -118,7 +118,7 @@ export default function MCQScreen() {
       isCorrect: r.correct,
       type: 'mcq',
       yourAnswer: r.chosen || 'Skipped',
-      correctAnswer: r.q.options.find(o => o.trim().startsWith(r.q.correct.toUpperCase())),
+      correctAnswer: r.q.options.find(o => o.trim()[0]?.toUpperCase() === r.q.correct.trim()[0]?.toUpperCase()),
       rawQuestion: r.q
     }));
 

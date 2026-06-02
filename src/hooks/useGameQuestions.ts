@@ -31,12 +31,25 @@ export const useGameQuestions = () => {
     setError(null);
 
     try {
-      // Standardize metadata sourcing
-      const sectionId = selectedSections[0] || 'technical';
-      const section = selectedPSU.sections.find(s => s.id === sectionId) || selectedPSU.sections[0];
-      
-      const allTopics = getSyllabusTopics(sectionId, selectedBranch?.id);
-      const topic = allTopics.find(t => selectedTopics.includes(t.id)) ?? allTopics[0];
+      // Use ALL selected sections — combine for richer question variety
+      const matchingSections = selectedPSU.sections.filter(s => selectedSections.includes(s.id));
+      const activeSections = matchingSections.length > 0 ? matchingSections : [selectedPSU.sections[0]];
+      const primarySection = activeSections[0];
+      const sectionName = activeSections.length === 1
+        ? activeSections[0].name
+        : activeSections.map(s => s.name).join(' + ');
+      const sectionId = activeSections.map(s => s.id).join('_');
+
+      // Gather topics from ALL active sections
+      const allTopics = activeSections.flatMap(sec => getSyllabusTopics(sec.id, selectedBranch?.id));
+
+      // Use ALL user-selected topics — combine titles so Gemini mixes questions across them
+      const matchingTopics = allTopics.filter(t => selectedTopics.includes(t.id));
+      const activeTopics = matchingTopics.length > 0 ? matchingTopics : [allTopics[0]];
+      const topicTitle = activeTopics.length === 1
+        ? activeTopics[0].title
+        : activeTopics.map(t => t.title).join(', ');
+      const topicId = activeTopics.map(t => t.id).join('_');
 
       const seenQuestions = getSeenForPsu(selectedPSU.id);
 
@@ -48,12 +61,12 @@ export const useGameQuestions = () => {
         psuDifficulty: selectedPSU.difficulty,
         branchId: selectedBranch?.id || 'all',
         branchName: selectedBranch?.name || 'General',
-        sectionId: section.id,
-        sectionName: section.name,
-        sectionDifficulty: section.difficulty,
+        sectionId,
+        sectionName,
+        sectionDifficulty: primarySection.difficulty,
         negativeMarking: selectedPSU.negativeMarking,
-        topicId: topic?.id || 'mixed',
-        topicTitle: topic?.title || 'Mixed Topics',
+        topicId,
+        topicTitle,
         gameMode,
         count: countOverride || storeCount || 10,
         bypassCache: true, // always fetch fresh — no stale questions per session
