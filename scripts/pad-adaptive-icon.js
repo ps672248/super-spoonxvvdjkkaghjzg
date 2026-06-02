@@ -2,7 +2,7 @@ const sharp = require('sharp');
 const path = require('path');
 
 const CANVAS = 1024;
-const LOGO_SIZE = Math.round(CANVAS * 0.48); // 48% → ~491px — fits inside all launcher masks
+const LOGO_SIZE = Math.round(CANVAS * 0.68); // 68% → ~696px — fills safe zone, no clipping
 const OFFSET = Math.round((CANVAS - LOGO_SIZE) / 2); // centered padding
 
 const input  = path.resolve(__dirname, '../assets/logo_transparent.png');
