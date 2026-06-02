@@ -212,18 +212,18 @@ export const FlagsModals: React.FC = () => {
         <View style={styles.overlay}>
           <View style={styles.card}>
             <View style={styles.cardHeader}>
-              <View style={[styles.iconCircle, { backgroundColor: '#E3F2FD' }]}>
-                <Ionicons name="arrow-up-circle-outline" size={36} color="#1565C0" />
+              <View style={[styles.iconCircle, { backgroundColor: Colors.primary + '15' }]}>
+                <Ionicons name="arrow-up-circle-outline" size={36} color={Colors.primary} />
               </View>
               <Text style={styles.cardTitle}>Update Available</Text>
-              <Text style={styles.cardSubtitle}>Version {updateVersion} is ready</Text>
+              <Text style={[styles.cardSubtitle, { color: Colors.gold, fontFamily: 'Inter_700Bold' }]}>Version {updateVersion} is ready</Text>
             </View>
 
             {updateReleaseNotes.length > 0 && (
               <View style={styles.releaseNotesList}>
                 {updateReleaseNotes.map((note, i) => (
                   <View key={i} style={styles.releaseNoteItem}>
-                    <Ionicons name="checkmark-circle" size={15} color="#1565C0" />
+                    <Ionicons name="checkmark-circle" size={15} color={Colors.primary} />
                     <Text style={styles.releaseNoteText}>{note}</Text>
                   </View>
                 ))}
@@ -232,7 +232,7 @@ export const FlagsModals: React.FC = () => {
 
             <View style={styles.updateNotes}>
               <View style={styles.updateNote}>
-                <Ionicons name="download-outline" size={16} color="#1565C0" />
+                <Ionicons name="download-outline" size={16} color={Colors.primary} />
                 <Text style={styles.updateNoteText}>Downloaded directly from our servers</Text>
               </View>
             </View>
@@ -259,7 +259,7 @@ export const FlagsModals: React.FC = () => {
               ) : null}
 
               <TouchableOpacity
-                style={[styles.primaryBtn, { backgroundColor: '#1565C0' }, isDownloading && { opacity: 0.7 }]}
+                style={[styles.primaryBtn, { backgroundColor: Colors.primary }, isDownloading && { opacity: 0.7 }]}
                 onPress={handleDownloadUpdate}
                 disabled={isDownloading}
               >
@@ -497,18 +497,18 @@ const styles = StyleSheet.create({
   },
   progressTrack: {
     height: 8,
-    backgroundColor: '#E3EAF5',
+    backgroundColor: Colors.primary + '20',
     borderRadius: Radius.pill,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#1565C0',
+    backgroundColor: Colors.primary,
     borderRadius: Radius.pill,
   },
   progressLabel: {
     ...Typography.bodySm,
-    color: '#1565C0',
+    color: Colors.primary,
     fontFamily: 'Inter_600SemiBold',
     textAlign: 'center',
   },
@@ -516,9 +516,9 @@ const styles = StyleSheet.create({
   updateNotes: { gap: 8, marginBottom: Spacing.xl },
   updateNote: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   updateNoteText: { ...Typography.bodyMd, color: Colors.onSurface },
-  releaseNotesList: { gap: 8, marginBottom: Spacing.lg, backgroundColor: '#EEF4FF', borderRadius: 10, padding: Spacing.md },
+  releaseNotesList: { gap: 8, marginBottom: Spacing.lg, backgroundColor: Colors.primary + '08', borderRadius: 10, padding: Spacing.md, borderWidth: 1, borderColor: Colors.primary + '20' },
   releaseNoteItem: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
-  releaseNoteText: { ...Typography.bodyMd, color: '#1565C0', flex: 1, lineHeight: 20 },
+  releaseNoteText: { ...Typography.bodyMd, color: Colors.primary, flex: 1, lineHeight: 20 },
   forceNotice: {
     ...Typography.bodySm,
     color: '#B71C1C',
