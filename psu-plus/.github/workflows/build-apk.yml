@@ -1,0 +1,133 @@
+name: Android Build
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🏗 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: ☕ Setup JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'zulu'
+
+      - name: 🐘 Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: 📦 Install dependencies
+        run: npm ci
+
+      - name: 🔥 Inject Firebase Config
+        run: |
+          echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > google-services.json
+          echo "✅ google-services.json written to root."
+
+      - name: 📦 Cache Native Directory
+        id: cache-android
+        uses: actions/cache@v4
+        with:
+          path: android
+          key: ${{ runner.os }}-android-v1-${{ hashFiles('package-lock.json', 'app.json', 'google-services.json') }}
+
+      - name: 🛠 Prebuild Android
+        if: steps.cache-android.outputs.cache-hit != 'true'
+        run: npx expo prebuild --platform android --no-install
+
+      - name: 🛠 Configure ABI Splits
+        run: |
+          if ! grep -q "arm64-v8a" android/app/build.gradle; then
+            printf '    splits {\n        abi {\n            enable true\n            reset()\n            include "arm64-v8a", "armeabi-v7a", "x86_64"\n            universalApk false\n        }\n    }\n' > splits.gradle
+            sed -i '/android {/r splits.gradle' android/app/build.gradle
+            echo "✅ ABI splits injected."
+          else
+            echo "ℹ️ ABI splits already present, skipping."
+          fi
+
+      - name: ⚡ Tune Gradle Performance
+        run: |
+          echo "org.gradle.parallel=true" >> android/gradle.properties
+          echo "org.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=512m" >> android/gradle.properties
+          echo "org.gradle.vfs.watch=false" >> android/gradle.properties
+
+      - name: 🔨 Build Release APKs
+        run: |
+          cd android
+          ./gradlew assembleRelease --no-daemon
+
+      - name: 📋 Extract Version
+        run: |
+          VERSION=$(jq -r '.expo.version' app.json)
+          echo "APP_VERSION=$VERSION" >> $GITHUB_ENV
+
+      - name: 📋 Prepare Artifacts
+        run: |
+          mkdir -p build-artifacts
+          find android/app/build/outputs/apk/release -name "*.apk" -not -name "*universal*" -exec cp {} build-artifacts/ \;
+
+          cd build-artifacts
+          for f in *.apk; do
+            case "$f" in
+              *arm64-v8a*)   mv "$f" "aspirant_arcade_${{ env.APP_VERSION }}_mobile.apk" ;;
+              *armeabi-v7a*) mv "$f" "aspirant_arcade_${{ env.APP_VERSION }}_old_phones.apk" ;;
+              *x86_64*)      mv "$f" "aspirant_arcade_${{ env.APP_VERSION }}_emulator.apk" ;;
+            esac
+          done
+
+          echo "--- Built artifacts ---"
+          ls -lh
+
+      - name: 📝 Generate Job Summary
+        run: |
+          echo "## 📱 Android Build Summary (v${{ env.APP_VERSION }})" >> $GITHUB_STEP_SUMMARY
+          echo "Architecture-specific APKs bundled into **AspirantArcade-${{ env.APP_VERSION }}**." >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ steps.cache-android.outputs.cache-hit }}" == "true" ]; then
+            echo "✅ **Smart Cache Hit**: Restored native project from cache, skipping prebuild." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "🔄 **Smart Cache Miss**: Performed full native prebuild." >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Architecture | Filename | Size | Description |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------------|----------|------|-------------|" >> $GITHUB_STEP_SUMMARY
+
+          get_row() {
+            arch=$1
+            fname=$2
+            desc=$3
+            if [ -f "build-artifacts/$fname" ]; then
+              size=$(ls -lh "build-artifacts/$fname" | awk '{print $5}')
+              echo "| **$arch** | $fname | $size | $desc |"
+            else
+              echo "| **$arch** | *Not found* | - | $desc |"
+            fi
+          }
+
+          get_row "arm64-v8a"   "aspirant_arcade_${{ env.APP_VERSION }}_mobile.apk"     "Modern phones (most common since 2015)." >> $GITHUB_STEP_SUMMARY
+          get_row "armeabi-v7a" "aspirant_arcade_${{ env.APP_VERSION }}_old_phones.apk" "Older / legacy budget devices."          >> $GITHUB_STEP_SUMMARY
+          get_row "x86_64"      "aspirant_arcade_${{ env.APP_VERSION }}_emulator.apk"   "Emulators and ChromeOS devices."         >> $GITHUB_STEP_SUMMARY
+
+      - name: 📤 Upload APK Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: AspirantArcade-${{ env.APP_VERSION }}
+          path: build-artifacts/aspirant_arcade_*.apk
+          retention-days: 7
+        continue-on-error: true
