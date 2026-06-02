@@ -42,7 +42,6 @@ jobs:
 
       - name: 📦 Install dependencies
         run: npm ci
-        working-directory: ${{ github.workspace }}
 
       - name: 🔥 Inject Firebase Config
         run: |
