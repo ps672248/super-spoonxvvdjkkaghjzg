@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  Animated, LayoutAnimation, Platform, UIManager,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,10 +8,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Typography, Spacing, Radius, Shadows } from '@/theme';
 import { useExamStore } from '@/stores/examStore';
 import { getSyllabusTopics } from '@/config/syllabus';
-
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
 
 import { AppHeader } from '@/components/AppHeader';
 
@@ -55,7 +50,6 @@ export default function SectionsScreen() {
   };
 
   const toggleAccordion = (id: string) => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setExpandedSection(expandedSection === id ? null : id);
   };
 
@@ -240,8 +234,8 @@ function SectionAccordion({
             <Ionicons name={section.icon as any} size={24} color={Colors.primary} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={styles.accordionTitle} >{section.name}</Text>
-            <Text style={styles.accordionSub} >{topics.length} Topics • {section.description}</Text>
+            <Text style={styles.accordionTitle} numberOfLines={1}>{section.name}</Text>
+            <Text style={styles.accordionSub} numberOfLines={1}>{topics.length} Topics • {section.description}</Text>
           </View>
         </View>
         <Ionicons name={isExpanded ? "chevron-up" : "chevron-down"} size={20} color={Colors.outline} />

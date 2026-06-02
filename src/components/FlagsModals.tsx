@@ -8,7 +8,7 @@ import { useFlagsContext } from '@/context/FlagsContext';
 import { Colors, Typography, Spacing, Radius, Shadows } from '@/theme';
 import { useAuthStore } from '@/stores/authStore';
 import { useToast } from '@/context/ToastContext';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import * as IntentLauncher from 'expo-intent-launcher';
 
 export const FlagsModals: React.FC = () => {
@@ -77,17 +77,39 @@ export const FlagsModals: React.FC = () => {
     setDownloadProgress(0);
   };
 
-  const installAPK = async (fileUri: string) => {
+  const openUnknownSourcesSettings = async () => {
     try {
-      const contentUri = await FileSystem.getContentUriAsync(fileUri);
-      // FLAG_GRANT_READ_URI_PERMISSION = 1 | FLAG_ACTIVITY_NEW_TASK = 268435456
+      await IntentLauncher.startActivityAsync(
+        'android.settings.MANAGE_UNKNOWN_APP_SOURCES',
+        { data: 'package:com.aspirants.arcade' }
+      );
+      showToast('Enable "Install unknown apps" for Aspirant Arcade, then tap Download & Install again.', 'warning');
+    } catch {
+      showToast('Go to Settings → Apps → Special access → Install unknown apps → enable Aspirant Arcade, then retry.', 'warning');
+    }
+  };
+
+  const installAPK = async (fileUri: string) => {
+    // Step 1: get content URI (FileProvider-backed)
+    let contentUri: string;
+    try {
+      contentUri = await FileSystem.getContentUriAsync(fileUri);
+    } catch (e: any) {
+      showToast('Failed to prepare APK: ' + (e?.message ?? 'unknown error'), 'error');
+      setIsDownloading(false);
+      return;
+    }
+
+    // Step 2: launch package installer
+    // Android handles "Install unknown apps" UI itself — only redirect to settings on hard failure
+    try {
       await IntentLauncher.startActivityAsync('android.intent.action.VIEW', {
         data: contentUri,
-        flags: 1 | 268435456,
+        flags: 1 | 268435456, // FLAG_GRANT_READ_URI_PERMISSION | FLAG_ACTIVITY_NEW_TASK
         type: 'application/vnd.android.package-archive',
       });
-    } catch (e: any) {
-      // Fallback: expo-sharing
+    } catch (_e: any) {
+      // Intent threw (no handler / hard failure) — fall back to expo-sharing sheet
       try {
         const { shareAsync } = await import('expo-sharing');
         await shareAsync(fileUri, {
@@ -95,8 +117,7 @@ export const FlagsModals: React.FC = () => {
           dialogTitle: 'Install Aspirant Arcade Update',
         });
       } catch {
-        showToast('Install failed. Open the APK from your Downloads folder.', 'error');
-        Linking.openURL(updateApkUrl);
+        await openUnknownSourcesSettings();
       }
     } finally {
       setIsDownloading(false);
@@ -134,12 +155,12 @@ export const FlagsModals: React.FC = () => {
       if (!result || result.status !== 200) {
         throw new Error(`Status ${result?.status ?? 'unknown'}`);
       }
+      showToast('Download complete! Launching installer…', 'success');
       await installAPK(result.uri);
     } catch (e: any) {
       setIsDownloading(false);
       setDownloadProgress(0);
       showToast('Download failed — ' + (e.message ?? 'try again'), 'error');
-      Linking.openURL(updateApkUrl); // fallback
     }
   };
 
@@ -198,15 +219,18 @@ export const FlagsModals: React.FC = () => {
               <Text style={styles.cardSubtitle}>Version {updateVersion} is ready</Text>
             </View>
 
-            {!!updateReleaseNotes && (
-              <Text style={styles.cardDesc}>{updateReleaseNotes}</Text>
+            {updateReleaseNotes.length > 0 && (
+              <View style={styles.releaseNotesList}>
+                {updateReleaseNotes.map((note, i) => (
+                  <View key={i} style={styles.releaseNoteItem}>
+                    <Ionicons name="checkmark-circle" size={15} color="#1565C0" />
+                    <Text style={styles.releaseNoteText}>{note}</Text>
+                  </View>
+                ))}
+              </View>
             )}
 
             <View style={styles.updateNotes}>
-              <View style={styles.updateNote}>
-                <Ionicons name="shield-checkmark-outline" size={16} color="#1565C0" />
-                <Text style={styles.updateNoteText}>Security &amp; performance improvements</Text>
-              </View>
               <View style={styles.updateNote}>
                 <Ionicons name="download-outline" size={16} color="#1565C0" />
                 <Text style={styles.updateNoteText}>Downloaded directly from our servers</Text>
@@ -299,7 +323,7 @@ export const FlagsModals: React.FC = () => {
               {whatsNewItems.map((item, i) => (
                 <View key={i} style={styles.listItem}>
                   <Ionicons name="checkmark-circle" size={18} color={Colors.success ?? '#2E7D32'} />
-                  <Text style={styles.listItemText}>{item}</Text>
+                  <Text style={styles.listItemText} numberOfLines={3}>{item}</Text>
                 </View>
               ))}
             </ScrollView>
@@ -492,6 +516,9 @@ const styles = StyleSheet.create({
   updateNotes: { gap: 8, marginBottom: Spacing.xl },
   updateNote: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   updateNoteText: { ...Typography.bodyMd, color: Colors.onSurface },
+  releaseNotesList: { gap: 8, marginBottom: Spacing.lg, backgroundColor: '#EEF4FF', borderRadius: 10, padding: Spacing.md },
+  releaseNoteItem: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
+  releaseNoteText: { ...Typography.bodyMd, color: '#1565C0', flex: 1, lineHeight: 20 },
   forceNotice: {
     ...Typography.bodySm,
     color: '#B71C1C',

@@ -175,7 +175,7 @@ export const migrateStaticToFirebase = async () => {
     version: '',
     apk_url: '',
     force_update: false,
-    release_notes: '',
+    release_notes: [],
   }, { merge: true });
 
   await setDoc(doc(db, 'app_config', 'whats_new'), {

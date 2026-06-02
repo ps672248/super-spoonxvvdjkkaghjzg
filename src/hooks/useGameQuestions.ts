@@ -56,6 +56,7 @@ export const useGameQuestions = () => {
         topicTitle: topic?.title || 'Mixed Topics',
         gameMode,
         count: countOverride || storeCount || 10,
+        bypassCache: true, // always fetch fresh — no stale questions per session
         seenQuestions,
       };
 

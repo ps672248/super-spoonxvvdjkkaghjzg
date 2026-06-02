@@ -6,29 +6,31 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Typography, Spacing, Radius, Shadows } from '@/theme';
-import { BranchConfig, BRANCHES } from '@/config/branches';
+import { BRANCHES, BranchConfig } from '@/config/branches';
 import { PSUS, PSUConfig } from '@/config/psus';
 import { useExamStore } from '@/stores/examStore';
+import { useSettingsStore } from '@/stores/settingsStore';
 import { AppHeader } from '@/components/AppHeader';
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { selectedPSU, selectedBranch, setPSU, setBranch } = useExamStore();
+  const { selectedPSU, setPSU, setBranch } = useExamStore();
+  const { primaryBranchId, setPrimaryBranch } = useSettingsStore();
 
+  const showBranchSelect = !primaryBranchId;
+  const filteredPSUs = primaryBranchId
+    ? PSUS.filter(p => p.branches.includes(primaryBranchId))
+    : [];
 
-  const showExams = !selectedPSU;
+  const handleBranchSelect = (branch: BranchConfig) => {
+    setBranch(branch.id);
+    setPrimaryBranch(branch.id);
+  };
 
-  const availableItems = showExams
-    ? PSUS
-    : BRANCHES.filter(b => selectedPSU.branches.includes(b.id));
-
-  const handleItemSelect = (item: PSUConfig | BranchConfig) => {
-    if (showExams) {
-      setPSU(item.id);
-    } else {
-      setBranch(item.id);
-      router.push('/sections');
-    }
+  const handlePSUSelect = (psu: PSUConfig) => {
+    setPSU(psu.id);
+    if (primaryBranchId) setBranch(primaryBranchId);
+    router.push('/sections');
   };
 
   return (
@@ -40,77 +42,66 @@ export default function HomeScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        {/* Title Section */}
         <View style={styles.titleSection}>
-          <View style={styles.titleWrap}>
-            <Text style={styles.titleMain}>
-              {showExams ? 'Choose Your Challenge' : 'Select Your Branch'}
-            </Text>
-            <View style={styles.titleUnderline} />
-          </View>
+          <Text style={styles.titleMain}>
+            {showBranchSelect ? 'Select Your Branch' : 'Choose Your Challenge'}
+          </Text>
+          <View style={styles.titleUnderline} />
         </View>
 
-        {/* List Section */}
-        <View style={styles.branchList}>
-          {availableItems.map((item) => (
-            <SelectionItem
-              key={item.id}
-              item={item}
-              type={showExams ? 'psu' : 'branch'}
-              isSelected={showExams ? (selectedPSU as any)?.id === item.id : selectedBranch?.id === item.id}
-              onPress={() => handleItemSelect(item)}
-            />
-          ))}
+        <View style={styles.list}>
+          {showBranchSelect
+            ? BRANCHES.map(branch => (
+                <TouchableOpacity
+                  key={branch.id}
+                  style={styles.card}
+                  onPress={() => handleBranchSelect(branch)}
+                  activeOpacity={0.9}
+                >
+                  <View style={styles.accent} />
+                  <View style={styles.cardInner}>
+                    <View style={styles.iconBox}>
+                      <Ionicons name={branch.icon as any} size={28} color={Colors.onSurfaceVariant} />
+                    </View>
+                    <View style={styles.info}>
+                      <Text style={styles.name}>{branch.name}</Text>
+                      <Text style={styles.sub}>TAP TO SELECT</Text>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              ))
+            : filteredPSUs.map(psu => (
+                <TouchableOpacity
+                  key={psu.id}
+                  style={[styles.card, selectedPSU?.id === psu.id && styles.cardSelected]}
+                  onPress={() => handlePSUSelect(psu)}
+                  activeOpacity={0.9}
+                >
+                  <View style={[styles.accent, selectedPSU?.id === psu.id && { width: '100%' }]} />
+                  <View style={styles.cardInner}>
+                    <View style={[styles.iconBox, selectedPSU?.id === psu.id && { backgroundColor: Colors.primary + '20' }]}>
+                      <Ionicons
+                        name={(psu.ionicon || 'school') as any}
+                        size={28}
+                        color={selectedPSU?.id === psu.id ? Colors.primary : Colors.onSurfaceVariant}
+                      />
+                    </View>
+                    <View style={styles.info}>
+                      <Text style={[styles.name, selectedPSU?.id === psu.id && { color: Colors.primary }]}>
+                        {psu.name}
+                      </Text>
+                      <Text style={styles.sub} numberOfLines={1}>{psu.fullName}</Text>
+                    </View>
+                    {selectedPSU?.id === psu.id && (
+                      <Ionicons name="checkmark-circle" size={24} color={Colors.primary} />
+                    )}
+                  </View>
+                </TouchableOpacity>
+              ))
+          }
         </View>
-
-        {!showExams && (
-          <TouchableOpacity
-            style={styles.backToExams}
-            onPress={() => setPSU(null)}
-          >
-            <Ionicons name="arrow-back" size={16} color={Colors.outline} />
-            <Text style={styles.backToExamsText}>Back to Exams</Text>
-          </TouchableOpacity>
-        )}
       </ScrollView>
     </SafeAreaView>
-  );
-}
-
-function SelectionItem({
-  item,
-  type,
-  isSelected,
-  onPress
-}: {
-  item: PSUConfig | BranchConfig;
-  type: 'psu' | 'branch';
-  isSelected: boolean;
-  onPress: () => void
-}) {
-  const icon = type === 'psu' ? (item as PSUConfig).ionicon || 'school' : (item as BranchConfig).icon;
-  const title = item.name;
-  const subtitle = type === 'psu' ? (item as PSUConfig).fullName : 'TAP TO START PREP';
-
-  return (
-    <TouchableOpacity
-      style={[styles.branchCard, isSelected && styles.branchCardSelected]}
-      onPress={onPress}
-      activeOpacity={0.9}
-    >
-      <View style={[styles.branchAccent, isSelected && { width: '100%' }]} />
-      <View style={styles.branchCardInner}>
-        <View style={[styles.branchIconBox, isSelected && { backgroundColor: Colors.primary + '20' }]}>
-          <Ionicons name={icon as any} size={28} color={isSelected ? Colors.primary : Colors.onSurfaceVariant} />
-        </View>
-        <View style={styles.branchInfo}>
-          <Text style={[styles.branchTitle, isSelected && { color: Colors.primary }]}>{title}</Text>
-          {isSelected && <Text style={styles.branchSubtitle}>{'CURRENTLY SELECTED'}</Text>}
-          <Text style={styles.branchSubtitle} numberOfLines={1}>{subtitle}</Text>
-        </View>
-        {isSelected && <Ionicons name="checkmark-circle" size={24} color={Colors.primary} />}
-      </View>
-    </TouchableOpacity>
   );
 }
 
@@ -122,12 +113,10 @@ const styles = StyleSheet.create({
   titleSection: {
     paddingHorizontal: Spacing.xl,
     marginTop: Spacing.xxl,
-    marginBottom: Spacing.xl
-  },
-  titleWrap: {
+    marginBottom: Spacing.xl,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between'
+    justifyContent: 'space-between',
   },
   titleMain: {
     fontSize: 28,
@@ -136,14 +125,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   titleUnderline: {
-    width: 80,
-    height: 4,
+    width: 80, height: 4,
     backgroundColor: Colors.gold,
-    borderRadius: 2
+    borderRadius: 2,
   },
 
-  branchList: { paddingHorizontal: Spacing.xl, gap: Spacing.lg },
-  branchCard: {
+  list: { paddingHorizontal: Spacing.xl, gap: Spacing.lg },
+  card: {
     backgroundColor: Colors.white,
     borderRadius: Radius.md,
     overflow: 'hidden',
@@ -151,57 +139,39 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#F0F2F5',
   },
-  branchCardSelected: {
+  cardSelected: {
     borderColor: Colors.primary,
-    backgroundColor: Colors.primary + '08', // Subtle primary background
+    backgroundColor: Colors.primary + '08',
   },
-  branchAccent: {
+  accent: {
     height: 4,
     backgroundColor: Colors.gold,
     width: '35%',
     borderBottomRightRadius: 2,
   },
-  branchCardInner: {
+  cardInner: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: Spacing.lg,
-    gap: Spacing.lg
+    gap: Spacing.lg,
   },
-  branchIconBox: {
-    width: 56,
-    height: 56,
+  iconBox: {
+    width: 56, height: 56,
     borderRadius: Radius.md,
     backgroundColor: '#F0F2F5',
     alignItems: 'center',
-    justifyContent: 'center'
+    justifyContent: 'center',
   },
-  branchInfo: { flex: 1 },
-  branchTitle: {
+  info: { flex: 1 },
+  name: {
     fontSize: 20,
     fontFamily: 'Inter_700Bold',
-    color: Colors.onSurface
+    color: Colors.onSurface,
   },
-  branchSubtitle: {
+  sub: {
     ...Typography.labelCaps,
     color: Colors.outline,
     marginTop: 4,
     fontSize: 10,
   },
-
-  emptyState: { padding: Spacing.xxl, alignItems: 'center' },
-  emptyText: { ...Typography.bodyMd, color: Colors.onSurfaceVariant, textAlign: 'center' },
-
-  backToExams: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: Spacing.xl,
-    gap: Spacing.xs,
-    paddingVertical: Spacing.md
-  },
-  backToExamsText: {
-    ...Typography.labelCaps,
-    color: Colors.outline,
-    fontSize: 12
-  }
 });

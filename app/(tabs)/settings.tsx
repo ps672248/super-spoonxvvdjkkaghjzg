@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
   ScrollView, TextInput, LayoutAnimation, Alert, ActivityIndicator,
-  KeyboardAvoidingView, Platform
+  KeyboardAvoidingView, Platform, Modal, Linking
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -24,6 +24,14 @@ import {
 
 const ADMIN_EMAIL = 'ps671248@gmail.com';
 
+const API_KEY_STEPS = [
+  { step: '1', title: 'Open Google AI Studio', desc: 'Go to aistudio.google.com and sign in with your Google account.' },
+  { step: '2', title: 'Click "Get API Key"', desc: 'Find the "Get API key" button in the left sidebar or header.' },
+  { step: '3', title: 'Create a New Key', desc: 'Click "Create API key in new project" — takes about 5 seconds.' },
+  { step: '4', title: 'Copy the Key', desc: 'The key starts with "AIza". Copy it and come back here to paste.' },
+  { step: '5', title: 'Free Tier', desc: 'No billing required. The free tier is more than enough for daily practice.' },
+];
+
 export default function SettingsScreen() {
   const router = useRouter();
   const { user } = useAuthStore();
@@ -39,8 +47,10 @@ export default function SettingsScreen() {
   const [showResumePaste, setShowResumePaste] = useState(false);
   const [isGeneratingIntro, setIsGeneratingIntro] = useState(false);
   const [showKey, setShowKey] = useState(false);
+  const [introExpanded, setIntroExpanded] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
+  const [showKeyGuide, setShowKeyGuide] = useState(false);
   const [isMigrating, setIsMigrating] = useState(false);
   const [migrationStatus, setMigrationStatus] = useState<MigrationStatus | null>(null);
   const [isCheckingStatus, setIsCheckingStatus] = useState(false);
@@ -256,8 +266,8 @@ export default function SettingsScreen() {
                     </Text>
                   </View>
                   <View style={styles.accountDetails}>
-                    <Text style={styles.accountName}>{user.displayName || 'User'}</Text>
-                    <Text style={styles.accountEmail}>{user.email}</Text>
+                    <Text style={styles.accountName} numberOfLines={1}>{user.displayName || 'User'}</Text>
+                    <Text style={styles.accountEmail} numberOfLines={1}>{user.email}</Text>
                     <View style={styles.syncBadge}>
                       <Ionicons name="cloud-done-outline" size={12} color={Colors.matchGreen} />
                       <Text style={styles.syncBadgeText}>Bookmarks synced</Text>
@@ -299,6 +309,7 @@ export default function SettingsScreen() {
                       value={localName}
                       onChangeText={setLocalName}
                       placeholder="Enter your name"
+                    placeholderTextColor={Colors.outline}
                     />
                   </View>
                   <Text style={styles.helperText}>Used to personalize your performance feedback.</Text>
@@ -311,91 +322,116 @@ export default function SettingsScreen() {
           <View style={styles.card}>
             <View style={styles.cardAccent} />
             <View style={styles.cardInner}>
-              <View style={styles.cardTitleRow}>
+              <TouchableOpacity
+                style={styles.cardTitleRow}
+                onPress={() => setIntroExpanded(e => !e)}
+                activeOpacity={0.7}
+              >
                 <Ionicons name="mic-outline" size={20} color={Colors.primary} />
-                <Text style={styles.cardTitle}>Career Profile</Text>
-              </View>
-
-              <Text style={styles.fieldLabel}>YOUR INTRODUCTION</Text>
-              <Text style={[styles.helperText, { marginBottom: Spacing.sm }]}>
-                Used to personalise your AI-powered interview simulations. Write in first person as if introducing yourself to an interview panel.
-              </Text>
-              <View style={[styles.inputContainer, { alignItems: 'flex-start', paddingVertical: Spacing.md }]}>
-                <TextInput
-                  style={[styles.input, { minHeight: 100, textAlignVertical: 'top' }]}
-                  value={localIntro}
-                  onChangeText={setLocalIntro}
-                  placeholder="E.g., I'm Priya, a Mechanical Engineering graduate from NIT Trichy with a project in thermodynamic system optimization. My strengths are in Fluid Mechanics and Heat Transfer, and I aim to contribute to HPCL's refinery efficiency initiatives..."
-                  placeholderTextColor={Colors.outline}
-                  multiline
-                  maxLength={1600}
+                <Text style={[styles.cardTitle, { flex: 1 }]}>Career Profile</Text>
+                {!introExpanded && localIntro.trim() ? (
+                  <View style={styles.introBadge}>
+                    <Ionicons name="checkmark-circle" size={14} color={Colors.success} />
+                    <Text style={styles.introBadgeText}>Set</Text>
+                  </View>
+                ) : !introExpanded ? (
+                  <Text style={styles.introNotSetText}>Not set</Text>
+                ) : null}
+                <Ionicons
+                  name={introExpanded ? 'chevron-up' : 'chevron-down'}
+                  size={18}
+                  color={Colors.outline}
+                  style={{ marginLeft: Spacing.sm }}
                 />
-              </View>
-              <Text style={[styles.helperText, { textAlign: 'right' }]}>{localIntro.length}/1600</Text>
+              </TouchableOpacity>
 
-              {/* Generate from resume options */}
-              <View style={styles.resumeRow}>
-                <TouchableOpacity
-                  style={styles.resumeBtn}
-                  onPress={() => { LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); setShowResumePaste(!showResumePaste); }}
-                  activeOpacity={0.8}
-                >
-                  <Ionicons name="document-text-outline" size={16} color={Colors.primary} />
-                  <Text style={styles.resumeBtnText}>Paste Resume Text</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.resumeBtn}
-                  onPress={generateIntroFromPDF}
-                  disabled={isGeneratingIntro}
-                  activeOpacity={0.8}
-                >
-                  <Ionicons name="attach-outline" size={16} color={Colors.primary} />
-                  <Text style={styles.resumeBtnText}>Upload PDF Resume</Text>
-                </TouchableOpacity>
-              </View>
+              {!introExpanded && localIntro.trim() ? (
+                <Text style={styles.introPreview} numberOfLines={2}>{localIntro}</Text>
+              ) : null}
 
-              {showResumePaste && (
-                <View style={styles.resumePasteBox}>
-                  <Text style={styles.fieldLabel}>PASTE RESUME / CV TEXT</Text>
+              {introExpanded && (
+                <>
+                  <Text style={[styles.fieldLabel, { marginTop: Spacing.md }]}>YOUR INTRODUCTION</Text>
+                  <Text style={[styles.helperText, { marginBottom: Spacing.sm }]}>
+                    Used to personalise your AI-powered interview simulations. Write in first person as if introducing yourself to an interview panel.
+                  </Text>
                   <View style={[styles.inputContainer, { alignItems: 'flex-start', paddingVertical: Spacing.md }]}>
                     <TextInput
-                      style={[styles.input, { minHeight: 80, textAlignVertical: 'top' }]}
-                      value={resumePasteText}
-                      onChangeText={setResumePasteText}
-                      placeholder="Paste your CV or resume text here…"
+                      style={[styles.input, { minHeight: 100, textAlignVertical: 'top' }]}
+                      value={localIntro}
+                      onChangeText={setLocalIntro}
+                      placeholder="E.g., I'm Priya, a Mechanical Engineering graduate from NIT Trichy with a project in thermodynamic system optimization. My strengths are in Fluid Mechanics and Heat Transfer, and I aim to contribute to HPCL's refinery efficiency initiatives..."
                       placeholderTextColor={Colors.outline}
                       multiline
+                      maxLength={1600}
                     />
                   </View>
+                  <Text style={[styles.helperText, { textAlign: 'right' }]}>{localIntro.length}/1600</Text>
+
+                  <View style={styles.resumeRow}>
+                    <TouchableOpacity
+                      style={styles.resumeBtn}
+                      onPress={() => setShowResumePaste(!showResumePaste)}
+                      activeOpacity={0.8}
+                    >
+                      <Ionicons name="document-text-outline" size={16} color={Colors.primary} />
+                      <Text style={styles.resumeBtnText}>Paste Resume Text</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.resumeBtn}
+                      onPress={generateIntroFromPDF}
+                      disabled={isGeneratingIntro}
+                      activeOpacity={0.8}
+                    >
+                      <Ionicons name="attach-outline" size={16} color={Colors.primary} />
+                      <Text style={styles.resumeBtnText}>Upload PDF Resume</Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  {showResumePaste && (
+                    <View style={styles.resumePasteBox}>
+                      <Text style={styles.fieldLabel}>PASTE RESUME / CV TEXT</Text>
+                      <View style={[styles.inputContainer, { alignItems: 'flex-start', paddingVertical: Spacing.md }]}>
+                        <TextInput
+                          style={[styles.input, { minHeight: 80, textAlignVertical: 'top' }]}
+                          value={resumePasteText}
+                          onChangeText={setResumePasteText}
+                          placeholder="Paste your CV or resume text here…"
+                          placeholderTextColor={Colors.outline}
+                          multiline
+                        />
+                      </View>
+                      <TouchableOpacity
+                        style={[styles.saveBtn, { marginTop: Spacing.sm }]}
+                        onPress={() => generateIntroFromText(resumePasteText)}
+                        disabled={isGeneratingIntro || !resumePasteText.trim()}
+                        activeOpacity={0.8}
+                      >
+                        {isGeneratingIntro
+                          ? <ActivityIndicator size="small" color="#FFF" />
+                          : <Text style={styles.saveBtnText}>Generate Introduction</Text>
+                        }
+                      </TouchableOpacity>
+                    </View>
+                  )}
+
+                  {isGeneratingIntro && !showResumePaste && (
+                    <View style={styles.generatingRow}>
+                      <ActivityIndicator size="small" color={Colors.primary} />
+                      <Text style={styles.generatingText}>Gemini is reading your resume…</Text>
+                    </View>
+                  )}
+
                   <TouchableOpacity
-                    style={[styles.saveBtn, { marginTop: Spacing.sm }]}
-                    onPress={() => generateIntroFromText(resumePasteText)}
-                    disabled={isGeneratingIntro || !resumePasteText.trim()}
+                    style={[styles.saveBtn, { marginTop: Spacing.md }]}
+                    onPress={handleSaveIntro}
+                    disabled={!localIntro.trim()}
                     activeOpacity={0.8}
                   >
-                    {isGeneratingIntro
-                      ? <ActivityIndicator size="small" color="#FFF" />
-                      : <Text style={styles.saveBtnText}>Generate Introduction</Text>
-                    }
+                    <Text style={styles.saveBtnText}>Save Introduction</Text>
                   </TouchableOpacity>
-                </View>
+                </>
               )}
-
-              {isGeneratingIntro && !showResumePaste && (
-                <View style={styles.generatingRow}>
-                  <ActivityIndicator size="small" color={Colors.primary} />
-                  <Text style={styles.generatingText}>Gemini is reading your resume…</Text>
-                </View>
-              )}
-
-              <TouchableOpacity
-                style={[styles.saveBtn, { marginTop: Spacing.md }]}
-                onPress={handleSaveIntro}
-                disabled={!localIntro.trim()}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.saveBtnText}>Save Introduction</Text>
-              </TouchableOpacity>
             </View>
           </View>
 
@@ -411,21 +447,26 @@ export default function SettingsScreen() {
               <View style={styles.field}>
                 <Text style={styles.fieldLabel}>GEMINI API KEY</Text>
                 <View style={styles.inputContainer}>
-                  <TextInput 
+                  <TextInput
                     style={styles.input}
                     value={localKey}
                     onChangeText={setLocalKey}
                     placeholder="Paste your API key here"
+                    placeholderTextColor={Colors.outline}
                     secureTextEntry={!showKey}
                   />
                   <TouchableOpacity onPress={() => setShowKey(!showKey)}>
-                    <Ionicons 
-                      name={showKey ? "eye-off-outline" : "eye-outline"} 
-                      size={20} 
-                      color={Colors.outline} 
+                    <Ionicons
+                      name={showKey ? "eye-off-outline" : "eye-outline"}
+                      size={20}
+                      color={Colors.outline}
                     />
                   </TouchableOpacity>
                 </View>
+                <TouchableOpacity style={styles.getKeyLink} onPress={() => setShowKeyGuide(true)}>
+                  <Ionicons name="help-circle-outline" size={14} color={Colors.primary} />
+                  <Text style={styles.getKeyText}>How to get a free API key?</Text>
+                </TouchableOpacity>
               </View>
 
               <View style={styles.field}>
@@ -435,7 +476,7 @@ export default function SettingsScreen() {
                   onPress={toggleDropdown}
                   activeOpacity={0.7}
                 >
-                  <Text style={styles.inputText}>{selectedModel.label}</Text>
+                  <Text style={styles.inputText} numberOfLines={1}>{selectedModel.label}</Text>
                   <View style={styles.dropdownIcons}>
                     <Ionicons name={isDropdownOpen ? "chevron-up" : "chevron-down"} size={16} color={Colors.outline} />
                   </View>
@@ -445,23 +486,49 @@ export default function SettingsScreen() {
                   <View style={styles.dropdownList}>
                     <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled={true}>
                       {GEMINI_MODELS.map((m) => (
-                        <TouchableOpacity 
-                          key={m.id} 
-                          style={[styles.dropdownItem, m.id === geminiModel && styles.dropdownItemActive]}
-                          onPress={() => handleSelectModel(m.id)}
+                        <TouchableOpacity
+                          key={m.id}
+                          style={[styles.dropdownItem, m.id === geminiModel && styles.dropdownItemActive, (m as any).comingSoon && { opacity: 0.5 }]}
+                          onPress={() => !(m as any).comingSoon && handleSelectModel(m.id)}
+                          activeOpacity={(m as any).comingSoon ? 1 : 0.7}
                         >
                           <View style={{ flex: 1 }}>
-                            <Text style={[styles.dropdownItemLabel, m.id === geminiModel && styles.dropdownItemLabelActive]}>
-                              {m.label}
-                            </Text>
-                            <Text style={styles.dropdownItemDesc}>{m.desc}</Text>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                              <Text style={[styles.dropdownItemLabel, m.id === geminiModel && styles.dropdownItemLabelActive]} numberOfLines={1}>
+                                {m.label}
+                              </Text>
+                              {(m as any).comingSoon && (
+                                <View style={{ backgroundColor: '#FFF3CD', borderRadius: 4, paddingHorizontal: 5, paddingVertical: 1 }}>
+                                  <Text style={{ fontSize: 9, color: '#856404', fontFamily: 'Inter_600SemiBold' }}>COMING SOON</Text>
+                                </View>
+                              )}
+                              {(m as any).requiresPaid && (
+                                <View style={{ backgroundColor: '#FDE8FF', borderRadius: 4, paddingHorizontal: 5, paddingVertical: 1 }}>
+                                  <Text style={{ fontSize: 9, color: '#7B2FBE', fontFamily: 'Inter_600SemiBold' }}>PAID KEY</Text>
+                                </View>
+                              )}
+                              {(m as any).maxUsage && (
+                                <View style={{ backgroundColor: '#E8F5E9', borderRadius: 4, paddingHorizontal: 5, paddingVertical: 1 }}>
+                                  <Text style={{ fontSize: 9, color: '#2E7D32', fontFamily: 'Inter_600SemiBold' }}>MAX USAGE</Text>
+                                </View>
+                              )}
+                            </View>
+                            <Text style={styles.dropdownItemDesc} numberOfLines={2}>{m.desc}</Text>
                           </View>
-                          {m.id === geminiModel && (
+                          {m.id === geminiModel && !((m as any).comingSoon) && (
                             <Ionicons name="checkmark-circle" size={18} color={Colors.primary} />
                           )}
                         </TouchableOpacity>
                       ))}
                     </ScrollView>
+                  </View>
+                )}
+                {(selectedModel as any).requiresPaid && (
+                  <View style={styles.paidModelNote}>
+                    <Ionicons name="information-circle-outline" size={14} color="#7B2FBE" />
+                    <Text style={styles.paidModelNoteText}>
+                      This model requires a paid Gemini API key. Free-tier keys will use Gemini 2.5 Flash instead.
+                    </Text>
                   </View>
                 )}
               </View>
@@ -644,6 +711,52 @@ export default function SettingsScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* API Key Guide Modal */}
+      <Modal visible={showKeyGuide} transparent animationType="slide" onRequestClose={() => setShowKeyGuide(false)}>
+        <View style={styles.guideOverlay}>
+          <View style={styles.guideCard}>
+            <View style={styles.guideHeader}>
+              <View style={styles.guideIconSquare}>
+                <Ionicons name="key" size={20} color="#FFF" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.guideTitle}>Get a Free Gemini API Key</Text>
+                <Text style={styles.guideSubtitle}>No billing required · Takes under 1 minute</Text>
+              </View>
+              <TouchableOpacity onPress={() => setShowKeyGuide(false)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <Ionicons name="close" size={22} color={Colors.outline} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.guideStepsScroll} showsVerticalScrollIndicator={false}>
+              {API_KEY_STEPS.map((s, i) => (
+                <View key={i} style={styles.guideStep}>
+                  <View style={styles.guideStepNumber}>
+                    <Text style={styles.guideStepNumberText}>{s.step}</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.guideStepTitle}>{s.title}</Text>
+                    <Text style={styles.guideStepDesc}>{s.desc}</Text>
+                  </View>
+                </View>
+              ))}
+            </ScrollView>
+
+            <TouchableOpacity
+              style={styles.openStudioBtn}
+              onPress={() => Linking.openURL('https://aistudio.google.com/app/apikey')}
+            >
+              <Ionicons name="open-outline" size={18} color="#FFF" />
+              <Text style={styles.openStudioBtnText}>Open Google AI Studio</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.guideDoneBtn} onPress={() => setShowKeyGuide(false)}>
+              <Text style={styles.guideDoneBtnText}>Got it, I'll paste my key now</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -743,10 +856,29 @@ const styles = StyleSheet.create({
     marginTop: 2
   },
 
-  btnRow: { 
-    flexDirection: 'row', 
-    gap: Spacing.md, 
-    marginTop: Spacing.md 
+  paidModelNote: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 6,
+    backgroundColor: '#FDF4FF',
+    borderRadius: Radius.sm,
+    borderWidth: 1,
+    borderColor: '#E9D8FD',
+    padding: Spacing.md,
+    marginTop: Spacing.sm,
+  },
+  paidModelNoteText: {
+    ...Typography.bodySm,
+    color: '#7B2FBE',
+    flex: 1,
+    fontSize: 11,
+    lineHeight: 16,
+  },
+
+  btnRow: {
+    flexDirection: 'row',
+    gap: Spacing.md,
+    marginTop: Spacing.md
   },
   testBtn: { 
     flex: 1, 
@@ -894,6 +1026,33 @@ const styles = StyleSheet.create({
   },
 
   // ── Career Profile ─────────────────────────────────────────────────────────
+  introBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#E8F5E9',
+    borderRadius: Radius.pill,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  introBadgeText: {
+    ...Typography.bodySm,
+    color: Colors.success,
+    fontFamily: 'Inter_600SemiBold',
+    fontSize: 11,
+  },
+  introNotSetText: {
+    ...Typography.bodySm,
+    color: Colors.outline,
+    fontSize: 11,
+  },
+  introPreview: {
+    ...Typography.bodySm,
+    color: Colors.onSurfaceVariant,
+    marginTop: Spacing.xs,
+    lineHeight: 18,
+    fontStyle: 'italic',
+  },
   resumeRow: {
     flexDirection: 'row',
     gap: Spacing.sm,
@@ -1024,5 +1183,107 @@ const styles = StyleSheet.create({
     flex: 1,
     lineHeight: 18,
     fontSize: 12,
+  },
+
+  // ── API Key guide link ────────────────────────────────────────────────────
+  getKeyLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: Spacing.xs,
+    alignSelf: 'flex-start',
+  },
+  getKeyText: { ...Typography.bodySm, color: Colors.primary, fontSize: 11, fontFamily: 'Inter_600SemiBold' },
+
+  // ── API Key guide modal ───────────────────────────────────────────────────
+  guideOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    justifyContent: 'flex-end',
+  },
+  guideCard: {
+    backgroundColor: '#FFF',
+    borderTopLeftRadius: Radius.xl,
+    borderTopRightRadius: Radius.xl,
+    padding: Spacing.xl,
+    paddingBottom: Spacing.xxxl,
+    maxHeight: '85%',
+    ...Shadows.cardHover,
+  },
+  guideHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+    marginBottom: Spacing.xl,
+  },
+  guideIconSquare: {
+    width: 40,
+    height: 40,
+    backgroundColor: Colors.primary,
+    borderRadius: Radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  guideTitle: { ...Typography.h3, color: Colors.primary },
+  guideSubtitle: { ...Typography.bodySm, color: Colors.outline, marginTop: 2 },
+  guideStepsScroll: { marginBottom: Spacing.xl },
+  guideStep: {
+    flexDirection: 'row',
+    gap: Spacing.md,
+    marginBottom: Spacing.lg,
+    alignItems: 'flex-start',
+  },
+  guideStepNumber: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: Colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+    marginTop: 1,
+  },
+  guideStepNumberText: {
+    ...Typography.labelCaps,
+    color: '#FFF',
+    fontSize: 12,
+    fontFamily: 'Inter_700Bold',
+  },
+  guideStepTitle: {
+    ...Typography.bodyMd,
+    color: Colors.onSurface,
+    fontFamily: 'Inter_700Bold',
+    marginBottom: 2,
+  },
+  guideStepDesc: {
+    ...Typography.bodySm,
+    color: Colors.onSurfaceVariant,
+    lineHeight: 18,
+  },
+  openStudioBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.sm,
+    backgroundColor: Colors.primary,
+    paddingVertical: Spacing.lg,
+    borderRadius: Radius.md,
+    marginBottom: Spacing.md,
+    ...Shadows.button,
+  },
+  openStudioBtnText: {
+    ...Typography.button,
+    color: '#FFF',
+    fontSize: 14,
+  },
+  guideDoneBtn: {
+    paddingVertical: Spacing.md,
+    alignItems: 'center',
+  },
+  guideDoneBtnText: {
+    ...Typography.bodyMd,
+    color: Colors.outline,
+    fontFamily: 'Inter_600SemiBold',
+    textDecorationLine: 'underline',
   },
 });

@@ -34,7 +34,7 @@ interface FlagsContextType {
   showAppUpdate: boolean;
   updateVersion: string;
   updateApkUrl: string;
-  updateReleaseNotes: string;
+  updateReleaseNotes: string[];
   forceUpdate: boolean;
   dismissUpdate: () => void;
 }
@@ -67,7 +67,7 @@ export const FlagsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [showAppUpdate, setShowAppUpdate] = useState(false);
   const [updateVersion, setUpdateVersion] = useState('');
   const [updateApkUrl, setUpdateApkUrl] = useState('');
-  const [updateReleaseNotes, setUpdateReleaseNotes] = useState('');
+  const [updateReleaseNotes, setUpdateReleaseNotes] = useState<string[]>([]);
   const [forceUpdate, setForceUpdate] = useState(false);
 
   // ── Init on mount — runs for all users (guest + logged-in) ─────────────────
@@ -100,6 +100,8 @@ export const FlagsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         if (d.maintenance_mode === true || d.maintenance_mode === 'true') {
           setIsMaintenanceMode(true);
           return true;
+        } else {
+          setIsMaintenanceMode(false);
         }
       }
     } catch { /* offline — skip */ }
@@ -108,7 +110,8 @@ export const FlagsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   /**
    * Firestore schema: app_config/update
-   * { version: "1.1.0", apk_url: "https://...", force_update: false, release_notes: "..." }
+   * { version: "1.1.0", apk_url: "https://...", force_update: false, release_notes: ["Fix 1", "Fix 2"] }
+   * release_notes accepts string[] or JSON string array.
    */
   async function checkUpdate() {
     try {
@@ -121,7 +124,11 @@ export const FlagsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (!latest || !apkUrl || latest === currentVersion) return;
       setUpdateVersion(latest);
       setUpdateApkUrl(apkUrl);
-      setUpdateReleaseNotes(d.release_notes ?? '');
+      let notes = d.release_notes ?? [];
+      if (typeof notes === 'string') {
+        try { notes = JSON.parse(notes); } catch { notes = notes ? [notes] : []; }
+      }
+      setUpdateReleaseNotes(Array.isArray(notes) ? notes : []);
       setForceUpdate(d.force_update === true);
       setShowAppUpdate(true);
     } catch { /* offline — skip */ }

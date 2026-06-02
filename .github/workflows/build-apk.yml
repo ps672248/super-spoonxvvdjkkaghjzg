@@ -130,3 +130,4 @@ jobs:
           name: AspirantArcade-${{ env.APP_VERSION }}
           path: build-artifacts/aspirant_arcade_*.apk
           retention-days: 7
+        continue-on-error: true

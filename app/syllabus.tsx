@@ -128,8 +128,8 @@ export default function SyllabusScreen() {
               >
                 <View style={[styles.sectionDot, { backgroundColor: section.color }]} />
                 <View style={styles.accordionTitleWrap}>
-                  <Text style={styles.accordionTitle}>{section.name}</Text>
-                  <Text style={styles.accordionSub}>{sectionSelectedCount}/{topics.length} selected</Text>
+                  <Text style={styles.accordionTitle} numberOfLines={1}>{section.name}</Text>
+                  <Text style={styles.accordionSub} numberOfLines={1}>{sectionSelectedCount}/{topics.length} selected</Text>
                 </View>
                 <TouchableOpacity
                   style={styles.selectSectionBtn}
@@ -156,9 +156,9 @@ export default function SyllabusScreen() {
                       <View style={[styles.topicCheckbox, isSelected && { backgroundColor: section.color, borderColor: section.color }]}>
                         {isSelected && <Ionicons name="checkmark" size={12} color={Colors.white} />}
                       </View>
-                      <View style={styles.topicInfo}>
-                        <Text style={[styles.topicTitle, isSelected && { color: Colors.onSurface, fontFamily: 'Inter_600SemiBold' }]}>{topic.title}</Text>
-                        <Text style={styles.topicMeta}>~{topic.estimatedQCount}Q · {topic.tags[0]}</Text>
+                      <View style={[styles.topicInfo, { flex: 1, minWidth: 0 }]}>
+                        <Text style={[styles.topicTitle, isSelected && { color: Colors.onSurface, fontFamily: 'Inter_600SemiBold' }]} numberOfLines={2}>{topic.title}</Text>
+                        <Text style={styles.topicMeta} numberOfLines={1}>~{topic.estimatedQCount}Q · {topic.tags[0]}</Text>
                       </View>
                       {bookmarked && <Ionicons name="bookmark" size={16} color={Colors.secondary} style={{ marginLeft: 4 }} />}
                     </TouchableOpacity>

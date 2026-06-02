@@ -30,14 +30,17 @@ async function bumpLocalVersion(): Promise<number> {
 }
 
 export const GEMINI_MODELS = [
-  { id: 'gemini-3.1-pro-preview',       label: '💎 Gemini 3.1 Pro',       tier: 'stable',  desc: 'Highest accuracy for complex technical topics' },
-  { id: 'gemini-3.1-flash-lite-preview',label: '✨ Gemini 3.1 Flash Lite', tier: 'stable',  desc: 'Ultra-fast and efficient generation' },
-  { id: 'gemini-3-flash-preview',      label: '🚀 Gemini 3 Flash',        tier: 'preview', desc: 'Latest flagship preview performance' },
-  { id: 'gemini-2.5-pro',              label: '💎 Gemini 2.5 Pro',       tier: 'stable',  desc: 'Proven technical intelligence' },
-  { id: 'gemini-2.5-flash',            label: '⚡ Gemini 2.5 Flash',     tier: 'stable',  desc: 'Balanced speed and logic (Default)' },
-  { id: 'gemini-2.5-flash-lite',       label: '⚡ Gemini 2.5 Flash Lite',tier: 'stable',  desc: 'Lightweight performance' },
-  { id: 'gemini-2-flash-preview',      label: '🔥 Gemini 2 Flash',       tier: 'preview', desc: 'Experimental low-latency model' },
-  { id: 'gemini-2-flash-lite-preview', label: '🔥 Gemini 2 Flash Lite',  tier: 'preview', desc: 'Experimental efficiency' },
+  // ── Gemini 3.x (latest generation) ───────────────────────────────────────
+  { id: 'gemini-3.5-flash',                 label: '🚀 Gemini 3.5 Flash',       tier: 'stable',  desc: 'Latest frontier model — highest capability' },
+  { id: 'gemini-3.1-flash-lite',            label: '🪶 Gemini 3.1 Flash Lite',  tier: 'stable',  desc: 'Latest lightweight — lowest quota usage', maxUsage: true },
+  { id: 'gemini-3.1-pro-preview',           label: '💎 Gemini 3.1 Pro',         tier: 'preview', desc: 'Advanced reasoning — preview', requiresPaid: true },
+  // ── Gemini 2.5 (previous stable generation) ──────────────────────────────
+  { id: 'gemini-2.5-pro',                   label: '💎 Gemini 2.5 Pro',         tier: 'stable',  desc: 'Deep reasoning — proven stability', requiresPaid: true },
+  { id: 'gemini-2.5-flash',                 label: '⚡ Gemini 2.5 Flash',       tier: 'stable',  desc: 'Balanced speed and quality (Recommended)' },
+  { id: 'gemini-2.5-flash-lite',            label: '⚡ Gemini 2.5 Flash Lite',  tier: 'stable',  desc: 'Budget-friendly, fast generation' },
+  // ── Gemma 4 open-source (via Gemini API) ─────────────────────────────────
+  { id: 'gemma-4-31b-it',                   label: '🟢 Gemma 4 31B',            tier: 'open',    desc: 'Open source — large, highly capable',          comingSoon: true },
+  { id: 'gemma-4-26b-a4b-it',               label: '🟢 Gemma 4 26B (MoE)',      tier: 'open',    desc: 'Open source — mixture of experts, efficient',  comingSoon: true },
 ];
 
 const DEFAULT_MODEL = 'gemini-2.5-flash';

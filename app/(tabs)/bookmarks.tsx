@@ -82,7 +82,7 @@ export default function BookmarksScreen() {
               color={attemptMode ? "#FFF" : Colors.primary} 
             />
             <Text style={[styles.attemptToggleText, attemptMode && { color: '#FFF' }]}>
-              {attemptMode ? "Attempting" : "Attempt Mode"}
+              {attemptMode ? "Exit Practice" : "Practice Mode"}
             </Text>
           </TouchableOpacity>
         </View>
@@ -105,9 +105,9 @@ export default function BookmarksScreen() {
               >
                 <View style={styles.groupHeaderLeft}>
                   <Ionicons name="ribbon-outline" size={20} color={Colors.secondary} />
-                  <View>
-                    <Text style={styles.groupTitle}>{groupName}</Text>
-                    <Text style={styles.groupSub}>{items.length} SAVED QUESTIONS</Text>
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Text style={styles.groupTitle} numberOfLines={1}>{groupName}</Text>
+                    <Text style={styles.groupSub} numberOfLines={1}>{items.length} SAVED QUESTIONS</Text>
                   </View>
                 </View>
                 <Ionicons 
@@ -468,21 +468,15 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   content: { padding: Spacing.xl, gap: Spacing.lg, paddingBottom: Spacing.xxxl },
 
-  headerRow: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    alignItems: 'center', 
-    flexWrap: 'wrap',
+  headerRow: {
+    flexDirection: 'column',
     gap: Spacing.sm,
-    marginBottom: Spacing.md 
+    marginBottom: Spacing.md
   },
-  titleRow: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: Spacing.sm,
-    flex: 1,
-    minWidth: 180,
-    marginRight: Spacing.xs 
   },
   mainTitle: { 
     ...Typography.h1, 
@@ -502,6 +496,8 @@ const styles = StyleSheet.create({
   attemptToggle: { 
     flexDirection: 'row', 
     alignItems: 'center', 
+    justifyContent:'center',
+    width:'fit',
     gap: 6, 
     backgroundColor: '#FFF', 
     paddingHorizontal: Spacing.md, 

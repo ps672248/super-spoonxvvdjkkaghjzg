@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, Animated } from 'react-native';
+import { View, Text, StyleSheet, Animated, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -87,12 +87,21 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     <ToastContext.Provider value={{ showToast }}>
       <View style={styles.root}>
         {children}
+      </View>
+      {/* Render toasts in their own Modal so they always sit above all other Modals */}
+      <Modal
+        visible={toasts.length > 0}
+        transparent
+        animationType="none"
+        statusBarTranslucent
+        onRequestClose={() => {}}
+      >
         <View style={styles.container} pointerEvents="none">
           {toasts.map(item => (
             <ToastRow key={item.id} item={item} onDone={() => removeToast(item.id)} />
           ))}
         </View>
-      </View>
+      </Modal>
     </ToastContext.Provider>
   );
 };
@@ -111,10 +120,9 @@ const styles = StyleSheet.create({
   },
   container: {
     position: 'absolute',
-    bottom: 80,       // sits above tab bar
+    bottom: 80,
     left: 16,
     right: 16,
-    zIndex: 9999,
     gap: 8,
     pointerEvents: 'none',
   },

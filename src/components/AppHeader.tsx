@@ -4,13 +4,15 @@ import { useRouter, usePathname } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, Radius } from '@/theme';
 import { useExamStore } from '@/stores/examStore';
-import { PSUS, PSUConfig } from '@/config/psus';
+import { useSettingsStore } from '@/stores/settingsStore';
+import { BRANCHES, BranchConfig } from '@/config/branches';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export function AppHeader() {
   const router = useRouter();
   const pathname = usePathname();
-  const { selectedPSU, selectedBranch, setPSU } = useExamStore();
+  const { selectedPSU, selectedBranch, setBranch } = useExamStore();
+  const { primaryBranchId, setPrimaryBranch } = useSettingsStore();
   const [modalVisible, setModalVisible] = useState(false);
 
   const isHome = pathname === '/' || pathname === '/(tabs)';
@@ -26,8 +28,8 @@ export function AppHeader() {
   return (
     <>
       <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.headerLeft} 
+        <TouchableOpacity
+          style={styles.headerLeft}
           onPress={handleLogoPress}
           activeOpacity={0.7}
         >
@@ -43,9 +45,9 @@ export function AppHeader() {
               <Text style={styles.headerLogo}>Aspirant Arcade</Text>
               {isHome && <Ionicons name="chevron-down" size={12} color={Colors.primary} style={{ marginLeft: 4, marginTop: 2 }} />}
             </View>
-            {selectedPSU && (
+            {(selectedBranch || selectedPSU) && (
               <Text style={styles.examInfo} numberOfLines={1}>
-                {selectedPSU.name} {selectedBranch ? `· ${selectedBranch.name}` : ''}
+                {selectedBranch?.name ?? ''}{selectedPSU ? ` · ${selectedPSU.name}` : ''}
               </Text>
             )}
           </View>
@@ -68,34 +70,38 @@ export function AppHeader() {
       >
         <SafeAreaView style={styles.modalSafe} edges={['top', 'bottom']}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Select PSU Exam</Text>
+            <Text style={styles.modalTitle}>Select Your Branch</Text>
             <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.modalClose}>
               <Ionicons name="close" size={24} color={Colors.onSurface} />
             </TouchableOpacity>
           </View>
           <FlatList
-            data={PSUS}
-            keyExtractor={item => item.id}
+            data={BRANCHES}
+            keyExtractor={(item: BranchConfig) => item.id}
             contentContainerStyle={{ padding: Spacing.lg }}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={[styles.psuItem, selectedPSU?.id === item.id && styles.psuItemSelected]}
-                onPress={() => {
-                  setPSU(item.id);
-                  setModalVisible(false);
-                }}
-                activeOpacity={0.8}
-              >
-                <View style={[styles.psuIconBox, selectedPSU?.id === item.id && { backgroundColor: Colors.primary + '20' }]}>
-                  <Ionicons name={(item.ionicon || 'school') as any} size={24} color={selectedPSU?.id === item.id ? Colors.primary : Colors.onSurfaceVariant} />
-                </View>
-                <View style={styles.psuItemInfo}>
-                  <Text style={styles.psuItemName}>{item.name}</Text>
-                  <Text style={styles.psuItemFull} numberOfLines={1}>{item.fullName}</Text>
-                </View>
-                {selectedPSU?.id === item.id && <Ionicons name="checkmark-circle" size={22} color={Colors.primary} />}
-              </TouchableOpacity>
-            )}
+            renderItem={({ item }: { item: BranchConfig }) => {
+              const active = primaryBranchId === item.id;
+              return (
+                <TouchableOpacity
+                  style={[styles.psuItem, active && styles.psuItemSelected]}
+                  onPress={() => {
+                    setBranch(item.id);
+                    setPrimaryBranch(item.id);
+                    setModalVisible(false);
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <View style={[styles.psuIconBox, active && { backgroundColor: Colors.primary + '20' }]}>
+                    <Ionicons name={(item.icon) as any} size={24} color={active ? Colors.primary : Colors.onSurfaceVariant} />
+                  </View>
+                  <View style={styles.psuItemInfo}>
+                    <Text style={styles.psuItemName}>{item.name}</Text>
+                    <Text style={styles.psuItemFull} numberOfLines={1}>{item.shortName || item.name}</Text>
+                  </View>
+                  {active && <Ionicons name="checkmark-circle" size={22} color={Colors.primary} />}
+                </TouchableOpacity>
+              );
+            }}
           />
         </SafeAreaView>
       </Modal>

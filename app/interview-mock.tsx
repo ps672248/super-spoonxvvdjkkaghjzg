@@ -43,6 +43,7 @@ function buildSystemPrompt(
   userIntro: string,
   sectorHint: string,
   techSummary: string,
+  gdTopics?: string[],
 ): string {
   const summaryInstruction = `
 When giving your final evaluation/summary, start with this EXACT JSON block on its own line (then continue with your narrative):
@@ -50,10 +51,14 @@ SUMMARY_JSON:{"overallRating":X,"strengths":["...","..."],"improvements":["...",
 Replace X with a number 1–10. Include exactly 2–3 strings in each array.`;
 
   if (mode === 'gd') {
+    const topicsBlock = gdTopics && gdTopics.length > 0
+      ? `\nSample GD topics for reference (these are illustrative examples only — NOT verified actual past exam topics from ${psuName}; use them purely as style and theme inspiration to generate a completely NEW, original topic):\n${gdTopics.map((t, i) => `${i + 1}. ${t}`).join('\n')}\n`
+      : '';
+
     return `You are conducting a Group Discussion simulation for ${psuFullName} recruitment.
 Candidate introduction: "${userIntro}"
-
-Generate ONE relevant GD topic for ${psuName} (sector: ${sectorHint}).
+${topicsBlock}
+Generate ONE relevant, original GD topic for ${psuName} (sector: ${sectorHint}). The topic must be fresh — inspired by the theme of the samples above but not copied from them.
 Three virtual candidates participate: Aisha, Rahul, and Dev. Each has distinct, slightly different viewpoints.
 
 Structure the GD in these exact phases:
@@ -97,10 +102,11 @@ Begin now with the PREP PHASE. Announce the topic first.`;
 
 Candidate background: "${userIntro}"
 
-Core subjects to cover: ${allCoreSubjects.join(', ')}
+Reference subjects (standard ${branchName} engineering syllabus — use as a guide only; actual interview questions will vary based on candidate responses and ${psuName}'s focus areas): ${allCoreSubjects.join(', ')}
 
 Instructions:
 - Conduct a formal technical interview covering ${branchName} core subjects
+- Generate your own original questions — do NOT recycle textbook questions verbatim
 - Connect at least 3 questions to ${psuName}'s specific operations or projects
 - After each answer: give a brief 1–2 line assessment, then ask the next question
 - Adapt difficulty: go deeper if answer is strong, simplify or clarify if weak
@@ -361,6 +367,7 @@ export default function InterviewMockScreen() {
       userIntroduction,
       sectorHints[selectedPSU.id] || selectedPSU.name,
       techSummary,
+      selectedPSU.gdTopics,
     );
   }, []);
 

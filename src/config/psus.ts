@@ -36,6 +36,7 @@ export type PSUConfig = {
   hasInterview: boolean; // whether PSU conducts GD/PI rounds after written exam
   interviewStages: ('GD' | 'Technical PI' | 'HR PI')[]; // post-written selection stages
   interviewTip?: string; // overall GD/PI strategy for this PSU
+  gdTopics?: string[]; // real historical GD topics from past recruitment cycles — injected into Gemini prompt
 };
 
 export const PSUS: PSUConfig[] = [
@@ -66,6 +67,15 @@ export const PSUS: PSUConfig[] = [
     hasInterview: true,
     interviewStages: ['GD', 'Technical PI', 'HR PI'],
     interviewTip: 'HPCL GD topics lean toward energy policy & sustainability. In PI connect fundamentals to refinery operations context. Panel tests clarity of thought, not jargon. Know HPCL\'s Visakh and Mumbai refineries.',
+    gdTopics: [
+      'India\'s energy transition: Should we accelerate EV adoption or focus on refinery capacity expansion?',
+      'Carbon neutrality by 2070 — achievable for India\'s petroleum sector?',
+      'Petrol and diesel price deregulation: Good or bad for common citizens?',
+      'Renewable energy and petroleum — competitors or co-existing pillars of India\'s energy security?',
+      'LPG subsidy reform: Targeted subsidies vs universal access',
+      'India\'s dependence on crude oil imports — strategic risk and solutions',
+      'Should PSU refineries diversify into petrochemicals to remain relevant?',
+    ],
     sections: [
       {
         id: 'technical', name: 'Technical / Domain Knowledge', icon: 'book',
@@ -125,6 +135,15 @@ export const PSUS: PSUConfig[] = [
     hasInterview: true,
     interviewStages: ['GD', 'Technical PI', 'HR PI'],
     interviewTip: 'SAIL GD topic is often around steel industry, manufacturing, or Make in India. PI panel weights CBT 75% + GD 10% + PI 15% in final merit. Show you know SAIL plants (Bhilai, Durgapur, Rourkela, Bokaro) and their specializations.',
+    gdTopics: [
+      'Make in India in the steel sector: Opportunities and challenges',
+      'China\'s steel dumping: How should India protect its steel industry?',
+      'Green steel manufacturing — is India ready to decarbonize steelmaking?',
+      'Infrastructure development and steel demand: Impact of PM Gati Shakti',
+      'Scrap-based steelmaking vs integrated steel plants: Which is the future for India?',
+      'Should India increase steel export capacity or focus on domestic consumption?',
+      'Automation in steel plants: Threat to employment or path to competitiveness?',
+    ],
     sections: [
       {
         id: 'technical', name: 'Technical / Domain Knowledge', icon: 'book',
@@ -190,6 +209,14 @@ export const PSUS: PSUConfig[] = [
     hasInterview: true,
     interviewStages: ['GD', 'Technical PI', 'HR PI'],
     interviewTip: 'MSTC interview is HR-focused with a short technical round. Know MSTC\'s core business (e-commerce auctions, scrap trading, recycling). GD topic is often on digital India, e-commerce or sustainability. Demonstrate commercial and technical aptitude.',
+    gdTopics: [
+      'GeM portal vs private e-commerce: Can government procurement go fully digital?',
+      'Circular economy and scrap recycling: Opportunity for India\'s industrial sector',
+      'Digital India initiative: Impact on public sector enterprises like MSTC',
+      'E-auction vs traditional tendering: Transparency, efficiency and challenges',
+      'Extended Producer Responsibility (EPR) in India: Challenges and opportunities',
+      'Should India mandate scrap-based raw material usage in manufacturing?',
+    ],
     sections: [
       {
         id: 'technical', name: 'Technical / Domain Knowledge', icon: 'book',
@@ -371,6 +398,15 @@ export const PSUS: PSUConfig[] = [
     hasInterview: true,
     interviewStages: ['GD', 'Technical PI', 'HR PI'],
     interviewTip: 'IOCL GD is typically on energy, sustainability, or oil industry policy. PI panel asks refinery-context questions even for civil/electrical branches. Know IOC product portfolio and refinery locations (Panipat, Mathura, Barauni).',
+    gdTopics: [
+      'Natural gas as a bridge fuel in India\'s energy transition — viable or just a delay tactic?',
+      'India\'s refinery capacity expansion: Strategic necessity or environmental risk?',
+      'Electric vehicles and their impact on India\'s long-term oil demand',
+      'One Nation One Gas Grid: Progress, challenges and impact',
+      'Should India privatize downstream oil sector operations?',
+      'E20 ethanol blending policy: Is India\'s fuel sector ready?',
+      'Crude oil price volatility: How should India insulate its economy?',
+    ],
     sections: [
       {
         id: 'technical', name: 'Technical / Domain Knowledge', icon: 'book',
@@ -429,6 +465,15 @@ export const PSUS: PSUConfig[] = [
     hasInterview: true,
     interviewStages: ['GD', 'Technical PI', 'HR PI'],
     interviewTip: 'ONGC GT track (via GATE) includes GD + PI. GD topic leans toward energy security, E&P policy, or environment. Technical PI focuses on petroleum fundamentals regardless of branch. Know ONGC\'s major fields (Bombay High, KG Basin) and recent discoveries.',
+    gdTopics: [
+      'Deep sea oil exploration: Economic necessity vs environmental cost',
+      'India\'s E&P policy — should we open upstream sector further to private players?',
+      'ONGC\'s transition to renewable energy: Right strategy or distraction from core business?',
+      'KG Basin gas production challenges: Lessons and the way forward',
+      'Energy security vs climate commitments: India\'s dilemma',
+      'Should India increase strategic petroleum reserves beyond current capacity?',
+      'Conventional energy and renewables: Can they co-exist in India\'s energy mix?',
+    ],
     sections: [
       {
         id: 'technical', name: 'Technical / Domain Knowledge', icon: 'book',
@@ -480,6 +525,15 @@ export const PSUS: PSUConfig[] = [
     hasInterview: true,
     interviewStages: ['GD', 'Technical PI', 'HR PI'],
     interviewTip: 'BPCL has the most structured interview process: Case Discussion → GD → Tech PI → HR PI. GD uses data-driven scenarios (energy stats, market data). Know BPCL\'s Kochi and Mumbai refineries, Project Sankalp, and Nayara Energy stake.',
+    gdTopics: [
+      'Is India ready for energy transition? Balancing oil demand growth and renewable targets',
+      'BPCL\'s privatization attempt: What went wrong and what are the lessons?',
+      'Biofuels in India: E20 blending by 2025 — feasible or over-ambitious?',
+      'LPG to PNG migration: Should India accelerate the shift in urban areas?',
+      'EV charging infrastructure vs fuel retail: Where should oil PSUs invest?',
+      'Oil marketing companies and their role in India\'s clean energy transition',
+      'Should fuel retail be fully privatised in India?',
+    ],
     sections: [
       {
         id: 'technical', name: 'Technical / Domain Knowledge', icon: 'book',
@@ -538,6 +592,15 @@ export const PSUS: PSUConfig[] = [
     hasInterview: true,
     interviewStages: ['GD', 'Technical PI', 'HR PI'],
     interviewTip: 'NTPC GD is conditional but PI is confirmed. PI panel tests power plant knowledge depth — know thermal, hydro, and renewable context. Know NTPC capacity (70+ GW), RE targets, and recent NTPC Green Energy projects.',
+    gdTopics: [
+      'Coal power plants: Retire early for climate goals or continue for India\'s energy security?',
+      'India\'s 500 GW renewable target by 2030: Achievable or aspirational?',
+      'Nuclear energy — should India significantly expand its nuclear power capacity?',
+      'Thermal power vs renewable energy for grid stability: The baseload problem',
+      'Just transition: How to support coal-dependent communities moving to renewable economy?',
+      'Pumped hydro storage — India\'s best bet for renewable energy storage?',
+      'NTPC\'s transformation into a renewable energy company: Strategy or survival?',
+    ],
     sections: [
       {
         id: 'technical', name: 'Technical / Domain Knowledge', icon: 'book',
@@ -660,6 +723,15 @@ export const PSUS: PSUConfig[] = [
     hasInterview: true,
     interviewStages: ['GD', 'Technical PI', 'HR PI'],
     interviewTip: 'GAIL GD topics lean toward energy transition, gas sector policy, and sustainability. PI connects your branch to pipeline/gas processing operations. Know GAIL\'s pipeline network (16,000+ km), CGD expansion, and LNG terminal at Dabhol.',
+    gdTopics: [
+      'Natural gas in India\'s energy transition: Role, challenges and long-term outlook',
+      'City Gas Distribution expansion: Opportunity or challenge for urban India?',
+      'Should India build more LNG import terminals to reduce gas supply risk?',
+      'Gas pricing reform: Market-linked pricing vs administered pricing — pros and cons',
+      'India\'s gas pipeline infrastructure: Where do we stand compared to global benchmarks?',
+      'Hydrogen economy: Can GAIL lead India\'s transition to green hydrogen?',
+      'Cross-border gas trade in South Asia: Potential and geopolitical challenges',
+    ],
     sections: [
       {
         id: 'technical', name: 'Technical / Domain Knowledge', icon: 'book',

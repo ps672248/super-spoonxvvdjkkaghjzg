@@ -153,7 +153,7 @@ export default function ApiSetupScreen() {
               onPress={toggleDropdown}
               activeOpacity={0.7}
             >
-              <Text style={styles.dropdownTriggerText}>{selectedModelObj.label}</Text>
+              <Text style={styles.dropdownTriggerText} numberOfLines={1}>{selectedModelObj.label}</Text>
               <Ionicons name={isDropdownOpen ? 'chevron-up' : 'chevron-down'} size={16} color={Colors.outline} />
             </TouchableOpacity>
 
@@ -163,16 +163,34 @@ export default function ApiSetupScreen() {
                   {GEMINI_MODELS.map(m => (
                     <TouchableOpacity
                       key={m.id}
-                      style={[styles.dropdownItem, m.id === selectedModel && styles.dropdownItemActive]}
-                      onPress={() => handleSelectModel(m.id)}
+                      style={[styles.dropdownItem, m.id === selectedModel && styles.dropdownItemActive, (m as any).comingSoon && { opacity: 0.5 }]}
+                      onPress={() => !(m as any).comingSoon && handleSelectModel(m.id)}
+                      activeOpacity={(m as any).comingSoon ? 1 : 0.7}
                     >
                       <View style={{ flex: 1 }}>
-                        <Text style={[styles.dropdownItemLabel, m.id === selectedModel && styles.dropdownItemLabelActive]}>
-                          {m.label}
-                        </Text>
-                        <Text style={styles.dropdownItemDesc}>{m.desc}</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                          <Text style={[styles.dropdownItemLabel, m.id === selectedModel && styles.dropdownItemLabelActive]} numberOfLines={1}>
+                            {m.label}
+                          </Text>
+                          {(m as any).comingSoon && (
+                            <View style={{ backgroundColor: '#FFF3CD', borderRadius: 4, paddingHorizontal: 5, paddingVertical: 1 }}>
+                              <Text style={{ fontSize: 9, color: '#856404', fontFamily: 'Inter_600SemiBold' }}>COMING SOON</Text>
+                            </View>
+                          )}
+                          {(m as any).requiresPaid && (
+                            <View style={{ backgroundColor: '#FDE8FF', borderRadius: 4, paddingHorizontal: 5, paddingVertical: 1 }}>
+                              <Text style={{ fontSize: 9, color: '#7B2FBE', fontFamily: 'Inter_600SemiBold' }}>PAID KEY</Text>
+                            </View>
+                          )}
+                          {(m as any).maxUsage && (
+                            <View style={{ backgroundColor: '#E8F5E9', borderRadius: 4, paddingHorizontal: 5, paddingVertical: 1 }}>
+                              <Text style={{ fontSize: 9, color: '#2E7D32', fontFamily: 'Inter_600SemiBold' }}>MAX USAGE</Text>
+                            </View>
+                          )}
+                        </View>
+                        <Text style={styles.dropdownItemDesc} numberOfLines={2}>{m.desc}</Text>
                       </View>
-                      {m.id === selectedModel && (
+                      {m.id === selectedModel && !((m as any).comingSoon) && (
                         <Ionicons name="checkmark-circle" size={18} color={Colors.primary} />
                       )}
                     </TouchableOpacity>

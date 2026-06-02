@@ -170,8 +170,8 @@ function ModeCard({ mode, onPress }: { mode: any; onPress: () => void }) {
           )}
         </View>
 
-        <Text style={styles.cardTitle}>{mode.title}</Text>
-        <Text style={styles.cardDesc}>{mode.desc}</Text>
+        <Text style={styles.cardTitle} numberOfLines={2}>{mode.title}</Text>
+        <Text style={styles.cardDesc} numberOfLines={3}>{mode.desc}</Text>
 
         <View style={styles.cardFooter}>
           {mode.showHearts && (
