@@ -30,15 +30,16 @@ export default function Home() {
         <div className="w-full px-4 md:px-8 h-14 md:h-16 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0">
             <Image src="/logo.png" alt="Aspirant Arcade" width={32} height={32} className="rounded-lg flex-shrink-0" />
-            <span className="font-bold text-white text-base md:text-lg truncate">
+            <span className="font-bold text-white text-sm md:text-lg whitespace-nowrap">
               Aspirant <span className="text-[#FDC003]">Arcade</span>
             </span>
           </div>
           <a
             href={APK_URL}
-            className="flex-shrink-0 bg-[#FDC003] text-[#0A0E17] font-bold text-xs md:text-sm px-4 py-2 rounded-full hover:brightness-110 transition-all"
+            className="flex-shrink-0 bg-[#FDC003] text-[#0A0E17] font-bold text-xs md:text-sm px-3 md:px-4 py-2 rounded-full hover:brightness-110 transition-all whitespace-nowrap"
           >
-            Download & Practice Free
+            <span className="sm:hidden">Download</span>
+            <span className="hidden sm:inline">Download & Practice Free</span>
           </a>
         </div>
       </nav>
