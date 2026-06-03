@@ -5,13 +5,12 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useFonts, Inter_400Regular, Inter_600SemiBold, Inter_700Bold, Inter_900Black } from '@expo-google-fonts/inter';
 import * as SplashScreen from 'expo-splash-screen';
 import { useSettingsStore } from '@/stores/settingsStore';
-import { useBookmarkStore } from '@/stores/bookmarkStore';
 import { useAuthStore } from '@/stores/authStore';
 import { useConfigStore } from '@/stores/configStore';
-import { useActivityStore } from '@/stores/activityStore';
 import { useSeenQuestionsStore } from '@/stores/seenQuestionsStore';
 import { FlagsProvider } from '@/context/FlagsContext';
 import { FlagsModals } from '@/components/FlagsModals';
+import { ConfirmModal } from '@/components/ConfirmModal';
 import { ToastProvider } from '@/context/ToastContext';
 import { Colors } from '@/theme';
 
@@ -21,17 +20,16 @@ export default function RootLayout() {
   const router = useRouter();
   const [fontsLoaded] = useFonts({ Inter_400Regular, Inter_600SemiBold, Inter_700Bold, Inter_900Black });
   const { loadSettings, isLoaded, isOnboarded } = useSettingsStore();
-  const { loadBookmarks } = useBookmarkStore();
   const { initialize } = useAuthStore();
   const { loadConfig } = useConfigStore();
-  const { loadSessions } = useActivityStore();
   const { load: loadSeenQuestions } = useSeenQuestionsStore();
 
-  // Load all stores on mount
+  // initialize() sets up the auth listener which owns bookmark + activity loading.
+  // loadSettings/loadConfig/loadSeenQuestions are auth-independent so load them directly.
   useEffect(() => {
     async function init() {
       initialize();
-      await Promise.all([loadSettings(), loadBookmarks(), loadConfig(), loadSessions(), loadSeenQuestions()]);
+      await Promise.all([loadSettings(), loadConfig(), loadSeenQuestions()]);
     }
     init();
   }, []);
@@ -70,6 +68,7 @@ export default function RootLayout() {
           <Stack.Screen name="interview-mock" options={{ presentation: 'fullScreenModal' }} />
         </Stack>
         <FlagsModals />
+        <ConfirmModal />
       </GestureHandlerRootView>
       </ToastProvider>
     </FlagsProvider>

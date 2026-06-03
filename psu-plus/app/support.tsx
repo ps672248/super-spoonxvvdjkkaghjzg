@@ -18,26 +18,50 @@ import { NewTicketModal } from '@/components/support/NewTicketModal';
 const FAQS = [
   {
     id: '1',
-    question: 'How do I download syllabus and notes?',
-    answer: 'Navigate to the "Syllabus" or "Notes" section from the home screen, select your subject, and click the download icon next to the file you want to save.',
+    question: 'Why do I need a Gemini API key?',
+    answer: 'Aspirant Arcade uses Google\'s Gemini AI to generate fresh questions every session. The key is free — go to aistudio.google.com, click "Get API Key", create one in under 2 minutes. No billing required.',
     category: 'General'
   },
   {
     id: '2',
-    question: 'Can I access the app offline?',
-    answer: 'Yes! Any syllabus or notes you have downloaded can be accessed offline via the "Downloads" tab in your profile.',
-    category: 'Technical'
+    question: 'Is my API key safe?',
+    answer: 'Yes. Your API key is stored locally on your device using secure encrypted storage. It is never sent to our servers or shared with anyone.',
+    category: 'Security'
   },
   {
     id: '3',
-    question: 'How to update my profile information?',
-    answer: 'Go to Settings > Profile and click the edit icon to change your name, branch, or semester details.',
-    category: 'Account'
+    question: 'Why are questions repeating across sessions?',
+    answer: 'The app tracks questions you\'ve seen and tells Gemini to avoid them. If repeats occur, try changing your selected topics in the Syllabus screen or tap "Bypass Cache" to force fresh generation.',
+    category: 'Technical'
   },
   {
     id: '4',
-    question: 'What to do if I find incorrect information?',
-    answer: 'Please use the "Contact Support" button on this screen and describe the issue. Our team will verify and correct the content within 24-48 hours.',
+    question: 'Which PSUs and branches are supported?',
+    answer: 'HPCL, Coal India, BHEL, ONGC, NTPC, SAIL, IOCL, GAIL and more. All major engineering branches — Mechanical, Electrical, Civil, Chemical, Electronics, Computer Science — are supported.',
+    category: 'General'
+  },
+  {
+    id: '5',
+    question: 'How does the Interview Simulator work?',
+    answer: 'Select your target PSU from the Sections screen and tap Interview Prep. The AI acts as a mock panel and asks branch-specific technical and HR questions based on your profile.',
+    category: 'Features'
+  },
+  {
+    id: '6',
+    question: 'What do the Insights show?',
+    answer: 'Insights track your accuracy per topic across all sessions. It shows which topics you score lowest in so you know exactly where to focus before the exam.',
+    category: 'Features'
+  },
+  {
+    id: '7',
+    question: 'Can I use the app without an account?',
+    answer: 'Yes. You can practice, bookmark, and view insights as a guest. Sign in to sync your bookmarks across devices.',
+    category: 'Account'
+  },
+  {
+    id: '8',
+    question: 'What to do if AI returns wrong or poor quality questions?',
+    answer: 'This can happen with free-tier Gemini models. Switch to Gemini 2.5 Flash in Settings > API Configuration for best results. You can also use the Contact Support button below to report specific issues.',
     category: 'Support'
   }
 ];

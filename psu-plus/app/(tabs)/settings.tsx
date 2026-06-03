@@ -12,8 +12,6 @@ import { useSettingsStore, GEMINI_MODELS } from '@/stores/settingsStore';
 import { useAuthStore } from '@/stores/authStore';
 import { testApiKey } from '@/services/gemini';
 import { AppHeader } from '@/components/AppHeader';
-import { signOut } from 'firebase/auth';
-import { auth as firebaseAuth } from '@/config/firebase';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
 import {
@@ -223,11 +221,11 @@ export default function SettingsScreen() {
       'Are you sure you want to sign out?',
       [
         { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Sign Out', 
+        {
+          text: 'Sign Out',
           style: 'destructive',
           onPress: async () => {
-            await signOut(firebaseAuth);
+            await useAuthStore.getState().signOut();
             Alert.alert('Signed Out', 'You have been signed out successfully.');
           }
         }

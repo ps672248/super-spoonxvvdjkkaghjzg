@@ -6,6 +6,16 @@ import { collection, doc, getDoc, getDocs, query, setDoc, where } from 'firebase
 import { useAuthStore } from '@/stores/authStore';
 import { useActivityStore } from '@/stores/activityStore';
 
+// ── Semver comparison — returns true only if `latest` is strictly newer ───────
+function isNewerVersion(latest: string, current: string): boolean {
+  const parse = (v: string) => v.split('.').map(n => parseInt(n, 10) || 0);
+  const [lMaj = 0, lMin = 0, lPat = 0] = parse(latest);
+  const [cMaj = 0, cMin = 0, cPat = 0] = parse(current);
+  if (lMaj !== cMaj) return lMaj > cMaj;
+  if (lMin !== cMin) return lMin > cMin;
+  return lPat > cPat;
+}
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface FlagsContextType {
@@ -121,7 +131,7 @@ export const FlagsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const d = snap.data();
       const latest: string = d.version ?? '';
       const apkUrl: string = d.apk_url ?? '';
-      if (!latest || !apkUrl || latest === currentVersion) return;
+      if (!latest || !apkUrl || !isNewerVersion(latest, currentVersion)) return;
       setUpdateVersion(latest);
       setUpdateApkUrl(apkUrl);
       let notes = d.release_notes ?? [];

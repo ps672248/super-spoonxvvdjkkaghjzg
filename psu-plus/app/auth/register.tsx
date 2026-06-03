@@ -8,6 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { auth } from '@/config/firebase';
+import { useSettingsStore } from '@/stores/settingsStore';
 import { Colors, Typography, Radius, Spacing, Shadows } from '@/theme';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -34,6 +35,9 @@ export default function RegisterScreen() {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       await updateProfile(userCredential.user, { displayName: name });
+      // onAuthStateChanged fires before updateProfile completes, so displayName
+      // is null at that point — seed it manually here
+      await useSettingsStore.getState().setFullName(name);
       router.replace('/(tabs)/settings');
     } catch (error: any) {
       console.error(error);

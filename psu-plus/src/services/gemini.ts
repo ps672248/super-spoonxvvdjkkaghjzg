@@ -1,5 +1,16 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+// ── Deterministic content hash for stable question IDs ────────────────────────
+// Same question text → same ID across sessions, devices, and users.
+// Prevents duplicate bookmarks when the same question is generated twice.
+function hashContent(text: string): string {
+  let h = 5381;
+  for (let i = 0; i < text.length; i++) {
+    h = (((h << 5) + h) ^ text.charCodeAt(i)) >>> 0;
+  }
+  return h.toString(36);
+}
+
 // ── Session-only in-memory cache ──────────────────────────────────────────────
 const SESSION_CACHE_TTL = 10 * 60 * 1000;
 const sessionCache = new Map<string, { data: MCQQuestion[]; timestamp: number }>();
@@ -309,7 +320,7 @@ Exactly 4 options, one correct answer, 1-2 sentence explanation.`;
       options:     Array.isArray(q.options) ? q.options : [],
       correct:     q.correct     || 'A',
       explanation: q.explanation || '',
-      id:          q.id          || Math.random().toString(36).substring(7),
+      id:          hashContent(q.question || ''),
       topicTitle,
     }));
   }
@@ -363,8 +374,8 @@ Format: [{"id":"challenge_1","pairs":[{"id":"1","left":"...","right":"..."},{"id
     const text = await withRetry(() => callGemini(apiKey, model, prompt, true, MATCH_SCHEMA));
     const raw: any[] = extractJson(text);
     return raw.map((c: any) => ({
-      id:          c.id          || Math.random().toString(36).substring(7),
       pairs:       Array.isArray(c.pairs) ? c.pairs : [],
+      id:          hashContent(Array.isArray(c.pairs) ? c.pairs.map((p: any) => p.left + p.right).join('|') : (c.id || '')),
       explanation: c.explanation || '',
     }));
   }
