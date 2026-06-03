@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import {
-  View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView,
+  View, Text, StyleSheet, TouchableOpacity, ScrollView,
   TextInput, ActivityIndicator, Linking, Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,6 +8,7 @@ import { useFlagsContext } from '@/context/FlagsContext';
 import { Colors, Typography, Spacing, Radius, Shadows } from '@/theme';
 import { useAuthStore } from '@/stores/authStore';
 import { useToast } from '@/context/ToastContext';
+import { AppModal } from '@/components/AppModal';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as IntentLauncher from 'expo-intent-launcher';
 
@@ -173,10 +174,8 @@ export const FlagsModals: React.FC = () => {
   return (
     <>
       {/* ── 1. Maintenance (blocks everything, non-dismissible) ── */}
-      <Modal
+      <AppModal
         visible={isMaintenanceMode}
-        animationType="slide"
-        transparent
         onRequestClose={() => {/* intentionally blocked */}}
       >
         <View style={styles.maintenanceOverlay}>
@@ -205,10 +204,10 @@ export const FlagsModals: React.FC = () => {
             </TouchableOpacity>
           </View>
         </View>
-      </Modal>
+      </AppModal>
 
       {/* ── 2. App Update ── */}
-      <Modal visible={noMaint && showAppUpdate} animationType="slide" transparent onRequestClose={forceUpdate ? undefined : dismissUpdate}>
+      <AppModal visible={noMaint && showAppUpdate} onRequestClose={forceUpdate ? undefined : dismissUpdate}>
         <View style={styles.overlay}>
           <View style={styles.card}>
             <View style={styles.cardHeader}>
@@ -237,8 +236,8 @@ export const FlagsModals: React.FC = () => {
               </View>
             </View>
 
-            {/* Progress bar */}
-            {isDownloading && (
+            {/* Progress bar — native only */}
+            {Platform.OS !== 'web' && isDownloading && (
               <View style={styles.progressWrap}>
                 <View style={styles.progressTrack}>
                   <View style={[styles.progressFill, { width: `${Math.round(downloadProgress * 100)}%` as any }]} />
@@ -248,7 +247,7 @@ export const FlagsModals: React.FC = () => {
             )}
 
             <View style={styles.footer}>
-              {isDownloading ? (
+              {Platform.OS !== 'web' && isDownloading ? (
                 <TouchableOpacity style={styles.secondaryBtn} onPress={handleCancelDownload}>
                   <Text style={styles.secondaryBtnText}>Cancel</Text>
                 </TouchableOpacity>
@@ -258,29 +257,30 @@ export const FlagsModals: React.FC = () => {
                 </TouchableOpacity>
               ) : null}
 
-              <TouchableOpacity
-                style={[styles.primaryBtn, { backgroundColor: Colors.primary }, isDownloading && { opacity: 0.7 }]}
-                onPress={handleDownloadUpdate}
-                disabled={isDownloading}
-              >
-                {isDownloading
-                  ? <ActivityIndicator size="small" color="#FFF" />
-                  : <Text style={styles.primaryBtnText}>Download & Install</Text>
-                }
-              </TouchableOpacity>
+              {/* Download button — hidden on web (web users don't need APK) */}
+              {Platform.OS !== 'web' && (
+                <TouchableOpacity
+                  style={[styles.primaryBtn, { backgroundColor: Colors.primary }, isDownloading && { opacity: 0.7 }]}
+                  onPress={handleDownloadUpdate}
+                  disabled={isDownloading}
+                >
+                  {isDownloading
+                    ? <ActivityIndicator size="small" color="#FFF" />
+                    : <Text style={styles.primaryBtnText}>Download & Install</Text>
+                  }
+                </TouchableOpacity>
+              )}
             </View>
             {forceUpdate && (
               <Text style={styles.forceNotice}>This update is required to continue using the app.</Text>
             )}
           </View>
         </View>
-      </Modal>
+      </AppModal>
 
       {/* ── 3. Permission Explainer ── */}
-      <Modal
+      <AppModal
         visible={noUpdate && showPermissionExplainer}
-        animationType="slide"
-        transparent
         onRequestClose={dismissPermissionExplainer}
       >
         <View style={styles.overlay}>
@@ -304,13 +304,11 @@ export const FlagsModals: React.FC = () => {
             </View>
           </View>
         </View>
-      </Modal>
+      </AppModal>
 
       {/* ── 4. What's New ── */}
-      <Modal
+      <AppModal
         visible={noPerm && showWhatsNew}
-        animationType="slide"
-        transparent
         onRequestClose={dismissWhatsNew}
       >
         <View style={styles.overlay}>
@@ -332,13 +330,11 @@ export const FlagsModals: React.FC = () => {
             </TouchableOpacity>
           </View>
         </View>
-      </Modal>
+      </AppModal>
 
       {/* ── 5. App Rate ── */}
-      <Modal
+      <AppModal
         visible={noNew && showAppRate}
-        animationType="slide"
-        transparent
         onRequestClose={() => scheduleRateReminder(7)}
       >
         <View style={styles.overlay}>
@@ -400,7 +396,7 @@ export const FlagsModals: React.FC = () => {
             </View>
           </View>
         </View>
-      </Modal>
+      </AppModal>
     </>
   );
 };

@@ -3,6 +3,7 @@ import {
   View, Text, TouchableOpacity, StyleSheet,
   ScrollView, LayoutAnimation, Modal, TextInput
 } from 'react-native';
+import { useIsWide } from '@/hooks/useColumns';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
@@ -13,6 +14,7 @@ import { AppHeader } from '@/components/AppHeader';
 export default function BookmarksScreen() {
   const { questionBookmarks, removeQuestionBookmark, updateQuestionNote } = useBookmarkStore();
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
+  const isWide = useIsWide();
   const [attemptMode, setAttemptMode] = useState(false);
 
   // Note Modal State
@@ -118,16 +120,17 @@ export default function BookmarksScreen() {
               </TouchableOpacity>
 
               {expandedGroups[groupName] !== false && (
-                <View style={styles.groupList}>
+                <View style={[styles.groupList, isWide && styles.groupListGrid]}>
                   {items.map(item => (
-                    <BookmarkItem 
-                      key={item.id} 
-                      item={item} 
+                    <BookmarkItem
+                      key={item.id}
+                      item={item}
                       attemptMode={attemptMode}
+                      isWide={isWide}
                       onRemove={() => {
                         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                         removeQuestionBookmark(item.id);
-                      }} 
+                      }}
                       onEditNote={() => openNoteModal(item)}
                     />
                   ))}
@@ -181,16 +184,18 @@ export default function BookmarksScreen() {
   );
 }
 
-function BookmarkItem({ 
-  item, 
-  onRemove, 
+function BookmarkItem({
+  item,
+  onRemove,
   onEditNote,
-  attemptMode 
-}: { 
-  item: BookmarkedQuestion; 
-  onRemove: () => void; 
+  attemptMode,
+  isWide,
+}: {
+  item: BookmarkedQuestion;
+  onRemove: () => void;
   onEditNote: () => void;
   attemptMode: boolean;
+  isWide?: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [currentAttempt, setCurrentAttempt] = useState<string | null>(null);
@@ -324,7 +329,7 @@ function BookmarkItem({
   };
 
   return (
-    <View style={styles.card}>
+    <View style={[styles.card, isWide && styles.cardGrid]}>
       <View style={[styles.cardAccent, { backgroundColor: statusColors[prevStatus] }]} />
       <View style={styles.cardInner}>
         <View style={styles.cardHeader}>
@@ -526,6 +531,8 @@ const styles = StyleSheet.create({
   groupSub: { ...Typography.labelCaps, fontSize: 10, color: Colors.outline, marginTop: 2 },
 
   groupList: { gap: Spacing.xl },
+  groupListGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.lg },
+  cardGrid: { width: '48%' },
   card: { 
     backgroundColor: '#FFF', 
     borderRadius: Radius.md, 

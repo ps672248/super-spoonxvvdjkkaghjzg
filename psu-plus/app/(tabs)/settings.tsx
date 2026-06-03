@@ -1,17 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
-  ScrollView, TextInput, LayoutAnimation, Alert, ActivityIndicator,
+  ScrollView, TextInput, LayoutAnimation, ActivityIndicator,
   KeyboardAvoidingView, Platform, Modal, Linking
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Typography, Spacing, Radius, Shadows } from '@/theme';
+import { useIsWide } from '@/hooks/useColumns';
 import { useSettingsStore, GEMINI_MODELS } from '@/stores/settingsStore';
 import { useAuthStore } from '@/stores/authStore';
 import { testApiKey } from '@/services/gemini';
 import { AppHeader } from '@/components/AppHeader';
+import { useConfirmStore } from '@/stores/confirmStore';
+import { useToast } from '@/context/ToastContext';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
 import {
@@ -33,6 +36,7 @@ const API_KEY_STEPS = [
 export default function SettingsScreen() {
   const router = useRouter();
   const { user } = useAuthStore();
+  const isWide = useIsWide();
   const {
     geminiApiKey, geminiModel, fullName, userIntroduction,
     setApiKey, setModel, setFullName, setUserIntroduction,
@@ -55,8 +59,10 @@ export default function SettingsScreen() {
   const [statusError, setStatusError] = useState<string | null>(null);
 
   const isAdmin = user?.email === ADMIN_EMAIL;
+  const { show: showConfirm } = useConfirmStore();
+  const { showToast } = useToast();
 
-  const handleMigrate = () => {
+  const handleMigrate = async () => {
     const summary = migrationStatus
       ? [
           migrationStatus.isConfigStale
@@ -65,31 +71,27 @@ export default function SettingsScreen() {
           migrationStatus.isAppVersionStale
             ? `App version: ${migrationStatus.firestoreAppVersion ?? 'none'} → ${migrationStatus.localAppVersion}`
             : null,
-        ].filter(Boolean).join('\n')
+        ].filter(Boolean).join(' | ')
       : 'Upload PSUs, Branches, and Syllabus to Firestore.';
 
-    Alert.alert(
-      'Run Config Migration',
-      summary || 'Re-upload all static config to Firestore.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Migrate',
-          onPress: async () => {
-            setIsMigrating(true);
-            try {
-              await migrateStaticToFirebase();
-              await loadMigrationStatus(); // refresh badges
-              Alert.alert('Done', 'Config migrated to Firestore ✓');
-            } catch (e: any) {
-              Alert.alert('Migration Failed', e.message);
-            } finally {
-              setIsMigrating(false);
-            }
-          }
-        }
-      ]
-    );
+    const confirmed = await showConfirm({
+      title: 'Run Config Migration',
+      message: summary || 'Re-upload all static config to Firestore.',
+      confirmText: 'Migrate',
+      cancelText: 'Cancel',
+    });
+    if (!confirmed) return;
+
+    setIsMigrating(true);
+    try {
+      await migrateStaticToFirebase();
+      await loadMigrationStatus();
+      showToast('Config migrated to Firestore ✓', 'success');
+    } catch (e: any) {
+      showToast('Migration failed: ' + e.message, 'error');
+    } finally {
+      setIsMigrating(false);
+    }
   };
 
   useEffect(() => {
@@ -102,7 +104,7 @@ export default function SettingsScreen() {
   const INTRO_PROMPT = `From the following resume content, write a natural 3–5 sentence professional introduction as if the candidate is speaking in a PSU interview. First-person voice. Emphasize engineering branch, key project/experience, core strengths, and career goal. Under 100 words. No bullet points.\n\n`;
 
   const generateIntroFromText = async (resumeText: string) => {
-    if (!geminiApiKey) { Alert.alert('API Key Required', 'Add your Gemini API key first.'); return; }
+    if (!geminiApiKey) { showToast('Add your Gemini API key first.', 'warning'); return; }
     setIsGeneratingIntro(true);
     try {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${geminiApiKey}`;
@@ -114,16 +116,16 @@ export default function SettingsScreen() {
       const data = await res.json();
       const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
       if (text) { setLocalIntro(text.trim()); setShowResumePaste(false); setResumePasteText(''); }
-      else Alert.alert('No Response', 'Gemini did not return an introduction. Try again.');
+      else showToast('Gemini did not return an introduction. Try again.', 'warning');
     } catch (e) {
-      Alert.alert('Error', 'Failed to generate introduction. Check your connection.');
+      showToast('Failed to generate introduction. Check your connection.', 'error');
     } finally {
       setIsGeneratingIntro(false);
     }
   };
 
   const generateIntroFromPDF = async () => {
-    if (!geminiApiKey) { Alert.alert('API Key Required', 'Add your Gemini API key first.'); return; }
+    if (!geminiApiKey) { showToast('Add your Gemini API key first.', 'warning'); return; }
     try {
       const result = await DocumentPicker.getDocumentAsync({ type: 'application/pdf', copyToCacheDirectory: true });
       if (result.canceled || !result.assets?.[0]?.uri) return;
@@ -146,9 +148,9 @@ export default function SettingsScreen() {
       const data = await res.json();
       const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
       if (text) setLocalIntro(text.trim());
-      else Alert.alert('No Response', 'Gemini could not read the PDF. Try pasting text instead.');
+      else showToast('Gemini could not read the PDF. Try pasting text instead.', 'warning');
     } catch (e: any) {
-      Alert.alert('Error', e?.message ?? 'Failed to process PDF.');
+      showToast(e?.message ?? 'Failed to process PDF.', 'error');
     } finally {
       setIsGeneratingIntro(false);
     }
@@ -156,7 +158,7 @@ export default function SettingsScreen() {
 
   const handleSaveIntro = async () => {
     await setUserIntroduction(localIntro.trim());
-    Alert.alert('Saved', 'Career profile introduction saved!');
+    showToast('Career profile introduction saved!', 'success');
   };
 
   // Load migration status for admin only
@@ -183,22 +185,22 @@ export default function SettingsScreen() {
     // Name only saved for guests; logged-in users use Auth displayName
     if (!user) await setFullName(localName);
     LayoutAnimation.configureNext(LayoutAnimation.Presets.spring);
-    Alert.alert('Saved', 'API configuration saved!');
+    showToast('API configuration saved!', 'success');
   };
 
   const handleTest = async () => {
     if (!localKey) {
-      Alert.alert('Error', 'Please enter an API key first.');
+      showToast('Enter an API key first.', 'warning');
       return;
     }
     setIsTesting(true);
     const success = await testApiKey(localKey, geminiModel);
     setIsTesting(false);
-    
+
     if (success) {
-      Alert.alert('Success', 'Connection verified! Your API key and model are working correctly.');
+      showToast('Connection verified! API key is working.', 'success');
     } else {
-      Alert.alert('Connection Failed', 'Unable to reach Gemini API. Please check your key and network connection.');
+      showToast('Unable to reach Gemini API. Check your key and connection.', 'error');
     }
   };
 
@@ -216,21 +218,15 @@ export default function SettingsScreen() {
   };
 
   const handleSignOut = async () => {
-    Alert.alert(
-      'Sign Out',
-      'Are you sure you want to sign out?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Sign Out',
-          style: 'destructive',
-          onPress: async () => {
-            await useAuthStore.getState().signOut();
-            Alert.alert('Signed Out', 'You have been signed out successfully.');
-          }
-        }
-      ]
-    );
+    const confirmed = await showConfirm({
+      title: 'Sign Out',
+      message: 'Are you sure you want to sign out?',
+      confirmText: 'Sign Out',
+      cancelText: 'Cancel',
+    });
+    if (!confirmed) return;
+    await useAuthStore.getState().signOut();
+    showToast('Signed out successfully.', 'success');
   };
 
   return (
@@ -243,11 +239,14 @@ export default function SettingsScreen() {
       >
         <ScrollView 
           style={styles.container} 
-          contentContainerStyle={styles.content}
+          contentContainerStyle={[styles.content, isWide && styles.contentWide]}
           showsVerticalScrollIndicator={false}
         >
+          {/* ── Grid wrapper for cards ────────────────────────────────── */}
+          <View style={isWide ? styles.cardGrid : styles.cardStack}>
+
           {/* Account Card */}
-          <View style={styles.card}>
+          <View style={[styles.card, isWide && styles.cardWide]}>
             <View style={[styles.cardAccent, { backgroundColor: Colors.primary }]} />
             <View style={styles.cardInner}>
               <View style={styles.cardTitleRow}>
@@ -291,7 +290,7 @@ export default function SettingsScreen() {
 
           {/* Profile Details Card — guest only (logged-in users use Auth displayName) */}
           {!user && (
-            <View style={styles.card}>
+            <View style={[styles.card, isWide && styles.cardWide]}>
               <View style={styles.cardAccent} />
               <View style={styles.cardInner}>
                 <View style={styles.cardTitleRow}>
@@ -317,7 +316,7 @@ export default function SettingsScreen() {
           )}
 
           {/* Career Profile Card */}
-          <View style={styles.card}>
+          <View style={[styles.card, isWide && styles.cardWide]}>
             <View style={styles.cardAccent} />
             <View style={styles.cardInner}>
               <TouchableOpacity
@@ -434,7 +433,7 @@ export default function SettingsScreen() {
           </View>
 
           {/* API Configuration Card */}
-          <View style={styles.card}>
+          <View style={[styles.card, isWide && styles.cardWide]}>
             <View style={styles.cardAccent} />
             <View style={styles.cardInner}>
               <View style={styles.cardTitleRow}>
@@ -550,7 +549,7 @@ export default function SettingsScreen() {
 
           {/* Admin Tools Card — visible only to admin */}
           {isAdmin && (
-            <View style={styles.card}>
+            <View style={[styles.card, isWide && styles.cardWide]}>
               <View style={[styles.cardAccent, { backgroundColor: '#7B2FBE' }]} />
               <View style={styles.cardInner}>
 
@@ -672,7 +671,7 @@ export default function SettingsScreen() {
           )}
 
           {/* Help & Support Card */}
-          <View style={styles.card}>
+          <View style={[styles.card, isWide && styles.cardWide]}>
             <View style={[styles.cardAccent, { backgroundColor: Colors.primary }]} />
             <View style={styles.cardInner}>
               <View style={styles.cardTitleRow}>
@@ -707,6 +706,8 @@ export default function SettingsScreen() {
               )}
             </View>
           </View>
+
+          </View>{/* end card grid */}
         </ScrollView>
       </KeyboardAvoidingView>
 
@@ -763,6 +764,10 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#F9FBFF' },
   container: { flex: 1 },
   content: { padding: Spacing.xl, gap: Spacing.xl, paddingBottom: Spacing.xxxl },
+  contentWide: {},
+  cardStack: { gap: Spacing.xl },
+  cardGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.xl, alignItems: 'flex-start' },
+  cardWide: { width: '48%' },
 
   card: { 
     backgroundColor: '#FFF', 

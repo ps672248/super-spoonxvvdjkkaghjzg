@@ -24,6 +24,8 @@ interface TicketListProps {
   onSelectTicket: (ticket: any) => void;
   onCreateNew?: () => void;
   faqs?: FAQ[];
+  faqOnly?: boolean;
+  ticketsOnly?: boolean;
 }
 
 export const TicketList: React.FC<TicketListProps> = ({
@@ -33,6 +35,8 @@ export const TicketList: React.FC<TicketListProps> = ({
   onSelectTicket,
   onCreateNew,
   faqs = [],
+  faqOnly = false,
+  ticketsOnly = false,
 }) => {
   const [activeTab, setActiveTab] = useState<'all' | 'open' | 'pending' | 'closed'>('all');
   const [expandedFaqId, setExpandedFaqId] = useState<string | null>(null);
@@ -58,10 +62,36 @@ export const TicketList: React.FC<TicketListProps> = ({
     }
   };
 
+  if (faqOnly) {
+    return (
+      <ScrollView style={styles.container} contentContainerStyle={{ padding: Spacing.lg }}>
+        <Text style={styles.sectionTitle}>Frequently Asked Questions</Text>
+        <View style={styles.faqList}>
+          {faqs.map((faq) => {
+            const isExpanded = expandedFaqId === faq.id;
+            return (
+              <View key={faq.id} style={styles.faqCard}>
+                <TouchableOpacity style={styles.faqHeader} onPress={() => toggleFaq(faq.id)} activeOpacity={0.7}>
+                  <Text style={styles.faqQuestion}>{faq.question}</Text>
+                  <Ionicons name={isExpanded ? 'chevron-up' : 'chevron-down'} size={18} color={Colors.outline} />
+                </TouchableOpacity>
+                {isExpanded && (
+                  <View style={styles.faqBody}>
+                    <Text style={styles.faqAnswer}>{faq.answer}</Text>
+                  </View>
+                )}
+              </View>
+            );
+          })}
+        </View>
+      </ScrollView>
+    );
+  }
+
   return (
     <View style={styles.container}>
       {/* Filter Tabs */}
-      <View style={styles.tabsContainer}>
+      {!faqOnly && <View style={styles.tabsContainer}>
         {(['all', 'open', 'pending', 'closed'] as const).map((tab) => {
           const isActive = activeTab === tab;
           return (
@@ -87,9 +117,9 @@ export const TicketList: React.FC<TicketListProps> = ({
             </TouchableOpacity>
           );
         })}
-      </View>
+      </View>}
 
-      <ScrollView 
+      <ScrollView
         style={styles.scrollContainer}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -151,8 +181,8 @@ export const TicketList: React.FC<TicketListProps> = ({
           )}
         </View>
 
-        {/* FAQs Section (Only for Users) */}
-        {!isAdmin && faqs.length > 0 && (
+        {/* FAQs Section (Only for Users, not in ticketsOnly mode) */}
+        {!isAdmin && faqs.length > 0 && !ticketsOnly && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Frequently Asked Questions</Text>
             <View style={styles.faqList}>

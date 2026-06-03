@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { Alert } from '@/utils/alert';
+import { useIsWide } from '@/hooks/useColumns';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -69,6 +71,7 @@ const FAQS = [
 export default function SupportScreen() {
   const router = useRouter();
   const { user } = useAuthStore();
+  const isWide = useIsWide();
   const [tickets, setTickets] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedTicket, setSelectedTicket] = useState<any | null>(null);
@@ -144,6 +147,13 @@ export default function SupportScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <Ionicons name="arrow-back" size={24} color={Colors.primary} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Help & Support</Text>
+      </View>
+
       {selectedTicket ? (
         <ChatThread
           ticket={selectedTicket}
@@ -151,30 +161,45 @@ export default function SupportScreen() {
           onBack={() => setSelectedTicket(null)}
           onReply={handleReplyTicket}
         />
-      ) : (
-        <>
-          <View style={styles.header}>
-            <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-              <Ionicons name="arrow-back" size={24} color={Colors.primary} />
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>Help & Support</Text>
+      ) : isWide ? (
+        /* Wide: FAQ panel left, tickets panel right */
+        <View style={styles.wideLayout}>
+          <View style={styles.wideFaq}>
+            <TicketList
+              tickets={[]}
+              isLoading={false}
+              onSelectTicket={setSelectedTicket}
+              onCreateNew={() => setIsNewModalVisible(true)}
+              faqs={FAQS}
+              faqOnly
+            />
           </View>
-
-          <TicketList
-            tickets={tickets}
-            isLoading={isLoading}
-            onSelectTicket={setSelectedTicket}
-            onCreateNew={() => setIsNewModalVisible(true)}
-            faqs={FAQS}
-          />
-
-          <NewTicketModal
-            visible={isNewModalVisible}
-            onClose={() => setIsNewModalVisible(false)}
-            onSubmit={handleCreateTicket}
-          />
-        </>
+          <View style={styles.wideTickets}>
+            <TicketList
+              tickets={tickets}
+              isLoading={isLoading}
+              onSelectTicket={setSelectedTicket}
+              onCreateNew={() => setIsNewModalVisible(true)}
+              faqs={[]}
+              ticketsOnly
+            />
+          </View>
+        </View>
+      ) : (
+        <TicketList
+          tickets={tickets}
+          isLoading={isLoading}
+          onSelectTicket={setSelectedTicket}
+          onCreateNew={() => setIsNewModalVisible(true)}
+          faqs={FAQS}
+        />
       )}
+
+      <NewTicketModal
+        visible={isNewModalVisible}
+        onClose={() => setIsNewModalVisible(false)}
+        onSubmit={handleCreateTicket}
+      />
     </SafeAreaView>
   );
 }
@@ -183,6 +208,18 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F9FBFF',
+  },
+  wideLayout: {
+    flex: 1,
+    flexDirection: 'row',
+  },
+  wideFaq: {
+    width: '40%',
+    borderRightWidth: 1,
+    borderRightColor: '#F0F2F5',
+  },
+  wideTickets: {
+    flex: 1,
   },
   header: {
     paddingHorizontal: 16,

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
 } from 'react-native';
+import { useIsWide } from '@/hooks/useColumns';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -27,6 +28,7 @@ export default function SectionsScreen() {
   } = useExamStore();
 
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
+  const isWide = useIsWide();
 
   if (!selectedPSU) { router.replace('/'); return null; }
 
@@ -142,7 +144,7 @@ export default function SectionsScreen() {
         )}
 
         {/* Sections List */}
-        <View style={styles.sectionList}>
+        <View style={[styles.sectionList, isWide && styles.sectionGrid]}>
           {sections.map(section => (
             <SectionAccordion
               key={section.id}
@@ -153,6 +155,7 @@ export default function SectionsScreen() {
               selectedTopics={selectedTopics}
               onTopicToggle={(tid) => handleTopicToggle(tid, section.id)}
               onSelectAll={() => handleSelectAllInSection(section.id)}
+              isWide={isWide}
             />
           ))}
         </View>
@@ -216,14 +219,15 @@ function SectionAccordion({
   onToggle,
   selectedTopics,
   onTopicToggle,
-  onSelectAll
+  onSelectAll,
+  isWide,
 }: any) {
   const topics = getSyllabusTopics(section.id, branchId);
   const selectedCount = topics.filter(t => selectedTopics.includes(t.id)).length;
   const isAllSelected = selectedCount === topics.length && topics.length > 0;
 
   return (
-    <View style={styles.accordionContainer}>
+    <View style={[styles.accordionContainer, isWide && { width: '48%' }]}>
       <TouchableOpacity
         style={[styles.accordionHeader, isExpanded && styles.accordionHeaderActive]}
         onPress={onToggle}
@@ -261,22 +265,24 @@ function SectionAccordion({
             </TouchableOpacity>
           </View>
 
-          {topics.map(topic => {
-            const isSelected = selectedTopics.includes(topic.id);
-            return (
-              <TouchableOpacity
-                key={topic.id}
-                style={styles.topicRow}
-                onPress={() => onTopicToggle(topic.id)}
-                activeOpacity={0.7}
-              >
-                <View style={[styles.checkbox, isSelected && styles.checkboxActive]}>
-                  {isSelected && <Ionicons name="checkmark" size={14} color={Colors.white} />}
-                </View>
-                <Text style={[styles.topicText, isSelected && styles.topicTextActive]}>{topic.title}</Text>
-              </TouchableOpacity>
-            );
-          })}
+          <View style={isWide ? styles.topicsGrid : undefined}>
+            {topics.map(topic => {
+              const isSelected = selectedTopics.includes(topic.id);
+              return (
+                <TouchableOpacity
+                  key={topic.id}
+                  style={[styles.topicRow, isWide && styles.topicRowGrid]}
+                  onPress={() => onTopicToggle(topic.id)}
+                  activeOpacity={0.7}
+                >
+                  <View style={[styles.checkbox, isSelected && styles.checkboxActive]}>
+                    {isSelected && <Ionicons name="checkmark" size={14} color={Colors.white} />}
+                  </View>
+                  <Text style={[styles.topicText, isSelected && styles.topicTextActive]}>{topic.title}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
         </View>
       )}
     </View>
@@ -331,6 +337,8 @@ const styles = StyleSheet.create({
   radioLabel: { ...Typography.bodySm, color: Colors.onSurfaceVariant, fontFamily: 'Inter_600SemiBold' },
 
   sectionList: { gap: Spacing.lg },
+  sectionGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.lg },
+  topicsGrid: { flexDirection: 'row', flexWrap: 'wrap' },
   accordionContainer: {
     backgroundColor: '#FFF',
     borderRadius: Radius.md,
@@ -369,6 +377,7 @@ const styles = StyleSheet.create({
   selectAllText: { ...Typography.bodySm, color: Colors.outline, fontFamily: 'Inter_600SemiBold' },
 
   topicRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, paddingVertical: Spacing.sm },
+  topicRowGrid: { width: '48%' },
   checkbox: { width: 20, height: 20, borderRadius: 4, borderWidth: 2, borderColor: Colors.outlineVariant, alignItems: 'center', justifyContent: 'center' },
   checkboxActive: { backgroundColor: Colors.gold, borderColor: Colors.gold },
   topicText: { ...Typography.bodyMd, color: Colors.onSurface },

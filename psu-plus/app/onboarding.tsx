@@ -6,7 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   StyleSheet,
-  Dimensions,
+  useWindowDimensions,
   NativeSyntheticEvent,
   NativeScrollEvent,
 } from 'react-native';
@@ -15,8 +15,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { Colors, Typography, Spacing, Radius, Shadows } from '@/theme';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 interface Bullet {
   icon: keyof typeof Ionicons.glyphMap;
@@ -102,9 +100,9 @@ const SLIDES: Slide[] = [
   },
 ];
 
-function SlideItem({ slide }: { slide: Slide }) {
+function SlideItem({ slide, width }: { slide: Slide; width: number }) {
   return (
-    <View style={[styles.slide, { width: SCREEN_WIDTH }]}>
+    <View style={[styles.slide, { width }]}>
       {/* Fixed header: icon + title + body */}
       <View style={[styles.iconCircle, { backgroundColor: slide.accent }]}>
         <Ionicons name={slide.ionicon} size={34} color="#FFF" />
@@ -139,12 +137,14 @@ export default function OnboardingScreen() {
   const { setOnboarded } = useSettingsStore();
   const flatListRef = useRef<FlatList>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const { width: SCREEN_WIDTH } = useWindowDimensions();
 
   const isLast = currentIndex === SLIDES.length - 1;
 
   const goNext = () => {
     const next = currentIndex + 1;
-    flatListRef.current?.scrollToIndex({ index: next, animated: true });
+    // scrollToOffset more reliable than scrollToIndex on web
+    flatListRef.current?.scrollToOffset({ offset: SCREEN_WIDTH * next, animated: true });
     setCurrentIndex(next);
   };
 
@@ -189,7 +189,13 @@ export default function OnboardingScreen() {
         showsHorizontalScrollIndicator={false}
         scrollEventThrottle={16}
         onMomentumScrollEnd={handleScroll}
-        renderItem={({ item }) => <SlideItem slide={item} />}
+        onScrollEndDrag={handleScroll}
+        getItemLayout={(_, index) => ({
+          length: SCREEN_WIDTH,
+          offset: SCREEN_WIDTH * index,
+          index,
+        })}
+        renderItem={({ item }) => <SlideItem slide={item} width={SCREEN_WIDTH} />}
         style={styles.flatList}
       />
 

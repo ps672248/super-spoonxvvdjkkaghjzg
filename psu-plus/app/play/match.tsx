@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, ScrollView,
-  ActivityIndicator, Alert, Animated
+  ActivityIndicator, Animated
 } from 'react-native';
+import { Alert } from '@/utils/alert';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';

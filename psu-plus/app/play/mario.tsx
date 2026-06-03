@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  View, Text, TouchableOpacity, StyleSheet, Animated, Dimensions, ScrollView, Modal, TextInput, ActivityIndicator
+  View, Text, TouchableOpacity, StyleSheet, Animated, Dimensions, ScrollView, Modal, TextInput, ActivityIndicator, Platform
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -136,10 +136,10 @@ export default function MarioScreen() {
     floatingAnimRefs.current.set(id, { opacity, translateY });
     setFloatingLabels(prev => [...prev, { id, text, x, y }]);
     Animated.parallel([
-      Animated.timing(translateY, { toValue: -70, duration: 900, useNativeDriver: true }),
+      Animated.timing(translateY, { toValue: -70, duration: 900, useNativeDriver: Platform.OS !== 'web' }),
       Animated.sequence([
         Animated.delay(400),
-        Animated.timing(opacity, { toValue: 0, duration: 500, useNativeDriver: true }),
+        Animated.timing(opacity, { toValue: 0, duration: 500, useNativeDriver: Platform.OS !== 'web' }),
       ]),
     ]).start(() => {
       floatingAnimRefs.current.delete(id);
@@ -152,7 +152,7 @@ export default function MarioScreen() {
     bannerOpacity.setValue(1);
     Animated.sequence([
       Animated.delay(800),
-      Animated.timing(bannerOpacity, { toValue: 0, duration: 500, useNativeDriver: true }),
+      Animated.timing(bannerOpacity, { toValue: 0, duration: 500, useNativeDriver: Platform.OS !== 'web' }),
     ]).start(() => setPowerUpBanner(null));
   };
 
@@ -161,7 +161,7 @@ export default function MarioScreen() {
     feedbackAnim.setValue(1);
     Animated.sequence([
       Animated.delay(1400),
-      Animated.timing(feedbackAnim, { toValue: 0, duration: 350, useNativeDriver: true }),
+      Animated.timing(feedbackAnim, { toValue: 0, duration: 350, useNativeDriver: Platform.OS !== 'web' }),
     ]).start(() => setGameFeedback(null));
   };
 
@@ -434,6 +434,19 @@ export default function MarioScreen() {
     }
   };
 
+  // Keyboard controls for web (ArrowUp + Space to jump)
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.code === 'Space' || e.code === 'ArrowUp') {
+        e.preventDefault();
+        jump();
+      }
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [gameState]);
+
   const shootFireball = () => {
     if (marioMode !== 'fire' || gameState !== 'playing') return;
     const id = Math.random().toString();
@@ -703,7 +716,7 @@ export default function MarioScreen() {
             <Animated.Text key={l.id} pointerEvents="none" style={{
               position: 'absolute', left: l.x, top: l.y,
               color: '#FFD700', fontSize: 22, fontFamily: 'Inter_900Black',
-              textShadowColor: '#000', textShadowRadius: 4,
+              ...Platform.select({ web: { textShadow: '0px 0px 4px #000' } as any, default: { textShadowColor: '#000', textShadowRadius: 4 } }),
               opacity: a.opacity, transform: [{ translateY: a.translateY }], zIndex: 20,
             }}>{l.text}</Animated.Text>
           );
@@ -712,14 +725,14 @@ export default function MarioScreen() {
         {/* Life / Streak Feedback Toast */}
         {gameFeedback && (
           <Animated.View pointerEvents="none" style={{ position: 'absolute', bottom: GROUND_LEVEL + 80, alignSelf: 'center', backgroundColor: gameFeedback.bg, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 24, opacity: feedbackAnim, zIndex: 25, borderWidth: 1, borderColor: gameFeedback.fg + '40' }}>
-            <Text style={{ color: gameFeedback.fg, fontSize: 20, fontFamily: 'Inter_900Black', textShadowColor: '#000', textShadowRadius: 4 }}>{gameFeedback.text}</Text>
+            <Text style={{ color: gameFeedback.fg, fontSize: 20, fontFamily: 'Inter_900Black', ...Platform.select({ web: { textShadow: '0px 0px 4px #000' } as any, default: { textShadowColor: '#000', textShadowRadius: 4 } }) }}>{gameFeedback.text}</Text>
           </Animated.View>
         )}
 
         {/* Power-up Banner */}
         {powerUpBanner && (
           <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(255,215,0,0.15)', opacity: bannerOpacity, justifyContent: 'center', alignItems: 'center', zIndex: 30 }]} pointerEvents="none">
-            <Text style={{ fontSize: 36, fontFamily: 'Inter_900Black', color: '#FFD700', textShadowColor: '#000', textShadowRadius: 8 }}>{powerUpBanner}</Text>
+            <Text style={{ fontSize: 36, fontFamily: 'Inter_900Black', color: '#FFD700', ...Platform.select({ web: { textShadow: '0px 0px 8px #000' } as any, default: { textShadowColor: '#000', textShadowRadius: 8 } }) }}>{powerUpBanner}</Text>
           </Animated.View>
         )}
 

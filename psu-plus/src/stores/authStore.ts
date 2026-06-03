@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { User, onAuthStateChanged, signOut as firebaseSignOut } from 'firebase/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
+import { Platform } from 'react-native';
 import { auth } from '@/config/firebase';
 import { useConfirmStore } from './confirmStore';
 import { useSettingsStore } from './settingsStore';
@@ -126,8 +127,11 @@ export const useAuthStore = create<AuthState>((set) => ({
           // seen questions
           'psuplus_seen_qs',
         ]),
-        // API key lives in SecureStore — clear so User B can't use User A's key
-        SecureStore.deleteItemAsync('psuplus_gemini_key').catch(() => {}),
+        // API key — SecureStore on native, AsyncStorage on web
+        (Platform.OS === 'web'
+          ? AsyncStorage.removeItem('psuplus_gemini_key')
+          : SecureStore.deleteItemAsync('psuplus_gemini_key')
+        ).catch(() => {}),
       ]);
     }
     // Reset all in-memory state to defaults before Firebase signOut

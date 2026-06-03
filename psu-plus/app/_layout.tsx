@@ -11,6 +11,7 @@ import { useSeenQuestionsStore } from '@/stores/seenQuestionsStore';
 import { FlagsProvider } from '@/context/FlagsContext';
 import { FlagsModals } from '@/components/FlagsModals';
 import { ConfirmModal } from '@/components/ConfirmModal';
+import { DownloadAppBanner } from '@/components/DownloadAppBanner';
 import { ToastProvider } from '@/context/ToastContext';
 import { Colors } from '@/theme';
 
@@ -48,28 +49,30 @@ export default function RootLayout() {
   return (
     <FlagsProvider>
       <ToastProvider>
-      <GestureHandlerRootView style={{ flex: 1 }}>
-        <StatusBar style="dark" backgroundColor={Colors.surface} />
-        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: Colors.surface } }}>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="onboarding" options={{ headerShown: false, gestureEnabled: false }} />
-          <Stack.Screen name="sections" options={{ presentation: 'card' }} />
-          <Stack.Screen name="syllabus" options={{ presentation: 'card' }} />
-          <Stack.Screen name="game-mode" options={{ presentation: 'card' }} />
-          <Stack.Screen name="play/mcq" options={{ presentation: 'fullScreenModal' }} />
-          <Stack.Screen name="play/survival" options={{ presentation: 'fullScreenModal' }} />
-          <Stack.Screen name="play/match" options={{ presentation: 'fullScreenModal' }} />
-          <Stack.Screen name="play/slasher" options={{ presentation: 'fullScreenModal' }} />
-          <Stack.Screen name="play/mario" options={{ presentation: 'fullScreenModal' }} />
-          <Stack.Screen name="api-setup" options={{ presentation: 'modal' }} />
-          <Stack.Screen name="auth/login" options={{ presentation: 'modal', headerShown: false }} />
-          <Stack.Screen name="auth/register" options={{ presentation: 'modal', headerShown: false }} />
-          <Stack.Screen name="interview-prep" options={{ presentation: 'card' }} />
-          <Stack.Screen name="interview-mock" options={{ presentation: 'fullScreenModal' }} />
-        </Stack>
+        <GestureHandlerRootView style={{ flex: 1 }}>
+          <DownloadAppBanner />
+          <StatusBar style="dark" backgroundColor={Colors.surface} />
+          <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: Colors.surface } }}>
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="onboarding" options={{ headerShown: false, gestureEnabled: false }} />
+            <Stack.Screen name="sections" options={{ presentation: 'card' }} />
+            <Stack.Screen name="syllabus" options={{ presentation: 'card' }} />
+            <Stack.Screen name="game-mode" options={{ presentation: 'card' }} />
+            <Stack.Screen name="play/mcq" options={{ presentation: 'fullScreenModal' }} />
+            <Stack.Screen name="play/survival" options={{ presentation: 'fullScreenModal' }} />
+            <Stack.Screen name="play/match" options={{ presentation: 'fullScreenModal' }} />
+            <Stack.Screen name="play/slasher" options={{ presentation: 'fullScreenModal' }} />
+            <Stack.Screen name="play/mario" options={{ presentation: 'fullScreenModal' }} />
+            <Stack.Screen name="api-setup" options={{ presentation: 'modal' }} />
+            <Stack.Screen name="auth/login" options={{ presentation: 'modal', headerShown: false }} />
+            <Stack.Screen name="auth/register" options={{ presentation: 'modal', headerShown: false }} />
+            <Stack.Screen name="interview-prep" options={{ presentation: 'card' }} />
+            <Stack.Screen name="interview-mock" options={{ presentation: 'fullScreenModal' }} />
+          </Stack>
+        </GestureHandlerRootView>
+        {/* Overlays rendered outside GestureHandlerRootView — anchored to ToastProvider root (position:relative on web) */}
         <FlagsModals />
         <ConfirmModal />
-      </GestureHandlerRootView>
       </ToastProvider>
     </FlagsProvider>
   );

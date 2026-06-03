@@ -1,8 +1,17 @@
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
+import { Platform } from 'react-native';
 import { getUserConfig, saveUserConfig, updateSingleField } from '@/services/userService';
 import { auth } from '@/config/firebase';
+
+// SecureStore not available on web — fall back to AsyncStorage (localStorage on web)
+const secureGet = (key: string) =>
+  Platform.OS === 'web' ? AsyncStorage.getItem(key) : SecureStore.getItemAsync(key);
+const secureSet = (key: string, value: string) =>
+  Platform.OS === 'web' ? AsyncStorage.setItem(key, value) : SecureStore.setItemAsync(key, value);
+const secureDelete = (key: string) =>
+  Platform.OS === 'web' ? AsyncStorage.removeItem(key) : SecureStore.deleteItemAsync(key);
 
 const KEYS = {
   API_KEY:          'psuplus_gemini_key',
@@ -79,7 +88,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
 
   loadSettings: async () => {
     const [localApiKey, localModel, localOnboarded, localName, localBranch, localPsu, localIntro, localVer] = await Promise.all([
-      SecureStore.getItemAsync(KEYS.API_KEY),
+      secureGet(KEYS.API_KEY),
       AsyncStorage.getItem(KEYS.MODEL),
       AsyncStorage.getItem(KEYS.ONBOARDED),
       AsyncStorage.getItem(KEYS.FULL_NAME),
@@ -156,7 +165,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
 
   setApiKey: async (key) => {
     // Save ONLY to local SecureStore
-    await SecureStore.setItemAsync(KEYS.API_KEY, key);
+    await secureSet(KEYS.API_KEY, key);
     set({ geminiApiKey: key });
   },
 
@@ -227,7 +236,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   },
 
   clearApiKey: async () => {
-    await SecureStore.deleteItemAsync(KEYS.API_KEY);
+    await secureDelete(KEYS.API_KEY);
     set({ geminiApiKey: '' });
   },
 

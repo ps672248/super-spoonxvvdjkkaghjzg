@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { View, StyleSheet, Text, Dimensions, PanResponder, StatusBar, ImageBackground, Animated, ScrollView, TouchableOpacity, Modal, TextInput } from 'react-native';
+import { View, StyleSheet, Text, Dimensions, PanResponder, StatusBar, ImageBackground, Animated, ScrollView, TouchableOpacity, Modal, TextInput, Platform } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SlasherLogic } from '../../hooks/useSyllabusSlasherLogic';
@@ -9,6 +10,7 @@ import { useBookmarkStore } from '../../stores/bookmarkStore';
 import { useExamStore } from '../../stores/examStore';
 import { GameResultScreen, GenericResultItem } from './GameResultScreen';
 import { UnifiedQuestion } from './UnifiedQuestion';
+import { Colors, Typography, Spacing, Radius } from '../../theme';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -121,10 +123,10 @@ export const SyllabusSlasher = ({ logic, onRestart, onHome }: { logic: SlasherLo
 
     const triggerShake = (intensity: number = 10) => {
         Animated.sequence([
-            Animated.timing(shakeAnim, { toValue: intensity, duration: 40, useNativeDriver: true }),
-            Animated.timing(shakeAnim, { toValue: -intensity, duration: 40, useNativeDriver: true }),
-            Animated.timing(shakeAnim, { toValue: intensity * 0.5, duration: 40, useNativeDriver: true }),
-            Animated.timing(shakeAnim, { toValue: 0, duration: 40, useNativeDriver: true }),
+            Animated.timing(shakeAnim, { toValue: intensity, duration: 40, useNativeDriver: Platform.OS !== 'web' }),
+            Animated.timing(shakeAnim, { toValue: -intensity, duration: 40, useNativeDriver: Platform.OS !== 'web' }),
+            Animated.timing(shakeAnim, { toValue: intensity * 0.5, duration: 40, useNativeDriver: Platform.OS !== 'web' }),
+            Animated.timing(shakeAnim, { toValue: 0, duration: 40, useNativeDriver: Platform.OS !== 'web' }),
         ]).start();
     };
 
@@ -136,10 +138,10 @@ export const SyllabusSlasher = ({ logic, onRestart, onHome }: { logic: SlasherLo
         setFloatingTexts(prev => [...prev, { id, x, y, text, color }]);
 
         Animated.parallel([
-            Animated.timing(translateY, { toValue: -80, duration: 900, useNativeDriver: true }),
+            Animated.timing(translateY, { toValue: -80, duration: 900, useNativeDriver: Platform.OS !== 'web' }),
             Animated.sequence([
                 Animated.delay(300),
-                Animated.timing(opacity, { toValue: 0, duration: 600, useNativeDriver: true }),
+                Animated.timing(opacity, { toValue: 0, duration: 600, useNativeDriver: Platform.OS !== 'web' }),
             ]),
         ]).start(() => {
             floatingAnimRefs.current.delete(id);
@@ -152,19 +154,19 @@ export const SyllabusSlasher = ({ logic, onRestart, onHome }: { logic: SlasherLo
             feedbackScale.setValue(0.5);
             feedbackOpacity.setValue(0);
             Animated.parallel([
-                Animated.spring(feedbackScale, { toValue: 1, friction: 4, useNativeDriver: true }),
-                Animated.timing(feedbackOpacity, { toValue: 1, duration: 200, useNativeDriver: true }),
+                Animated.spring(feedbackScale, { toValue: 1, friction: 4, useNativeDriver: Platform.OS !== 'web' }),
+                Animated.timing(feedbackOpacity, { toValue: 1, duration: 200, useNativeDriver: Platform.OS !== 'web' }),
             ]).start();
 
             if (feedbackMessage.type === 'error') {
                 Animated.sequence([
-                    Animated.timing(screenFlash, { toValue: 0.8, duration: 50, useNativeDriver: true }),
-                    Animated.timing(screenFlash, { toValue: 0, duration: 400, useNativeDriver: true }),
+                    Animated.timing(screenFlash, { toValue: 0.8, duration: 50, useNativeDriver: Platform.OS !== 'web' }),
+                    Animated.timing(screenFlash, { toValue: 0, duration: 400, useNativeDriver: Platform.OS !== 'web' }),
                 ]).start();
                 triggerShake(15);
             }
         } else {
-            Animated.timing(feedbackOpacity, { toValue: 0, duration: 150, useNativeDriver: true }).start();
+            Animated.timing(feedbackOpacity, { toValue: 0, duration: 150, useNativeDriver: Platform.OS !== 'web' }).start();
         }
     }, [feedbackMessage]);
 
@@ -262,7 +264,7 @@ export const SyllabusSlasher = ({ logic, onRestart, onHome }: { logic: SlasherLo
 
         // Stick on screen briefly, then fade out
         setTimeout(() => {
-            Animated.timing(opacity, { toValue: 0, duration: 1200, useNativeDriver: true }).start(() => {
+            Animated.timing(opacity, { toValue: 0, duration: 1200, useNativeDriver: Platform.OS !== 'web' }).start(() => {
                 splatAnimRefs.current.delete(id);
                 setSplats(prev => prev.filter(s => s.id !== id));
             });
@@ -377,7 +379,7 @@ export const SyllabusSlasher = ({ logic, onRestart, onHome }: { logic: SlasherLo
         return () => cancelAnimationFrame(frame);
     }, [gameState, isPaused, score, spawnFruit, countdown]);
 
-    const panResponder = useRef(PanResponder.create({
+    const panResponder = useRef(Platform.OS !== 'web' ? PanResponder.create({
         onStartShouldSetPanResponder: () => true,
         onPanResponderGrant: () => {
             gestureSliceCount.current = 0;
@@ -402,7 +404,25 @@ export const SyllabusSlasher = ({ logic, onRestart, onHome }: { logic: SlasherLo
             });
         },
         onPanResponderRelease: () => setTrail([]),
-    })).current;
+    }) : { panHandlers: {} as any }).current;
+
+    // Web gate — touch gestures not available on web
+    if (Platform.OS === 'web') {
+        return (
+            <SafeAreaView style={styles.container}>
+                <View style={styles.webGate}>
+                    <Ionicons name="phone-portrait-outline" size={52} color={Colors.outline} />
+                    <Text style={styles.webGateTitle}>Mobile Only</Text>
+                    <Text style={styles.webGateBody}>
+                        Syllabus Slasher uses touch gestures.{'\n'}Open the app on your phone to play.
+                    </Text>
+                    <TouchableOpacity style={styles.webGateBtn} onPress={onHome ?? (() => {})}>
+                        <Text style={styles.webGateBtnText}>Go Back</Text>
+                    </TouchableOpacity>
+                </View>
+            </SafeAreaView>
+        );
+    }
 
     if (gameState === 'result') {
         const genericResults: GenericResultItem[] = results.map(r => ({
@@ -439,7 +459,7 @@ export const SyllabusSlasher = ({ logic, onRestart, onHome }: { logic: SlasherLo
                 </ImageBackground>
 
                 {/* Juice splats layer */}
-                <View style={StyleSheet.absoluteFill} pointerEvents="none">
+                <View style={[StyleSheet.absoluteFill, { pointerEvents: 'none' } as any]}>
                     {splats.map(s => {
                         const opacityAnim = splatAnimRefs.current.get(s.id);
                         if (!opacityAnim) return null;
@@ -464,7 +484,7 @@ export const SyllabusSlasher = ({ logic, onRestart, onHome }: { logic: SlasherLo
                 </View>
 
                 {/* Pieces, fruits, trail */}
-                <View style={StyleSheet.absoluteFill} pointerEvents="none">
+                <View style={[StyleSheet.absoluteFill, { pointerEvents: 'none' } as any]}>
                     {pieces.map(p => (
                         <View
                             key={p.id} ref={p.ref}
@@ -524,13 +544,13 @@ export const SyllabusSlasher = ({ logic, onRestart, onHome }: { logic: SlasherLo
                 </View>
 
                 {countdown && (
-                    <View style={styles.fullOverlay} pointerEvents="none">
+                    <View style={[styles.fullOverlay, { pointerEvents: 'none' } as any]}>
                         <Text style={styles.countdownText}>{countdown}</Text>
                     </View>
                 )}
 
                 {criticals.map(c => (
-                    <View key={c.id} style={[styles.criticalOverlay, { left: c.x - 60, top: c.y - 40 }]} pointerEvents="none">
+                    <View key={c.id} style={[styles.criticalOverlay, { left: c.x - 60, top: c.y - 40 }, { pointerEvents: 'none' } as any]}>
                         <Text style={styles.criticalText}>CRITICAL!</Text>
                     </View>
                 ))}
@@ -542,7 +562,6 @@ export const SyllabusSlasher = ({ logic, onRestart, onHome }: { logic: SlasherLo
                     return (
                         <Animated.Text
                             key={ft.id}
-                            pointerEvents="none"
                             style={{
                                 position: 'absolute',
                                 left: ft.x - 70,
@@ -553,8 +572,7 @@ export const SyllabusSlasher = ({ logic, onRestart, onHome }: { logic: SlasherLo
                                 fontSize: ft.text.length > 6 ? 17 : 26,
                                 fontWeight: '900',
                                 fontStyle: 'italic',
-                                textShadowColor: '#000',
-                                textShadowRadius: 5,
+                                ...Platform.select({ web: { textShadow: '0px 0px 5px #000' } as any, default: { textShadowColor: '#000', textShadowRadius: 5 } }),
                                 opacity: anims.opacity,
                                 transform: [{ translateY: anims.translateY }],
                                 zIndex: 20,
@@ -565,7 +583,7 @@ export const SyllabusSlasher = ({ logic, onRestart, onHome }: { logic: SlasherLo
                     );
                 })}
 
-                <View style={styles.hud} pointerEvents="none">
+                <View style={[styles.hud, { pointerEvents: 'none' } as any]}>
                     <View style={styles.scoreBoard}>
                         <Text style={styles.scoreValueHud}>{score}</Text>
                     </View>
@@ -579,14 +597,14 @@ export const SyllabusSlasher = ({ logic, onRestart, onHome }: { logic: SlasherLo
                 </View>
 
                 {combo > 1 && (
-                    <View style={styles.comboPopup} pointerEvents="none">
+                    <View style={[styles.comboPopup, { pointerEvents: 'none' } as any]}>
                         <Text style={styles.comboText}>{combo}</Text>
                         <Text style={styles.comboSub}>COMBO!</Text>
                     </View>
                 )}
 
                 {feedbackMessage && (
-                    <Animated.View style={[styles.fullOverlay, { opacity: feedbackOpacity, transform: [{ scale: feedbackScale }] }]} pointerEvents="none">
+                    <Animated.View style={[styles.fullOverlay, { opacity: feedbackOpacity, transform: [{ scale: feedbackScale }] }, { pointerEvents: 'none' } as any]}>
                         <View style={styles.arcadeFeedbackBox}>
                             <Text style={[styles.arcadeFeedbackText, { color: feedbackMessage.type === 'success' ? '#00C853' : '#FF1744' }]}>
                                 {feedbackMessage.text}
@@ -596,7 +614,7 @@ export const SyllabusSlasher = ({ logic, onRestart, onHome }: { logic: SlasherLo
                     </Animated.View>
                 )}
 
-                <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: '#FFF', opacity: screenFlash, zIndex: 200 }]} pointerEvents="none" />
+                <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: '#FFF', opacity: screenFlash, zIndex: 200 }, { pointerEvents: 'none' } as any]} />
             </Animated.View>
 
             {/* Question modal — outside shake so it stays stable */}
@@ -686,6 +704,11 @@ export const SyllabusSlasher = ({ logic, onRestart, onHome }: { logic: SlasherLo
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#000' },
+    webGate: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: Spacing.xxl, gap: Spacing.lg, backgroundColor: Colors.surface },
+    webGateTitle: { ...Typography.h2, color: Colors.primary, textAlign: 'center' },
+    webGateBody: { ...Typography.bodyMd, color: Colors.onSurfaceVariant, textAlign: 'center', lineHeight: 24 },
+    webGateBtn: { backgroundColor: Colors.primary, paddingVertical: 14, paddingHorizontal: 32, borderRadius: Radius.md, marginTop: Spacing.sm },
+    webGateBtnText: { ...Typography.button, color: Colors.white },
     hud: { position: 'absolute', top: 50, left: 20, right: 20, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
     scoreBoard: { backgroundColor: 'rgba(0,0,0,0.4)', paddingHorizontal: 20, paddingVertical: 5, borderRadius: 10 },
     scoreValueHud: { color: '#FFD700', fontSize: 48, fontWeight: '900', fontStyle: 'italic' },
@@ -694,12 +717,12 @@ const styles = StyleSheet.create({
     xMark: { color: 'rgba(255,255,255,0.2)', fontSize: 36, fontWeight: '900' },
     xMarkLost: { color: '#FF1744' },
     fullOverlay: { ...StyleSheet.absoluteFillObject, justifyContent: 'center', alignItems: 'center', zIndex: 50 },
-    countdownText: { color: '#FFD700', fontSize: 84, fontWeight: '900', fontStyle: 'italic', textShadowColor: '#000', textShadowRadius: 10 },
+    countdownText: { color: '#FFD700', fontSize: 84, fontWeight: '900', fontStyle: 'italic', ...Platform.select({ web: { textShadow: '0px 0px 10px #000' } as any, default: { textShadowColor: '#000', textShadowRadius: 10 } }) },
     comboPopup: { position: 'absolute', top: '25%', alignSelf: 'center', alignItems: 'center' },
-    comboText: { color: '#FFD700', fontSize: 110, fontWeight: '900', fontStyle: 'italic', textShadowColor: 'rgba(0,0,0,0.5)', textShadowOffset: { width: 4, height: 4 }, textShadowRadius: 10 },
+    comboText: { color: '#FFD700', fontSize: 110, fontWeight: '900', fontStyle: 'italic', ...Platform.select({ web: { textShadow: '4px 4px 10px rgba(0,0,0,0.5)' } as any, default: { textShadowColor: 'rgba(0,0,0,0.5)', textShadowOffset: { width: 4, height: 4 }, textShadowRadius: 10 } }) },
     comboSub: { color: '#FFD700', fontSize: 24, fontWeight: '900', letterSpacing: 6, marginTop: -20 },
     criticalOverlay: { position: 'absolute', width: 120, height: 80, justifyContent: 'center', alignItems: 'center' },
-    criticalText: { color: '#FFD700', fontSize: 24, fontWeight: '900', fontStyle: 'italic', textShadowColor: '#000', textShadowRadius: 5 },
+    criticalText: { color: '#FFD700', fontSize: 24, fontWeight: '900', fontStyle: 'italic', ...Platform.select({ web: { textShadow: '0px 0px 5px #000' } as any, default: { textShadowColor: '#000', textShadowRadius: 5 } }) },
     overlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.9)', justifyContent: 'center', alignItems: 'center', zIndex: 100 },
     bombModal: { width: '88%', borderRadius: 32, overflow: 'hidden' },
     bombHeader: { padding: 24, flexDirection: 'row', justifyContent: 'space-between' },
@@ -725,6 +748,6 @@ const styles = StyleSheet.create({
     fruitShadow: { position: 'absolute', bottom: -10, width: '80%', height: 10, backgroundColor: 'rgba(0,0,0,0.3)', borderRadius: 10 },
     fruitPiece: { position: 'absolute', width: FRUIT_SIZE, height: FRUIT_SIZE / 2 },
     arcadeFeedbackBox: { alignItems: 'center', padding: 20 },
-    arcadeFeedbackText: { fontSize: 48, fontWeight: '900', textAlign: 'center', textShadowColor: '#000', textShadowRadius: 15, fontStyle: 'italic', letterSpacing: 1 },
-    arcadeFeedbackLine: { width: 150, height: 6, borderRadius: 3, marginTop: 10, shadowColor: '#000', shadowRadius: 10, shadowOpacity: 0.5 },
+    arcadeFeedbackText: { fontSize: 48, fontWeight: '900', textAlign: 'center', fontStyle: 'italic', letterSpacing: 1, ...Platform.select({ web: { textShadow: '0px 0px 15px #000' } as any, default: { textShadowColor: '#000', textShadowRadius: 15 } }) },
+    arcadeFeedbackLine: { width: 150, height: 6, borderRadius: 3, marginTop: 10, ...Platform.select({ web: { boxShadow: '0px 0px 10px rgba(0,0,0,0.5)' } as any, default: { shadowColor: '#000', shadowRadius: 10, shadowOpacity: 0.5 } }) },
 });

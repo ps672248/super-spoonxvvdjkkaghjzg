@@ -11,11 +11,13 @@ import {
   sendPasswordResetEmail, linkWithCredential,
 } from 'firebase/auth';
 import { auth, GOOGLE_WEB_CLIENT_ID } from '@/config/firebase';
+import { useIsWide } from '@/hooks/useColumns';
 import { Colors, Typography, Radius, Spacing, Shadows } from '@/theme';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function LoginScreen() {
   const router = useRouter();
+  const isWide = useIsWide();
 
   // ── Main form ──────────────────────────────────────────────────────────────
   const [email, setEmail] = useState('');
@@ -135,12 +137,12 @@ export default function LoginScreen() {
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+    <SafeAreaView style={[styles.container, isWide && styles.containerWide]} edges={['top', 'bottom']}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.container}
       >
-        <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+        <ScrollView contentContainerStyle={[styles.scrollContent, isWide && styles.scrollContentWide]} keyboardShouldPersistTaps="handled">
           <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
             <Ionicons name="arrow-back" size={24} color={Colors.primary} />
           </TouchableOpacity>
@@ -325,7 +327,9 @@ export default function LoginScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F9FBFF' },
+  containerWide: { alignItems: 'center' as const, backgroundColor: '#eef0f5' },
   scrollContent: { padding: Spacing.xl, paddingTop: Spacing.xl },
+  scrollContentWide: { width: 480, backgroundColor: '#F9FBFF', minHeight: '100%' as any, alignSelf: 'center' as const },
   backButton: { marginBottom: Spacing.xxl },
   header: { marginBottom: Spacing.xxxl },
   title: { ...Typography.h1, color: Colors.primary, marginBottom: Spacing.sm },

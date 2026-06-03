@@ -9,11 +9,13 @@ import { useRouter } from 'expo-router';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { auth } from '@/config/firebase';
 import { useSettingsStore } from '@/stores/settingsStore';
+import { useIsWide } from '@/hooks/useColumns';
 import { Colors, Typography, Radius, Spacing, Shadows } from '@/theme';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function RegisterScreen() {
   const router = useRouter();
+  const isWide = useIsWide();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -48,12 +50,12 @@ export default function RegisterScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      <KeyboardAvoidingView 
+    <SafeAreaView style={[styles.container, isWide && { alignItems: 'center' as const, backgroundColor: '#eef0f5' }]} edges={['top', 'bottom']}>
+      <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.container}
       >
-        <ScrollView contentContainerStyle={styles.scrollContent}>
+        <ScrollView contentContainerStyle={[styles.scrollContent, isWide && { width: 480, backgroundColor: '#F9FBFF', minHeight: '100%' as any, alignSelf: 'center' as const }]}>
           <TouchableOpacity 
             style={styles.backButton} 
             onPress={() => router.back()}

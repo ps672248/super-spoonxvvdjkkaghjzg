@@ -3,6 +3,7 @@ import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   Image, Modal
 } from 'react-native';
+import { useIsWide } from '@/hooks/useColumns';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -65,6 +66,7 @@ export default function GameModeScreen() {
   const { selectedPSU, setMode, questionCount, setQuestionCount } = useExamStore();
   const { geminiApiKey } = useSettingsStore();
   const [showApiModal, setShowApiModal] = React.useState(false);
+  const isWide = useIsWide();
 
   if (!selectedPSU) { router.replace('/'); return null; }
 
@@ -130,12 +132,13 @@ export default function GameModeScreen() {
         </View>
 
         {/* Mode Cards */}
-        <View style={styles.modeList}>
+        <View style={[styles.modeList, isWide && styles.modeGrid]}>
           {GAME_MODES.map((mode) => (
             <ModeCard
               key={mode.id}
               mode={mode}
               onPress={() => handleSelect(mode.id)}
+              isWide={isWide}
             />
           ))}
         </View>
@@ -154,9 +157,9 @@ export default function GameModeScreen() {
   );
 }
 
-function ModeCard({ mode, onPress }: { mode: any; onPress: () => void }) {
+function ModeCard({ mode, onPress, isWide }: { mode: any; onPress: () => void; isWide?: boolean }) {
   return (
-    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.9}>
+    <TouchableOpacity style={[styles.card, isWide && styles.cardGrid]} onPress={onPress} activeOpacity={0.9}>
       <View style={[styles.cardAccent, { backgroundColor: mode.accent }]} />
       <View style={styles.cardInner}>
         <View style={styles.cardHeader}>
@@ -315,6 +318,8 @@ const styles = StyleSheet.create({
   },
 
   modeList: { gap: Spacing.xl },
+  modeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.lg },
+  cardGrid: { width: '48%' },
   card: {
     backgroundColor: '#FFF',
     borderRadius: Radius.md,

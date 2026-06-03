@@ -4,7 +4,7 @@ export interface ConfirmOptions {
   title: string;
   message: string;
   confirmText: string;
-  cancelText: string;
+  cancelText?: string; // omit = single-button alert mode
 }
 
 interface ConfirmState {

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, Animated, Modal, BackHandler } from 'react-native';
+import { View, Text, StyleSheet, Animated, Modal, BackHandler, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -37,14 +37,14 @@ const ToastRow: React.FC<{ item: ToastItem; onDone: () => void }> = ({ item, onD
 
   useEffect(() => {
     Animated.parallel([
-      Animated.timing(opacity, { toValue: 1, duration: ANIM_IN, useNativeDriver: true }),
-      Animated.timing(translateY, { toValue: 0, duration: ANIM_IN, useNativeDriver: true }),
+      Animated.timing(opacity, { toValue: 1, duration: ANIM_IN, useNativeDriver: Platform.OS !== 'web' }),
+      Animated.timing(translateY, { toValue: 0, duration: ANIM_IN, useNativeDriver: Platform.OS !== 'web' }),
     ]).start();
 
     const hide = setTimeout(() => {
       Animated.parallel([
-        Animated.timing(opacity, { toValue: 0, duration: ANIM_OUT, useNativeDriver: true }),
-        Animated.timing(translateY, { toValue: 10, duration: ANIM_OUT, useNativeDriver: true }),
+        Animated.timing(opacity, { toValue: 0, duration: ANIM_OUT, useNativeDriver: Platform.OS !== 'web' }),
+        Animated.timing(translateY, { toValue: 10, duration: ANIM_OUT, useNativeDriver: Platform.OS !== 'web' }),
       ]).start(onDone);
     }, TOAST_DURATION);
 
@@ -83,35 +83,45 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setToasts(prev => prev.filter(t => t.id !== id));
   }, []);
 
-  // Clear toasts on back press and let event propagate to underlying screen
+  // Clear toasts on back press (native only — BackHandler not available on web)
   useEffect(() => {
-    if (toasts.length === 0) return;
+    if (Platform.OS === 'web' || toasts.length === 0) return;
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
       setToasts([]);
-      return false; // false = propagate back event to screen underneath
+      return false;
     });
     return () => sub.remove();
   }, [toasts.length]);
+
+  const toastList = toasts.map(item => (
+    <ToastRow key={item.id} item={item} onDone={() => removeToast(item.id)} />
+  ));
 
   return (
     <ToastContext.Provider value={{ showToast }}>
       <View style={styles.root}>
         {children}
+        {/* On web Modal is broken — render toasts inline with absolute positioning */}
+        {Platform.OS === 'web' && toasts.length > 0 && (
+          <View style={[styles.container, styles.webContainer]}>
+            {toastList}
+          </View>
+        )}
       </View>
-      {/* Render toasts in their own Modal so they always sit above all other Modals */}
-      <Modal
-        visible={toasts.length > 0}
-        transparent
-        animationType="none"
-        statusBarTranslucent
-        onRequestClose={() => setToasts([])}
-      >
-        <View style={styles.container} pointerEvents="none">
-          {toasts.map(item => (
-            <ToastRow key={item.id} item={item} onDone={() => removeToast(item.id)} />
-          ))}
-        </View>
-      </Modal>
+      {/* Native: use Modal so toasts float above all other Modals */}
+      {Platform.OS !== 'web' && (
+        <Modal
+          visible={toasts.length > 0}
+          transparent
+          animationType="none"
+          statusBarTranslucent
+          onRequestClose={() => setToasts([])}
+        >
+          <View style={styles.container}>
+            {toastList}
+          </View>
+        </Modal>
+      )}
     </ToastContext.Provider>
   );
 };
@@ -127,6 +137,7 @@ export function useToast() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
+    ...Platform.select({ web: { position: 'relative' } as any }),
   },
   container: {
     position: 'absolute',
@@ -134,7 +145,10 @@ const styles = StyleSheet.create({
     left: 16,
     right: 16,
     gap: 8,
-    pointerEvents: 'none',
+    pointerEvents: 'none' as const,
+  },
+  webContainer: {
+    zIndex: 9999,
   },
   toast: {
     flexDirection: 'row',
@@ -142,11 +156,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 8,
-    elevation: 10,
+    ...Platform.select({
+      web: { boxShadow: '0px 4px 8px rgba(0,0,0,0.35)' } as any,
+      default: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.35, shadowRadius: 8, elevation: 10 },
+    }),
   },
   toastIcon: {
     marginRight: 10,

@@ -11,11 +11,13 @@ import { PSUS, PSUConfig } from '@/config/psus';
 import { useExamStore } from '@/stores/examStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { AppHeader } from '@/components/AppHeader';
+import { useColumns } from '@/hooks/useColumns';
 
 export default function HomeScreen() {
   const router = useRouter();
   const { selectedPSU, setPSU, setBranch } = useExamStore();
   const { primaryBranchId, setPrimaryBranch } = useSettingsStore();
+  const cols = useColumns();
 
   const showBranchSelect = !primaryBranchId;
   const filteredPSUs = primaryBranchId
@@ -49,19 +51,19 @@ export default function HomeScreen() {
           <View style={styles.titleUnderline} />
         </View>
 
-        <View style={styles.list}>
+        <View style={[styles.list, cols > 1 && styles.grid]}>
           {showBranchSelect
             ? BRANCHES.map(branch => (
                 <TouchableOpacity
                   key={branch.id}
-                  style={styles.card}
+                  style={[styles.card, cols > 1 && { width: `${Math.floor(100 / cols) - 1}%` as any }]}
                   onPress={() => handleBranchSelect(branch)}
                   activeOpacity={0.9}
                 >
                   <View style={styles.accent} />
-                  <View style={styles.cardInner}>
-                    <View style={styles.iconBox}>
-                      <Ionicons name={branch.icon as any} size={28} color={Colors.onSurfaceVariant} />
+                  <View style={[styles.cardInner, cols > 1 && styles.cardInnerGrid]}>
+                    <View style={[styles.iconBox, cols > 1 && styles.iconBoxGrid]}>
+                      <Ionicons name={branch.icon as any} size={cols > 1 ? 32 : 28} color={Colors.onSurfaceVariant} />
                     </View>
                     <View style={styles.info}>
                       <Text style={styles.name}>{branch.name}</Text>
@@ -73,16 +75,16 @@ export default function HomeScreen() {
             : filteredPSUs.map(psu => (
                 <TouchableOpacity
                   key={psu.id}
-                  style={[styles.card, selectedPSU?.id === psu.id && styles.cardSelected]}
+                  style={[styles.card, selectedPSU?.id === psu.id && styles.cardSelected, cols > 1 && { width: `${Math.floor(100 / cols) - 1}%` as any }]}
                   onPress={() => handlePSUSelect(psu)}
                   activeOpacity={0.9}
                 >
                   <View style={[styles.accent, selectedPSU?.id === psu.id && { width: '100%' }]} />
-                  <View style={styles.cardInner}>
-                    <View style={[styles.iconBox, selectedPSU?.id === psu.id && { backgroundColor: Colors.primary + '20' }]}>
+                  <View style={[styles.cardInner, cols > 1 && styles.cardInnerGrid]}>
+                    <View style={[styles.iconBox, selectedPSU?.id === psu.id && { backgroundColor: Colors.primary + '20' }, cols > 1 && styles.iconBoxGrid]}>
                       <Ionicons
                         name={(psu.ionicon || 'school') as any}
-                        size={28}
+                        size={cols > 1 ? 32 : 28}
                         color={selectedPSU?.id === psu.id ? Colors.primary : Colors.onSurfaceVariant}
                       />
                     </View>
@@ -131,6 +133,7 @@ const styles = StyleSheet.create({
   },
 
   list: { paddingHorizontal: Spacing.xl, gap: Spacing.lg },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
   card: {
     backgroundColor: Colors.white,
     borderRadius: Radius.md,
@@ -162,6 +165,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  cardInnerGrid: { flexDirection: 'column', alignItems: 'flex-start', paddingVertical: Spacing.xl },
+  iconBoxGrid: { width: 64, height: 64, borderRadius: Radius.lg, marginBottom: Spacing.md },
   info: { flex: 1 },
   name: {
     fontSize: 20,

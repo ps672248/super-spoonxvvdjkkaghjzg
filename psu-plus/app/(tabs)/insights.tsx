@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import {
   View, Text, ScrollView, StyleSheet,
 } from 'react-native';
+import { useIsWide } from '@/hooks/useColumns';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, Radius, Shadows } from '@/theme';
@@ -215,9 +216,10 @@ function computePSUProgress(sessions: StudySession[]) {
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
-function Card({ children, accent }: { children: React.ReactNode; accent?: string }) {
+function Card({ children, accent, wide }: { children: React.ReactNode; accent?: string; wide?: boolean }) {
+  const isWide = useIsWide();
   return (
-    <View style={styles.card}>
+    <View style={[styles.card, isWide && styles.cardWide]}>
       {accent && <View style={[styles.cardAccent, { backgroundColor: accent }]} />}
       <View style={styles.cardInner}>{children}</View>
     </View>
@@ -283,6 +285,7 @@ function computeRecurringWeakAreas(sessions: InterviewSession[]): { area: string
 
 export default function InsightsScreen() {
   const { sessions, interviewSessions, isLoaded } = useActivityStore();
+  const isWide = useIsWide();
 
   const streak = useMemo(() => computeStreak(sessions), [sessions]);
   const weekBars = useMemo(() => computeWeeklyBars(sessions), [sessions]);
@@ -335,7 +338,7 @@ export default function InsightsScreen() {
       <AppHeader />
       <ScrollView
         style={styles.container}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, isWide && styles.contentWide]}
         showsVerticalScrollIndicator={false}
       >
         <Text style={styles.pageTitle}>Insights</Text>
@@ -359,6 +362,9 @@ export default function InsightsScreen() {
             <Text style={styles.heroLabel}>Questions</Text>
           </View>
         </View>
+
+        {/* ── Cards grid (2-col on wide screens) ───────────────────────── */}
+        <View style={isWide ? styles.cardGrid : styles.cardStack}>
 
         {/* ── Weekly Activity ───────────────────────────────────────────── */}
         <Card accent={Colors.primary}>
@@ -577,6 +583,7 @@ export default function InsightsScreen() {
           </Card>
         )}
 
+        </View>{/* end card grid */}
         <View style={{ height: Spacing.xxxl }} />
       </ScrollView>
     </SafeAreaView>
@@ -589,6 +596,10 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#F9FBFF' },
   container: { flex: 1 },
   content: { padding: Spacing.xl, gap: Spacing.xl },
+  contentWide: { flexDirection: 'column' },
+  cardStack: { gap: Spacing.xl },
+  cardGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.xl },
+  cardWide: { width: '48%' },
 
   pageTitle: {
     ...Typography.h1,

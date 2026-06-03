@@ -1,4 +1,5 @@
 // Academic Kinetic design system — from PSU Plus Gamified Prep (Stitch project 16553323456868927522)
+import { Platform } from 'react-native';
 
 export const Colors = {
   // Core brand
@@ -92,25 +93,16 @@ export const Radius = {
 };
 
 export const Shadows = {
-  card: {
-    shadowColor: '#1A237E',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  cardHover: {
-    shadowColor: '#1A237E',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.14,
-    shadowRadius: 16,
-    elevation: 6,
-  },
-  button: {
-    shadowColor: '#FDC003',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.30,
-    shadowRadius: 8,
-    elevation: 4,
-  },
+  card: Platform.select({
+    web: { boxShadow: '0px 2px 8px rgba(26,35,126,0.08)' } as any,
+    default: { shadowColor: '#1A237E', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8, elevation: 3 },
+  })!,
+  cardHover: Platform.select({
+    web: { boxShadow: '0px 4px 16px rgba(26,35,126,0.14)' } as any,
+    default: { shadowColor: '#1A237E', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.14, shadowRadius: 16, elevation: 6 },
+  })!,
+  button: Platform.select({
+    web: { boxShadow: '0px 4px 8px rgba(253,192,3,0.30)' } as any,
+    default: { shadowColor: '#FDC003', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.30, shadowRadius: 8, elevation: 4 },
+  })!,
 };
