@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { AndroidIcon } from "./components/AndroidIcon";
+import FaqSection from "./components/FaqSection";
 
 const APK_URL = "https://cwhpybswvsmoiwzkyhlj.supabase.co/storage/v1/object/public/app-releases/aspirant-arcade/aspirant_arcade_1.0.0_mobile.apk";
 
@@ -235,6 +236,8 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      <FaqSection />
 
       {/* ── FINAL CTA ── */}
       <section className="py-16 md:py-24 px-4 relative overflow-hidden">
