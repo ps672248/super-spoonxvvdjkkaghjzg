@@ -107,7 +107,7 @@ export default function FaqSection() {
         <p className="text-center text-gray-600 text-xs mt-8">
           Still have questions?{" "}
           <a
-            href="mailto:support@aspirantarcade.in"
+            href="mailto:psyt671248@gmail.com"
             className="text-[#FDC003] underline underline-offset-2"
           >
             Contact us
