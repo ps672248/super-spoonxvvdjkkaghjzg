@@ -237,7 +237,7 @@ function SectionAccordion({
           <View style={styles.iconBox}>
             <Ionicons name={section.icon as any} size={24} color={Colors.primary} />
           </View>
-          <View style={{ flex: 1 }}>
+          <View style={{ flex: 1, minWidth: 0 }}>
             <Text style={styles.accordionTitle} numberOfLines={1}>{section.name}</Text>
             <Text style={styles.accordionSub} numberOfLines={1}>{topics.length} Topics • {section.description}</Text>
           </View>
@@ -359,7 +359,7 @@ const styles = StyleSheet.create({
     borderTopColor: Colors.gold,
   },
   accordionHeaderActive: { borderBottomWidth: 1, borderBottomColor: '#F0F2F5' },
-  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
+  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, flex: 1, minWidth: 0 },
   iconBox: {
     width: 44,
     height: 44,
