@@ -93,8 +93,14 @@ export default function Home() {
             </h1>
 
             <p className="text-base md:text-xl text-gray-400 max-w-2xl mx-auto lg:mx-0 mb-8 leading-relaxed">
-              AI-powered PSU exam prep that feels like a game.
-              Your idle scroll time = your rank improvement.
+              AI-powered PSU exam prep that feels like a game.{" "}
+              <span className="text-white font-semibold">
+                Your idle scroll time = your{" "}
+                <span className="bg-gradient-to-r from-[#FDC003] to-[#FF8C00] bg-clip-text text-transparent font-bold">
+                  rank improvement
+                </span>
+                .
+              </span>
             </p>
 
             <div className="flex flex-col gap-3 items-center lg:items-start mb-10">

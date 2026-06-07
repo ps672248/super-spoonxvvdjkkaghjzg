@@ -112,7 +112,7 @@ export default function SectionsScreen() {
           <View style={styles.overviewLeft}>
             <Ionicons name="list" size={24} color={Colors.primary} />
             <View style={{ flex: 1 }}>
-              <Text style={styles.overviewTitle} >Curriculum Overview</Text>
+              <Text style={styles.overviewTitle} numberOfLines={1}>Curriculum Overview</Text>
             </View>
           </View>
           <View style={styles.overviewRight}>
@@ -328,13 +328,13 @@ const styles = StyleSheet.create({
     borderColor: '#F0F2F5',
     gap: Spacing.md,
   },
-  overviewLeft: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, flex: 1 },
+  overviewLeft: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, flex: 1, minWidth: 0 },
   overviewTitle: { ...Typography.h3, color: Colors.primary, flexShrink: 1 },
-  overviewRight: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, flexShrink: 0 },
+  overviewRight: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, flexShrink: 1, minWidth: 0 },
   radio: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: Colors.outlineVariant, alignItems: 'center', justifyContent: 'center' },
   radioActive: { borderColor: Colors.primary },
   radioInner: { width: 12, height: 12, borderRadius: 6, backgroundColor: Colors.primary },
-  radioLabel: { ...Typography.bodySm, color: Colors.onSurfaceVariant, fontFamily: 'Inter_600SemiBold' },
+  radioLabel: { ...Typography.bodySm, color: Colors.onSurfaceVariant, fontFamily: 'Inter_600SemiBold', flexShrink: 1 },
 
   sectionList: { gap: Spacing.lg },
   sectionGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.lg, alignItems: 'flex-start' },

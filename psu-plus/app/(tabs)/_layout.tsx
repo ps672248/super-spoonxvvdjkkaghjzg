@@ -2,13 +2,9 @@ import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Typography } from '@/theme';
-import { isEmbed } from '@/utils/embed';
 
 export default function TabLayout() {
   const { bottom } = useSafeAreaInsets();
-  // In the iframe demo, only the quiz "Prepare" tab is available.
-  const embed = isEmbed();
-  const hiddenInEmbed = embed ? ({ href: null } as const) : null;
 
   return (
     <Tabs
@@ -46,7 +42,6 @@ export default function TabLayout() {
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="bookmark" size={size} color={color} />
           ),
-          ...hiddenInEmbed,
         }}
       />
       <Tabs.Screen
@@ -56,7 +51,6 @@ export default function TabLayout() {
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="bar-chart" size={size} color={color} />
           ),
-          ...hiddenInEmbed,
         }}
       />
       <Tabs.Screen
@@ -66,7 +60,6 @@ export default function TabLayout() {
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="settings" size={size} color={color} />
           ),
-          ...hiddenInEmbed,
         }}
       />
     </Tabs>
