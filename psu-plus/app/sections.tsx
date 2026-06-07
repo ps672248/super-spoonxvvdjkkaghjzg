@@ -227,7 +227,7 @@ function SectionAccordion({
   const isAllSelected = selectedCount === topics.length && topics.length > 0;
 
   return (
-    <View style={[styles.accordionContainer, isWide && { width: '48%' }]}>
+    <View style={[styles.accordionContainer, isWide && styles.accordionGridItem]}>
       <TouchableOpacity
         style={[styles.accordionHeader, isExpanded && styles.accordionHeaderActive]}
         onPress={onToggle}
@@ -337,7 +337,8 @@ const styles = StyleSheet.create({
   radioLabel: { ...Typography.bodySm, color: Colors.onSurfaceVariant, fontFamily: 'Inter_600SemiBold' },
 
   sectionList: { gap: Spacing.lg },
-  sectionGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.lg },
+  sectionGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.lg, alignItems: 'flex-start' },
+  accordionGridItem: { flexGrow: 1, flexBasis: '48%', maxWidth: '100%' },
   topicsGrid: { flexDirection: 'row', flexWrap: 'wrap' },
   accordionContainer: {
     backgroundColor: '#FFF',

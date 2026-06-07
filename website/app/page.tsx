@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { AndroidIcon } from "./components/AndroidIcon";
 import FaqSection from "./components/FaqSection";
+import DemoPhone from "./components/DemoPhone";
 
 const APK_URL = "https://cwhpybswvsmoiwzkyhlj.supabase.co/storage/v1/object/public/app-releases/aspirant-arcade/aspirant_arcade_1.0.0_mobile.apk";
 
@@ -73,52 +74,68 @@ export default function Home() {
       <section className="min-h-screen flex flex-col items-center justify-center text-center px-4 pt-28 md:pt-32 pb-12 md:pb-16 relative overflow-hidden">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] md:w-[600px] h-[300px] md:h-[600px] bg-[#000666]/20 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="relative z-10 max-w-4xl mx-auto w-full">
-          {/* Urgency badge — split on mobile */}
-          <div className="inline-flex flex-col sm:flex-row items-center gap-1 sm:gap-2 bg-[#FDC003]/10 border border-[#FDC003]/30 rounded-2xl sm:rounded-full px-4 py-2 mb-6 text-xs sm:text-sm text-[#FDC003] font-semibold">
-            <span>🔥 HPCL Interviews Out</span>
-            <span className="hidden sm:inline">·</span>
-            <span>Coal India CBT Around the Corner</span>
-          </div>
+        <div className="relative z-10 max-w-6xl mx-auto w-full grid lg:grid-cols-2 gap-10 lg:gap-12 items-center">
+          {/* LEFT — copy */}
+          <div className="text-center lg:text-left">
+            {/* Urgency badge — split on mobile */}
+            <div className="inline-flex flex-col sm:flex-row items-center gap-1 sm:gap-2 bg-[#FDC003]/10 border border-[#FDC003]/30 rounded-2xl sm:rounded-full px-4 py-2 mb-6 text-xs sm:text-sm text-[#FDC003] font-semibold">
+              <span>🔥 HPCL Interviews Out</span>
+              <span className="hidden sm:inline">·</span>
+              <span>Coal India CBT Around the Corner</span>
+            </div>
 
-          <h1 className="text-4xl sm:text-5xl md:text-7xl font-black leading-tight mb-4 text-white">
-            Stop Scrolling.
-            <br />
-            <span className="bg-gradient-to-r from-[#FDC003] to-[#FF8C00] bg-clip-text text-transparent">
-              Start Scoring.
-            </span>
-          </h1>
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-black leading-tight mb-4 text-white">
+              Stop Scrolling.
+              <br />
+              <span className="bg-gradient-to-r from-[#FDC003] to-[#FF8C00] bg-clip-text text-transparent">
+                Start Scoring.
+              </span>
+            </h1>
 
-          <p className="text-base md:text-xl text-gray-400 max-w-2xl mx-auto mb-8 leading-relaxed">
-            AI-powered PSU exam prep that feels like a game.
-            Your idle scroll time = your rank improvement.
-          </p>
+            <p className="text-base md:text-xl text-gray-400 max-w-2xl mx-auto lg:mx-0 mb-8 leading-relaxed">
+              AI-powered PSU exam prep that feels like a game.
+              Your idle scroll time = your rank improvement.
+            </p>
 
-          <div className="flex flex-col gap-3 justify-center items-center mb-10">
-            <a
-              href={APK_URL}
-              className="flex items-center gap-3 bg-[#FDC003] text-[#0A0E17] font-black text-base md:text-lg px-8 py-4 rounded-2xl hover:brightness-110 transition-all w-full sm:w-auto justify-center"
-            >
-              <AndroidIcon size={20} color="#0A0E17" /> Download & Practice Free
-            </a>
-            <div className="flex items-center gap-2 text-gray-500 text-xs md:text-sm">
-              <span className="w-2 h-2 bg-green-400 rounded-full inline-block flex-shrink-0" />
-              Free · No login needed · Android
+            <div className="flex flex-col gap-3 items-center lg:items-start mb-10">
+              <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto justify-center lg:justify-start">
+                <a
+                  href={APK_URL}
+                  className="flex items-center gap-3 bg-[#FDC003] text-[#0A0E17] font-black text-base md:text-lg px-8 py-4 rounded-2xl hover:brightness-110 transition-all justify-center"
+                >
+                  <AndroidIcon size={20} color="#0A0E17" /> Download & Practice Free
+                </a>
+                <a
+                  href="#live-demo"
+                  className="flex items-center gap-2 bg-transparent border border-[#FDC003]/50 text-[#FDC003] font-bold text-base md:text-lg px-8 py-4 rounded-2xl hover:bg-[#FDC003]/10 transition-all justify-center lg:hidden"
+                >
+                  ⚡ Try a Free Quiz
+                </a>
+              </div>
+              <div className="flex items-center gap-2 text-gray-500 text-xs md:text-sm">
+                <span className="w-2 h-2 bg-green-400 rounded-full inline-block flex-shrink-0" />
+                Free · No login needed · Android
+              </div>
+            </div>
+
+            <div className="grid grid-cols-4 gap-2 md:gap-6 text-center lg:text-left max-w-md mx-auto lg:mx-0">
+              {[
+                { val: "6", label: "Game Modes" },
+                { val: "10+", label: "PSUs Covered" },
+                { val: "AI", label: "Questions" },
+                { val: "Free", label: "Always" },
+              ].map((s) => (
+                <div key={s.label}>
+                  <div className="text-2xl md:text-3xl font-black text-[#FDC003]">{s.val}</div>
+                  <div className="text-[10px] md:text-xs text-gray-500 uppercase tracking-wider mt-1">{s.label}</div>
+                </div>
+              ))}
             </div>
           </div>
 
-          <div className="grid grid-cols-4 gap-2 md:gap-8 text-center">
-            {[
-              { val: "6", label: "Game Modes" },
-              { val: "10+", label: "PSUs Covered" },
-              { val: "AI", label: "Questions" },
-              { val: "Free", label: "Always" },
-            ].map((s) => (
-              <div key={s.label}>
-                <div className="text-2xl md:text-3xl font-black text-[#FDC003]">{s.val}</div>
-                <div className="text-[10px] md:text-xs text-gray-500 uppercase tracking-wider mt-1">{s.label}</div>
-              </div>
-            ))}
+          {/* RIGHT — live demo phone */}
+          <div className="flex justify-center lg:justify-end">
+            <DemoPhone />
           </div>
         </div>
       </section>

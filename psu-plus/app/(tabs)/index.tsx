@@ -19,6 +19,12 @@ export default function HomeScreen() {
   const { primaryBranchId, setPrimaryBranch } = useSettingsStore();
   const cols = useColumns();
 
+  // Grid card sizing: each card grows to fill the row. flexBasis caps items
+  // per row to `cols`; flexGrow lets fewer items stretch to use all space.
+  const gridCardStyle = cols > 1
+    ? { flexGrow: 1, flexBasis: `${Math.floor(100 / cols) - 2}%` as any, maxWidth: '100%' as any }
+    : null;
+
   const showBranchSelect = !primaryBranchId;
   const filteredPSUs = primaryBranchId
     ? PSUS.filter(p => p.branches.includes(primaryBranchId))
@@ -56,7 +62,7 @@ export default function HomeScreen() {
             ? BRANCHES.map(branch => (
                 <TouchableOpacity
                   key={branch.id}
-                  style={[styles.card, cols > 1 && { width: `${Math.floor(100 / cols) - 1}%` as any }]}
+                  style={[styles.card, gridCardStyle]}
                   onPress={() => handleBranchSelect(branch)}
                   activeOpacity={0.9}
                 >
@@ -75,7 +81,7 @@ export default function HomeScreen() {
             : filteredPSUs.map(psu => (
                 <TouchableOpacity
                   key={psu.id}
-                  style={[styles.card, selectedPSU?.id === psu.id && styles.cardSelected, cols > 1 && { width: `${Math.floor(100 / cols) - 1}%` as any }]}
+                  style={[styles.card, selectedPSU?.id === psu.id && styles.cardSelected, gridCardStyle]}
                   onPress={() => handlePSUSelect(psu)}
                   activeOpacity={0.9}
                 >
@@ -133,7 +139,7 @@ const styles = StyleSheet.create({
   },
 
   list: { paddingHorizontal: Spacing.xl, gap: Spacing.lg },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
+  grid: { flexDirection: 'row', flexWrap: 'wrap' },
   card: {
     backgroundColor: Colors.white,
     borderRadius: Radius.md,

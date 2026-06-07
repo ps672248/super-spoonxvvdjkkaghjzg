@@ -13,6 +13,8 @@ import { FlagsModals } from '@/components/FlagsModals';
 import { ConfirmModal } from '@/components/ConfirmModal';
 import { DownloadAppBanner } from '@/components/DownloadAppBanner';
 import { ToastProvider } from '@/context/ToastContext';
+import { EmbedGuard } from '@/components/EmbedGuard';
+import { isEmbed } from '@/utils/embed';
 import { Colors } from '@/theme';
 
 SplashScreen.preventAutoHideAsync();
@@ -39,7 +41,8 @@ export default function RootLayout() {
   useEffect(() => {
     if (!fontsLoaded || !isLoaded) return;
     SplashScreen.hideAsync();
-    if (!isOnboarded) {
+    // Embed (iframe) users skip onboarding — straight into the quiz demo.
+    if (!isOnboarded && !isEmbed()) {
       router.replace('/onboarding');
     }
   }, [fontsLoaded, isLoaded]);
@@ -71,6 +74,7 @@ export default function RootLayout() {
           </Stack>
         </GestureHandlerRootView>
         {/* Overlays rendered outside GestureHandlerRootView — anchored to ToastProvider root (position:relative on web) */}
+        <EmbedGuard />
         <FlagsModals />
         <ConfirmModal />
       </ToastProvider>

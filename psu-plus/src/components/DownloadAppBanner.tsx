@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing } from '@/theme';
 import { useFlagsContext } from '@/context/FlagsContext';
+import { isEmbed } from '@/utils/embed';
 
 const DISMISSED_KEY = 'psuplus_download_banner_dismissed';
 
@@ -15,7 +16,7 @@ export const DownloadAppBanner: React.FC = () => {
   const { updateApkUrl } = useFlagsContext();
 
   useEffect(() => {
-    if (Platform.OS !== 'web') return;
+    if (Platform.OS !== 'web' || isEmbed()) return; // never show inside the iframe demo
     AsyncStorage.getItem(DISMISSED_KEY).then(val => {
       if (!val) setVisible(true);
     });

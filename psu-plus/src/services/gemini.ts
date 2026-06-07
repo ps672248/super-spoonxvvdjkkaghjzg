@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { isEmbed, GEMINI_PROXY_URL, EMBED_MODEL, showEmbedRedirectModal } from '@/utils/embed';
 
 // ── Deterministic content hash for stable question IDs ────────────────────────
 // Same question text → same ID across sessions, devices, and users.
@@ -102,6 +103,14 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 2): Promise<T> {
 
 // ── Gemini API caller ─────────────────────────────────────────────────────────
 
+/** Thrown when the embed proxy reports the IP quota is exhausted. */
+export class EmbedQuotaError extends Error {
+  constructor() {
+    super('Free demo used up — continue on the full Aspirant Arcade site.');
+    this.name = 'EmbedQuotaError';
+  }
+}
+
 async function callGemini(
   apiKey: string,
   modelId: string,
@@ -109,6 +118,25 @@ async function callGemini(
   useSchema: boolean,
   schema?: object,
 ): Promise<string> {
+  // ── Embed mode: route through the website proxy (key stays server-side) ──
+  if (isEmbed()) {
+    const res = await fetch(GEMINI_PROXY_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt, useSchema, schema, model: EMBED_MODEL }),
+    });
+    if (res.status === 429) {
+      showEmbedRedirectModal({ reason: 'quota' }); // fire-and-forget; modal prompts redirect
+      throw new EmbedQuotaError();
+    }
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || data.error) {
+      throw new Error(`Gemini proxy error: ${data.error || res.status}`);
+    }
+    if (!data.text) throw new Error('No content returned from proxy');
+    return data.text as string;
+  }
+
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${apiKey}`;
 
   const isGemmaCall = modelId.startsWith('gemma');
