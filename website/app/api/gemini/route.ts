@@ -115,8 +115,8 @@ export async function POST(req: NextRequest) {
   try {
     allowed = await checkAndConsumeQuota(ip);
   } catch (e) {
-    console.error('[gemini-proxy] quota check failed:', e);
-    return Response.json({ error: 'quota backend error' }, { status: 500, headers });
+    console.error('[gemini-proxy] rate-limit store unavailable:', e);
+    return Response.json({ error: 'demo temporarily unavailable' }, { status: 503, headers });
   }
   if (!allowed) {
     return Response.json({ error: 'quota exceeded' }, { status: 429, headers });

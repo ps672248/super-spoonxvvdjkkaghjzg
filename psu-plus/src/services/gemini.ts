@@ -366,6 +366,12 @@ Exactly 4 options, one correct answer, 1-2 sentence explanation.`;
       console.log(`[Gemini] MCQ parse OK — ${questions.length} questions from ${modelId}`);
     } catch (err) {
       console.error(`[Gemini] MCQ parse FAILED for ${modelId}:`, err);
+      // Embed (iframe demo): exactly ONE proxy call per quiz — no fallback call,
+      // otherwise the second call trips the 1-per-IP quota. Also never retry a
+      // quota error.
+      if (err instanceof EmbedQuotaError || isEmbed()) {
+        throw err;
+      }
       if (isGemma || modelId !== FALLBACK_MODEL) {
         console.warn(`[Gemini] Falling back to ${FALLBACK_MODEL}`);
         questions = await attemptGenerate(FALLBACK_MODEL);
