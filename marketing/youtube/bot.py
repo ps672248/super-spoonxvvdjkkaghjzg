@@ -132,46 +132,94 @@ def get_auth_client():
 def get_public_client():
     return build('youtube', 'v3', developerKey=YT_API_KEY)
 
-# ── RELEVANCY CHECK VIA GEMINI ───────────────────────────
+# ── RELEVANCY CHECK VIA KEYWORDS (no Gemini — saves quota) ──
+VIDEO_KEYWORDS = [
+    # ── App-supported PSUs (short codes) ──
+    'bhel', 'ongc', 'ntpc', 'hpcl', 'iocl', 'gail', 'sail', 'bpcl',
+    'pgcil', 'hal', 'bel', 'nmdc', 'nfl', 'aai', 'mecl', 'nhpc',
+    'moil', 'eil', 'wapcos', 'rites', 'ircon', 'concor', 'nalco',
+    'balco', 'hpcl', 'mrpl', 'cpcl', 'numaligarh', 'brbcl', 'thdc',
+    'neepco', 'sjvn', 'recl', 'pfc', 'ireda', 'ongc videsh',
+    'oil india', 'oil and natural gas',
+
+    # ── Full names ──
+    'bharat heavy electricals', 'bharat electronics', 'hindustan aeronautics',
+    'hindustan petroleum', 'indian oil', 'oil and natural gas corporation',
+    'national thermal power', 'power grid corporation', 'gas authority',
+    'steel authority', 'coal india', 'national fertilizers',
+    'airports authority', 'mineral exploration', 'national hydroelectric',
+    'engineers india', 'rashtriya ispat', 'vizag steel',
+
+    # ── Exam / recruitment terms ──
+    'psu', 'gate', 'recruitment', 'interview', 'selection process',
+    'group discussion', 'gd pi', 'technical interview', 'hr round',
+    'merit list', 'cutoff', 'shortlist', 'document verification',
+    'joining letter', 'offer letter', 'medical test', 'physical test',
+    'written test', 'cbt', 'online test', 'aptitude test',
+    'executive trainee', 'management trainee', 'graduate trainee',
+    'junior engineer', 'assistant manager', 'trainee engineer',
+    'get ', 'et ', 'mt ', 'je ', 'am ',
+
+    # ── Designations / roles ──
+    'engineer trainee', 'project engineer', 'assistant engineer',
+    'deputy manager', 'manager trainee',
+
+    # ── Exam-specific ──
+    'gate 2024', 'gate 2025', 'gate 2026', 'gate score', 'gate rank',
+    'gate cutoff', 'gate marks', 'gate result', 'gate scorecard',
+    'ibps', 'hrrl', 'oel', 'non gate', 'without gate',
+
+    # ── Hindi / Hinglish ──
+    'sarkari naukri', 'govt job', 'government job', 'engineering job',
+    'naukri', 'bharti', 'vacancy', 'notification', 'apply online',
+    'last date', 'admit card', 'hall ticket', 'result',
+    'taiyari', 'preparation tips', 'kaise crack', 'psu crack',
+]
+
+COMMENT_KEYWORDS = [
+    # ── Preparation asks ──
+    'prepare', 'preparation', 'how to prepare', 'how to crack',
+    'suggest', 'resource', 'material', 'study material', 'notes',
+    'study', 'practice', 'mock test', 'mock interview', 'mock gd',
+    'tips', 'help', 'guide', 'recommend', 'strategy', 'plan',
+    'syllabus', 'pattern', 'book', 'reference', 'pdf',
+
+    # ── Platforms / tools ──
+    'app', 'website', 'online', 'youtube', 'coaching', 'self study',
+    'telegram', 'channel', 'playlist', 'course',
+
+    # ── Emotional signals ──
+    'nervous', 'scared', 'worried', 'confused', 'struggling',
+    'stressed', 'anxious', 'not sure', 'don\'t know', 'lost',
+    'first time', 'no idea', 'any idea',
+
+    # ── Interview specific ──
+    'interview', 'gd', 'pi', 'group discussion', 'technical round',
+    'hr round', 'personal interview', 'panel interview',
+    'gd topics', 'pi questions', 'technical questions',
+    'document', 'joining', 'offer', 'medical', 'verification',
+
+    # ── Hinglish ──
+    'kaise', 'kya', 'batao', 'suggest karo', 'koi bata',
+    'padhai', 'taiyari', 'crack kaise', 'select kaise',
+    'koi app', 'koi website', 'best resource', 'sahi resource',
+    'help chahiye', 'guidance chahiye', 'pls help', 'please help',
+    'bhai', 'yaar', 'sir', 'mam',
+]
+
 def is_video_relevant(title: str, description: str) -> tuple[bool, str]:
-    prompt = f"""Is this YouTube video relevant for promoting an Indian PSU exam preparation app?
-
-Video title: {title}
-Video description (first 300 chars): {description[:300]}
-
-Relevant means: the video is about PSU recruitment, GATE exam, engineering job preparation,
-BHEL/ONGC/NTPC/IOCL interviews, GD/PI preparation, or engineering competitive exams in India.
-
-Reply ONLY in this JSON format (no markdown, no code block):
-{{"relevant": true/false, "reason": "one line reason"}}"""
-
-    raw = gemini(prompt)
-    try:
-        # Strip markdown code blocks if Gemini adds them
-        raw = raw.replace('```json', '').replace('```', '').strip()
-        result = json.loads(raw)
-        return result['relevant'], result['reason']
-    except:
-        return False, 'parse error'
+    text = (title + ' ' + description[:200]).lower()
+    matched = [kw for kw in VIDEO_KEYWORDS if kw in text]
+    if matched:
+        return True, f"matched: {', '.join(matched[:3])}"
+    return False, 'no PSU keywords found'
 
 def is_comment_relevant(comment_text: str) -> tuple[bool, str]:
-    prompt = f"""Is this YouTube comment asking for help or expressing a problem related to PSU interview/GD/PI preparation?
-
-Comment: "{comment_text}"
-
-Relevant means: asking for resources, tips, app recommendations, how to prepare for PSU interview/GD/PI,
-expressing frustration about preparation, or seeking advice about PSU selection process.
-
-Reply ONLY in this JSON format (no markdown, no code block):
-{{"relevant": true/false, "reason": "one line reason"}}"""
-
-    raw = gemini(prompt)
-    try:
-        raw = raw.replace('```json', '').replace('```', '').strip()
-        result = json.loads(raw)
-        return result['relevant'], result['reason']
-    except:
-        return False, 'parse error'
+    text = comment_text.lower()
+    matched = [kw for kw in COMMENT_KEYWORDS if kw in text]
+    if matched:
+        return True, f"matched: {', '.join(matched[:3])}"
+    return False, 'no relevant keywords'
 
 # ── GENERATE COMMENT VIA GEMINI ──────────────────────────
 def force_link(text: str) -> str:
@@ -408,6 +456,11 @@ def run():
             vid_id = video['id']
             log.info(f"  Video: {video['title'][:60]} | {video['views']:,} views")
 
+            # Skip entirely if already commented — assume replies done too
+            if str(vid_id) in history['commented_videos']:
+                log.info(f"    Skip (already handled): {video['title'][:50]}")
+                continue
+
             relevant, reason = is_video_relevant(video['title'], video['description'])
             if not relevant:
                 log.info(f"    Skip (not relevant): {reason}")
@@ -415,7 +468,7 @@ def run():
             log.info(f"    Relevant: {reason}")
 
             # Top-level comment
-            if str(vid_id) not in history['commented_videos'] and comment_count < DAILY_COMMENT_LIMIT:
+            if comment_count < DAILY_COMMENT_LIMIT:
                 comment_text = generate_top_comment(video['title'], video['description'])
                 if not comment_text:
                     continue
