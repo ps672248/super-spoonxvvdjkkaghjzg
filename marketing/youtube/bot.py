@@ -33,7 +33,7 @@ DAILY_REPLY_LIMIT   = 9999   # same
 MIN_VIDEO_VIEWS     = 3000
 MAX_VIDEO_VIEWS     = 300000
 
-TEST_MODE = True   # True = short delays (testing) | False = full delays (production)
+TEST_MODE = False  # True = short delays (testing) | False = full delays (production)
 APP_LINK  = 'https://qr.ae/pFYza2'
 
 SEARCH_QUERIES = [
@@ -72,19 +72,42 @@ Website: https://qr.ae/pFYza2
 genai.configure(api_key=GEMINI_API_KEY)
 model = genai.GenerativeModel('gemini-3.1-flash-lite')
 
-def gemini(prompt: str) -> str:
-    try:
-        resp = model.generate_content(prompt)
-        return resp.text.strip()
-    except Exception as e:
-        log.error(f"Gemini error: {e}")
-        return ''
+GEMINI_CALL_DELAY = 5  # seconds between Gemini calls — free tier = 15 RPM = 1 per 4s
+
+def gemini(prompt: str, retries: int = 4) -> str:
+    import re as _re
+    for attempt in range(retries):
+        try:
+            time.sleep(GEMINI_CALL_DELAY)  # throttle before every call
+            resp = model.generate_content(prompt)
+            return resp.text.strip()
+        except Exception as e:
+            err = str(e)
+            log.error(f"Gemini error: {e}")
+            # Extract retry_delay from 429 response and wait
+            m = _re.search(r'retry_delay\s*\{\s*seconds:\s*(\d+)', err)
+            wait = int(m.group(1)) + 5 if m else 60 * (attempt + 1)
+            if '429' in err or 'quota' in err.lower() or 'rate' in err.lower():
+                log.warning(f"  Rate limited. Waiting {wait}s before retry {attempt+1}/{retries}...")
+                time.sleep(wait)
+            else:
+                return ''  # non-quota error, don't retry
+    log.error("Gemini failed after all retries.")
+    return ''
 
 # ── HISTORY ──────────────────────────────────────────────
 def load_history():
     if os.path.exists(HISTORY_FILE):
-        with open(HISTORY_FILE, encoding='utf-8') as f:
-            return json.load(f)
+        try:
+            with open(HISTORY_FILE, encoding='utf-8') as f:
+                data = json.load(f)
+                if 'commented_videos' not in data:
+                    data['commented_videos'] = {}
+                if 'replied_comments' not in data:
+                    data['replied_comments'] = {}
+                return data
+        except (json.JSONDecodeError, ValueError):
+            log.warning("history.json corrupt or empty — starting fresh")
     return {'commented_videos': {}, 'replied_comments': {}}
 
 def save_history(h):
@@ -152,23 +175,23 @@ Reply ONLY in this JSON format (no markdown, no code block):
 
 # ── GENERATE COMMENT VIA GEMINI ──────────────────────────
 def force_link(text: str) -> str:
-    """Remove any links — YouTube deletes comments with URLs. Name-only approach."""
+    """Remove any links — YouTube deletes comments with URLs."""
     text = text.strip()
     if not text:
         return ''
-    # Strip any URLs Gemini included
     import re
     text = re.sub(r'https?://\S+', '', text)
-    text = re.sub(r'aspirant-arcade\.vercel\.app\S*', '', text)
+    text = re.sub(r'aspirant-arcade\.\S+', '', text)
     text = re.sub(r'qr\.ae/\S+', '', text)
     text = text.strip()
-    # Ensure app name is mentioned
-    if 'Aspirant Arcade' not in text and 'aspirant arcade' not in text.lower():
-        text = f"{text}\n— Aspirant Arcade (search on Google)"
     return text
 
 def generate_top_comment(video_title: str, video_description: str) -> str:
-    prompt = f"""Write a genuine YouTube comment promoting this app on this video.
+    # 80% purely helpful (no app mention), 20% mention app naturally
+    mention_app = random.random() < 0.20
+
+    if mention_app:
+        prompt = f"""Write a genuine YouTube comment from a PSU aspirant who naturally mentions using an app.
 
 {APP_CONTEXT}
 
@@ -176,34 +199,64 @@ Video title: {video_title}
 Video description: {video_description[:300]}
 
 Rules:
-- Sound like a real person, not a bot
-- Mention a specific relevant feature of the app that matches this video's topic
-- Max 2 sentences then the link
-- Casual tone, Hinglish is fine if it fits
-- Do NOT use exclamation marks excessively
-- Do NOT say "Great video!" or any fake compliments
+- Sound like a real person sharing their own experience, NOT promoting
+- Mention Aspirant Arcade once, naturally, as something you personally use
+- Max 2-3 sentences total
+- Casual tone, Hinglish OK
+- No exclamation marks, no "Great video!", no fake hype
+- Do NOT include any URLs
 
-Write ONLY the comment text, nothing else. Do not include the link."""
+Write ONLY the comment text."""
+    else:
+        prompt = f"""Write a genuine, helpful YouTube comment from a PSU aspirant on this video.
+
+Video title: {video_title}
+Video description: {video_description[:300]}
+
+Rules:
+- Sound like a real person who watched this video
+- Share a useful tip, personal experience, or ask a genuine question related to the video topic
+- About PSU preparation, GATE, interviews, GD/PI — whatever the video is about
+- 1-3 sentences, casual, Hinglish OK
+- Do NOT mention any app, product, or website
+- Do NOT say "Great video!" or fake compliments
+
+Write ONLY the comment text."""
 
     text = gemini(prompt)
     return force_link(text)
 
 def generate_reply(comment_text: str, video_title: str) -> str:
-    prompt = f"""Write a helpful reply to this YouTube comment that naturally mentions our PSU prep app.
+    mention_app = random.random() < 0.30  # 30% chance mention app in replies
+
+    if mention_app:
+        prompt = f"""Write a helpful reply to this YouTube comment. You personally use an app called Aspirant Arcade for PSU prep.
 
 {APP_CONTEXT}
 
 Video context: {video_title}
-Comment to reply to: "{comment_text}"
+Comment: "{comment_text}"
 
 Rules:
-- Directly address what the person asked or said
-- Mention the specific app feature that helps their problem
-- Max 2 sentences then the link
-- Casual, genuine tone — Hinglish OK
-- Don't be salesy — be helpful first
+- Directly answer what they asked first
+- Mention Aspirant Arcade naturally, once, as your own experience
+- 2-3 sentences max, casual, Hinglish OK
+- No URLs, no salesy language
 
-Write ONLY the reply text, nothing else. Do not include the link."""
+Write ONLY the reply text."""
+    else:
+        prompt = f"""Write a helpful, genuine reply to this YouTube comment about PSU preparation.
+
+Video context: {video_title}
+Comment: "{comment_text}"
+
+Rules:
+- Directly address what they asked or said
+- Give actually useful advice from a fellow aspirant's perspective
+- 1-3 sentences, casual, Hinglish OK
+- Do NOT mention any app, product, or website
+
+Write ONLY the reply text."""
 
     text = gemini(prompt)
     return force_link(text)
