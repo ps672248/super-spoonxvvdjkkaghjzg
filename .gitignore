@@ -45,3 +45,8 @@ yarn-error.log*
 
 # ── Misc ──────────────────────────────────────────────────
 .vercel
+
+# ── Marketing bot secrets ─────────────────────────────────
+marketing/youtube/client_secret.json
+marketing/youtube/token.json
+marketing/youtube/bot.log

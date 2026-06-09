@@ -1,0 +1,62 @@
+name: YouTube Comment Bot
+
+on:
+  schedule:
+    - cron: '30 14 * * *'   # 8:00 PM IST (14:30 UTC) daily
+  workflow_dispatch:         # allow manual trigger from GitHub Actions tab
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180     # 3 hour max (covers all delays between posts)
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install google-api-python-client google-auth-oauthlib google-generativeai
+
+      - name: Write credentials from secrets
+        working-directory: marketing/youtube
+        run: |
+          echo '${{ secrets.YT_CLIENT_SECRET }}' > client_secret.json
+          echo '${{ secrets.YT_TOKEN }}' > token.json
+
+      - name: Run bot
+        working-directory: marketing/youtube
+        env:
+          YT_API_KEY: ${{ secrets.YT_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: python bot.py
+
+      - name: Save updated history back to repo
+        working-directory: marketing/youtube
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add history.json
+          git diff --staged --quiet || git commit -m "chore: update youtube bot history [skip ci]"
+          git push
+
+      - name: Update YT_TOKEN secret if token was refreshed
+        if: always()
+        run: |
+          NEW_TOKEN=$(cat marketing/youtube/token.json)
+          echo "Token file exists. If refreshed, update YT_TOKEN secret manually."
+          # Auto-update via gh CLI:
+          echo '${{ secrets.YT_TOKEN }}' > /tmp/old_token.json
+          if ! diff -q marketing/youtube/token.json /tmp/old_token.json > /dev/null 2>&1; then
+            echo "Token was refreshed — updating secret..."
+            echo "$NEW_TOKEN" | gh secret set YT_TOKEN
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
