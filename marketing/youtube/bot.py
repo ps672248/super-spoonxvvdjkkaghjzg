@@ -28,8 +28,8 @@ CLIENT_SECRET  = 'client_secret.json'
 TOKEN_FILE     = 'token.json'
 HISTORY_FILE   = 'history.json'
 
-DAILY_COMMENT_LIMIT = 9999   # no artificial limit — YouTube API quota is the real cap (~10k units/day)
-DAILY_REPLY_LIMIT   = 9999   # same
+DAILY_COMMENT_LIMIT = 3   # per run — bot runs every 2h via scheduler
+DAILY_REPLY_LIMIT   = 3   # per run
 MIN_VIDEO_VIEWS     = 3000
 MAX_VIDEO_VIEWS     = 300000
 

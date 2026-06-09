@@ -2,13 +2,13 @@ name: YouTube Comment Bot
 
 on:
   schedule:
-    - cron: '30 14 * * *'   # 8:00 PM IST (14:30 UTC) daily
+    - cron: '0 */2 * * *'   # every 2 hours (12 runs/day)
   workflow_dispatch:         # allow manual trigger from GitHub Actions tab
 
 jobs:
   run-bot:
     runs-on: ubuntu-latest
-    timeout-minutes: 180     # 3 hour max (covers all delays between posts)
+    timeout-minutes: 40      # 3 comments + 3 replies with delays ~30 min max
 
     steps:
       - name: Checkout repo
@@ -23,7 +23,7 @@ jobs:
           cache: 'pip'
 
       - name: Install dependencies
-        run: pip install google-api-python-client google-auth-oauthlib google-generativeai
+        run: pip install google-api-python-client google-auth-oauthlib google-generativeai python-dotenv
 
       - name: Write credentials from secrets
         working-directory: marketing/youtube
