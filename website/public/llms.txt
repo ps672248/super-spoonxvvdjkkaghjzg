@@ -1,0 +1,51 @@
+# Aspirant Arcade
+
+> Free PSU exam preparation app for GATE-qualified engineers in India. Available on Android and web. No login required.
+
+## What it is
+
+Aspirant Arcade is a gamified PSU (Public Sector Undertaking) exam preparation app for Indian engineering graduates who have qualified GATE and are targeting PSU jobs. It uses Google Gemini AI to generate fresh, non-repetitive questions every session calibrated to the user's specific PSU, engineering branch, and exam syllabus.
+
+The app is completely free. Users bring their own Google Gemini API key (free from Google AI Studio). No data is stored on any server — all progress is local to the device.
+
+## Who it is for
+
+- GATE-qualified B.Tech/B.E. engineers preparing for PSU written tests (CBT) and interviews
+- Engineers targeting: HPCL, BHEL, ONGC, NTPC, IOCL, GAIL, SAIL, BPCL, PGCIL, HAL, BEL, Coal India, NMDC, NFL, AAI, and more
+- Supported engineering branches: Electrical, Mechanical, Civil, Chemical, Instrumentation, CS/IT
+
+## Key Features
+
+- **MCQ Blitz**: Rapid-fire multiple choice questions on PSU syllabus
+- **Survival Mode**: Timed MCQs with 3 lives — simulates real CBT exam pressure
+- **Match the Following**: Pair concepts with definitions
+- **Syllabus Slasher**: Gamified topic mastery mode
+- **Technical PI Simulator**: AI mock panel interview with branch-specific technical questions
+- **AI Mock GD**: Group Discussion practice with AI candidates on real PSU GD topics
+- **Insights Dashboard**: Accuracy tracking per topic over time
+- **Smart Bookmarks**: Save tough questions with personal notes
+
+## Platforms
+
+- Web app: https://aspirant-arcade.xyz
+- Android APK: Direct install, no Play Store required
+
+## How it works
+
+1. Open the web app or install the Android APK
+2. Get a free Gemini API key from Google AI Studio (no billing required)
+3. Select target PSU, engineering branch, and topics
+4. AI generates unique questions every session
+
+## Privacy
+
+No account creation. No email or phone required. All progress stored locally on device. Gemini API key stored on-device only — never sent to Aspirant Arcade servers. Zero ads, zero tracking.
+
+## PSUs Supported
+
+HPCL, BHEL, ONGC, NTPC, IOCL, GAIL, SAIL, BPCL, PGCIL, HAL, BEL, Coal India, NMDC, NFL, AAI, MECL, NHPC, Oil India, THDC, NEEPCO, SJVN, EIL, NALCO, RITES, IRCON
+
+## Links
+
+- Website: https://aspirant-arcade.xyz
+- Android APK: https://cwhpybswvsmoiwzkyhlj.supabase.co/storage/v1/object/public/app-releases/aspirant-arcade/aspirant_arcade_1.0.0_mobile.apk

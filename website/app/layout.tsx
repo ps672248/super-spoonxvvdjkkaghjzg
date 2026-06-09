@@ -60,9 +60,42 @@ export const metadata: Metadata = {
   },
 };
 
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Aspirant Arcade",
+  "url": SITE_URL,
+  "applicationCategory": "EducationApplication",
+  "operatingSystem": "Android, Web",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "INR" },
+  "description": "Free PSU exam preparation app for GATE-qualified engineers. Gamified MCQ practice, AI mock GD, Technical PI simulator for HPCL, BHEL, ONGC, NTPC, IOCL and more. No login required.",
+  "featureList": [
+    "MCQ Blitz — rapid-fire PSU syllabus questions",
+    "Survival Mode — timed CBT simulation with 3 lives",
+    "AI Mock GD — group discussion with AI candidates",
+    "Technical PI Simulator — AI mock panel interview",
+    "Syllabus Slasher — gamified topic mastery",
+    "Insights Dashboard — accuracy tracking per topic",
+    "Smart Bookmarks — save and annotate tough questions"
+  ],
+  "audience": {
+    "@type": "Audience",
+    "audienceType": "GATE-qualified engineers targeting PSU jobs in India"
+  },
+  "inLanguage": ["en", "hi"],
+  "isAccessibleForFree": true,
+  "image": OG_IMAGE,
+};
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={inter.variable}>
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      </head>
       <body className="min-h-screen bg-[#0A0E17] text-white antialiased font-sans">
         {children}
         <Analytics />
