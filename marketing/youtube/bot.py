@@ -34,7 +34,7 @@ MIN_VIDEO_VIEWS     = 3000
 MAX_VIDEO_VIEWS     = 300000
 
 TEST_MODE = False  # True = short delays (testing) | False = full delays (production)
-APP_LINK  = 'https://qr.ae/pFYza2'
+APP_LINK  = 'https://aspirant-arcade.xyz'
 
 SEARCH_QUERIES = [
     'PSU interview preparation 2025',
@@ -348,7 +348,7 @@ def search_videos(query: str, pub, max_results=8) -> list:
             if published_at:
                 pub_date = datetime.fromisoformat(published_at.replace('Z', '+00:00'))
                 age = datetime.now(timezone.utc) - pub_date
-                if age > timedelta(days=60):
+                if age > timedelta(days=30):
                     log.info(f"    Skip (too old: {age.days} days): {item['snippet']['title'][:50]}")
                     continue
 
