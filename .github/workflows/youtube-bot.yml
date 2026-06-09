@@ -5,6 +5,9 @@ on:
     - cron: '0 */2 * * *'   # every 2 hours (12 runs/day)
   workflow_dispatch:         # allow manual trigger from GitHub Actions tab
 
+permissions:
+  contents: write
+
 jobs:
   run-bot:
     runs-on: ubuntu-latest
