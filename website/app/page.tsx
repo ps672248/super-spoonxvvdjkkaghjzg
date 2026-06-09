@@ -3,7 +3,7 @@ import { AndroidIcon } from "./components/AndroidIcon";
 import FaqSection from "./components/FaqSection";
 import DemoPhone from "./components/DemoPhone";
 
-const APK_URL = "https://cwhpybswvsmoiwzkyhlj.supabase.co/storage/v1/object/public/app-releases/aspirant-arcade/aspirant_arcade_1.0.0_mobile.apk";
+const APK_URL = "https://cwhpybswvsmoiwzkyhlj.supabase.co/storage/v1/object/public/app-releases/aspirant-arcade/aspirant_arcade_1.0.1_mobile.apk";
 
 const FEATURES = [
   { icon: "🎮", title: "6 Game Modes", desc: "MCQ, Survival, Match the Following, Slasher, Mario-style & Interview Simulator. Same PSU syllabus — completely different energy." },

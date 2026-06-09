@@ -3,7 +3,7 @@
 **AI-powered PSU exam prep that feels like a game. Free on Android & Web. No login required.**
 
 🌐 **Web:** [aspirant-arcade.xyz](https://aspirant-arcade.xyz)  
-📱 **Android:** [Download APK (Free, Direct Install)](https://cwhpybswvsmoiwzkyhlj.supabase.co/storage/v1/object/public/app-releases/aspirant-arcade/aspirant_arcade_1.0.0_mobile.apk)
+📱 **Android:** [Download APK (Free, Direct Install)](https://cwhpybswvsmoiwzkyhlj.supabase.co/storage/v1/object/public/app-releases/aspirant-arcade/aspirant_arcade_1.0.1_mobile.apk)
 
 ---
 
@@ -70,7 +70,7 @@ Open in any browser:
 👉 **[aspirant-arcade.xyz](https://aspirant-arcade.xyz)**
 
 ### Android APK — Free Direct Install
-👉 **[Download APK](https://cwhpybswvsmoiwzkyhlj.supabase.co/storage/v1/object/public/app-releases/aspirant-arcade/aspirant_arcade_1.0.0_mobile.apk)**
+👉 **[Download APK](https://cwhpybswvsmoiwzkyhlj.supabase.co/storage/v1/object/public/app-releases/aspirant-arcade/aspirant_arcade_1.0.1_mobile.apk)**
 
 Side-load on any Android phone. No Play Store required.
 
@@ -168,7 +168,7 @@ Survival mode PSU quiz app
 ## Related Resources
 
 - 🌐 Web App: [aspirant-arcade.xyz](https://aspirant-arcade.xyz)
-- 📥 Android APK: [Direct Download](https://cwhpybswvsmoiwzkyhlj.supabase.co/storage/v1/object/public/app-releases/aspirant-arcade/aspirant_arcade_1.0.0_mobile.apk)
+- 📥 Android APK: [Direct Download](https://cwhpybswvsmoiwzkyhlj.supabase.co/storage/v1/object/public/app-releases/aspirant-arcade/aspirant_arcade_1.0.1_mobile.apk)
 - 🔑 Free Gemini API Key: [aistudio.google.com](https://aistudio.google.com)
 
 ---

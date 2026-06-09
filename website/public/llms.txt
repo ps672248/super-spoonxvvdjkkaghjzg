@@ -48,4 +48,4 @@ HPCL, BHEL, ONGC, NTPC, IOCL, GAIL, SAIL, BPCL, PGCIL, HAL, BEL, Coal India, NMD
 ## Links
 
 - Website: https://aspirant-arcade.xyz
-- Android APK: https://cwhpybswvsmoiwzkyhlj.supabase.co/storage/v1/object/public/app-releases/aspirant-arcade/aspirant_arcade_1.0.0_mobile.apk
+- Android APK: https://cwhpybswvsmoiwzkyhlj.supabase.co/storage/v1/object/public/app-releases/aspirant-arcade/aspirant_arcade_1.0.1_mobile.apk
