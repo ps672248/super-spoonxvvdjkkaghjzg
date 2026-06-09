@@ -5,7 +5,7 @@ import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
-const SITE_URL = "https://aspirant-arcade.vercel.app";
+const SITE_URL = "https://aspirant-arcade.xyz";
 const OG_IMAGE = "https://cwhpybswvsmoiwzkyhlj.supabase.co/storage/v1/object/public/app-releases/aspirant-arcade/aspirant-arcade-banner.png";
 
 export const metadata: Metadata = {

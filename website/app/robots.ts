@@ -6,6 +6,6 @@ export default function robots(): MetadataRoute.Robots {
       userAgent: '*',
       allow: '/',
     },
-    sitemap: 'https://aspirant-arcade.vercel.app/sitemap.xml',
+    sitemap: 'https://aspirant-arcade.xyz/sitemap.xml',
   }
 }
