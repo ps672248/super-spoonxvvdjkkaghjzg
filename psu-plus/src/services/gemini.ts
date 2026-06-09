@@ -194,10 +194,21 @@ const MCQ_SCHEMA = {
       options:     { type: 'ARRAY', items: { type: 'STRING' } },
       correct:     { type: 'STRING' },
       explanation: { type: 'STRING' },
+      topic:       { type: 'STRING' },
     },
     required: ['question', 'options', 'correct', 'explanation'],
   },
 };
+
+/** A question is "format-compatible" only if it's actually playable. */
+function isValidMCQ(q: MCQQuestion): boolean {
+  if (!q || typeof q.question !== 'string' || !q.question.trim()) return false;
+  if (!Array.isArray(q.options) || q.options.length !== 4) return false;
+  if (!q.options.every(o => typeof o === 'string' && o.trim().length > 0)) return false;
+  const c = (q.correct || '').trim().toUpperCase()[0];
+  if (!c || !['A', 'B', 'C', 'D'].includes(c)) return false;
+  return true;
+}
 
 const MATCH_SCHEMA = {
   type: 'ARRAY',
@@ -220,6 +231,20 @@ const MATCH_SCHEMA = {
       explanation: { type: 'STRING' },
     },
     required: ['id', 'pairs', 'explanation'],
+  },
+};
+
+const TF_SCHEMA = {
+  type: 'ARRAY',
+  items: {
+    type: 'OBJECT',
+    properties: {
+      statement:   { type: 'STRING' },
+      isTrue:      { type: 'BOOLEAN' },
+      explanation: { type: 'STRING' },
+      topic:       { type: 'STRING' },
+    },
+    required: ['statement', 'isTrue', 'explanation'],
   },
 };
 
@@ -324,16 +349,15 @@ Generate exactly ${count} MCQs. Each question:
 2. Has exactly 4 options: A), B), C), D)
 3. Has exactly ONE correct answer
 4. Has a concise 1–2 sentence explanation
+5. Has a "topic" field naming the SINGLE specific topic it tests — pick exactly one from: ${topicTitle}
 
 NO PREAMBLE. NO THINKING. NO CHATTER. OUTPUT ONLY RAW JSON ARRAY.
-Format: [{"question":"...","options":["A) ...","B) ...","C) ...","D) ..."],"correct":"A","explanation":"..."}]`;
+Format: [{"question":"...","options":["A) ...","B) ...","C) ...","D) ..."],"correct":"A","explanation":"...","topic":"..."}]`;
 
   // Gemma-specific compact prompt — avoids bullet-point context that Gemma echoes back
   const gemmaPrompt = `Generate ${count} multiple-choice questions for ${psuName} ${branchName} exam, topic: ${topicTitle}. Difficulty: ${sectionDifficulty}. Marking: ${nmText}.${avoidBlock ? '\n' + avoidBlock : ''}
 Return a JSON array. Each item: {"question":"...","options":["A) ...","B) ...","C) ...","D) ..."],"correct":"A","explanation":"..."}
 Exactly 4 options, one correct answer, 1-2 sentence explanation.`;
-
-  const isGemma = modelId.startsWith('gemma');
 
   async function attemptGenerate(model: string): Promise<MCQQuestion[]> {
     const gemmaModel   = model.startsWith('gemma');
@@ -349,7 +373,8 @@ Exactly 4 options, one correct answer, 1-2 sentence explanation.`;
       correct:     q.correct     || 'A',
       explanation: q.explanation || '',
       id:          hashContent(q.question || ''),
-      topicTitle,
+      // Per-question specific topic (Gemini-tagged); fall back to the combined label.
+      topicTitle:  (typeof q.topic === 'string' && q.topic.trim()) ? q.topic.trim() : topicTitle,
     }));
   }
 
@@ -359,27 +384,47 @@ Exactly 4 options, one correct answer, 1-2 sentence explanation.`;
     return inFlight.get(cacheKey)!;
   }
 
+  // Regenerate until the AI returns format-compatible questions.
+  // Embed (iframe demo) gets ONE call only — regenerating would trip the 1-per-IP
+  // quota — so MAX_REGEN is 0 there; the real app retries with the user's own key.
+  const MAX_REGEN = isEmbed() ? 0 : 3;
+
   const doGenerate = async (): Promise<MCQQuestion[]> => {
-    let questions: MCQQuestion[];
-    try {
-      questions = await attemptGenerate(modelId);
-      console.log(`[Gemini] MCQ parse OK — ${questions.length} questions from ${modelId}`);
-    } catch (err) {
-      console.error(`[Gemini] MCQ parse FAILED for ${modelId}:`, err);
-      // Embed (iframe demo): exactly ONE proxy call per quiz — no fallback call,
-      // otherwise the second call trips the 1-per-IP quota. Also never retry a
-      // quota error.
-      if (err instanceof EmbedQuotaError || isEmbed()) {
-        throw err;
+    let useModel = modelId;
+    let best: MCQQuestion[] = [];
+
+    for (let attempt = 0; attempt <= MAX_REGEN; attempt++) {
+      let parsed: MCQQuestion[] = [];
+      try {
+        parsed = await attemptGenerate(useModel);
+      } catch (err) {
+        if (err instanceof EmbedQuotaError || isEmbed()) throw err;
+        console.error(`[Gemini] MCQ attempt ${attempt + 1} failed for ${useModel}:`, err);
+        // Parse/network failure → switch to the stable fallback model and retry.
+        if (useModel !== FALLBACK_MODEL) { useModel = FALLBACK_MODEL; continue; }
+        if (attempt === MAX_REGEN) break;
+        continue;
       }
-      if (isGemma || modelId !== FALLBACK_MODEL) {
-        console.warn(`[Gemini] Falling back to ${FALLBACK_MODEL}`);
-        questions = await attemptGenerate(FALLBACK_MODEL);
-        console.log(`[Gemini] Fallback OK — ${questions.length} questions from ${FALLBACK_MODEL}`);
-      } else {
-        throw new Error('AI returned invalid question format. Please try again.');
+
+      const valid = parsed.filter(isValidMCQ);
+      if (valid.length > best.length) best = valid;
+
+      if (valid.length >= count) {
+        console.log(`[Gemini] MCQ OK — ${valid.length}/${count} valid from ${useModel} (attempt ${attempt + 1})`);
+        best = valid;
+        break;
       }
+
+      console.warn(`[Gemini] Only ${valid.length}/${count} valid — regenerating (attempt ${attempt + 1}/${MAX_REGEN + 1})`);
+      // After the first weak result, switch to the stable model for better compliance.
+      if (useModel !== FALLBACK_MODEL) useModel = FALLBACK_MODEL;
     }
+
+    if (best.length === 0) {
+      throw new Error('AI returned invalid question format. Please try again.');
+    }
+
+    const questions = best.slice(0, count);
     if (!bypassCache) setCache(cacheKey, questions);
     return questions;
   };
@@ -428,6 +473,87 @@ Format: [{"id":"challenge_1","pairs":[{"id":"1","left":"...","right":"..."},{"id
     }
     throw new Error('AI returned invalid challenge format. Please try again.');
   }
+}
+
+// ── True/False (Tsunami mode) ──────────────────────────────────────────────────
+
+export type TFStatement = {
+  id: string;
+  statement: string;
+  isTrue: boolean;
+  explanation: string;
+  topicTitle?: string;
+};
+
+/** A statement is valid only if it's a non-empty claim with a real truth value. */
+function isValidTF(s: TFStatement): boolean {
+  return !!s && typeof s.statement === 'string' && s.statement.trim().length > 0
+    && typeof s.isTrue === 'boolean';
+}
+
+export async function generateTrueFalse(params: GenerateParams): Promise<TFStatement[]> {
+  const {
+    apiKey, modelId, psuName, branchName, sectionName, sectionDifficulty,
+    topicTitle, count = 15, seenQuestions = [],
+  } = params;
+
+  const avoidBlock = seenQuestions.length > 0
+    ? `\nDo NOT repeat or closely paraphrase these previously asked statements:\n${
+        seenQuestions.slice(-30).map((q, i) => `${i + 1}. ${q.substring(0, 100)}`).join('\n')
+      }\n`
+    : '';
+
+  const prompt = `You are an expert question setter for ${psuName} (${branchName}) PSU competitive exams.
+${avoidBlock}
+Generate exactly ${count} TRUE/FALSE statements on: ${topicTitle} (section: ${sectionName}, difficulty: ${sectionDifficulty}).
+Rules:
+1. Roughly half TRUE and half FALSE — shuffle them, do not group.
+2. Each item is a single clear factual claim (a statement, NOT a question).
+3. Calibrated to real ${psuName} CBT difficulty.
+4. "isTrue" is a boolean (true/false) — the actual truth of the statement.
+5. Include a concise 1-sentence "explanation" of why it is true or false.
+6. "topic" names the single specific topic it tests — pick one from: ${topicTitle}.
+
+NO PREAMBLE. NO THINKING. NO CHATTER. OUTPUT ONLY RAW JSON ARRAY.
+Format: [{"statement":"...","isTrue":true,"explanation":"...","topic":"..."}]`;
+
+  async function attemptTF(model: string): Promise<TFStatement[]> {
+    const text = await withRetry(() => callGemini(apiKey, model, prompt, true, TF_SCHEMA));
+    const raw: any[] = extractJson(text);
+    return raw.map((s: any) => ({
+      statement:   typeof s.statement === 'string' ? s.statement.trim() : '',
+      isTrue:      s.isTrue === true || s.isTrue === 'true',
+      explanation: s.explanation || '',
+      id:          hashContent(typeof s.statement === 'string' ? s.statement : ''),
+      topicTitle:  (typeof s.topic === 'string' && s.topic.trim()) ? s.topic.trim() : topicTitle,
+    }));
+  }
+
+  // Same regenerate-until-valid policy as MCQ (embed = single call, no regen).
+  const MAX_REGEN = isEmbed() ? 0 : 3;
+  let useModel = modelId;
+  let best: TFStatement[] = [];
+
+  for (let attempt = 0; attempt <= MAX_REGEN; attempt++) {
+    let parsed: TFStatement[] = [];
+    try {
+      parsed = await attemptTF(useModel);
+    } catch (err) {
+      if (err instanceof EmbedQuotaError || isEmbed()) throw err;
+      console.error(`[Gemini] TF attempt ${attempt + 1} failed for ${useModel}:`, err);
+      if (useModel !== FALLBACK_MODEL) { useModel = FALLBACK_MODEL; continue; }
+      if (attempt === MAX_REGEN) break;
+      continue;
+    }
+    const valid = parsed.filter(isValidTF);
+    if (valid.length > best.length) best = valid;
+    if (valid.length >= count) { best = valid; break; }
+    console.warn(`[Gemini] Only ${valid.length}/${count} valid TF — regenerating (attempt ${attempt + 1})`);
+    if (useModel !== FALLBACK_MODEL) useModel = FALLBACK_MODEL;
+  }
+
+  if (best.length === 0) throw new Error('AI returned invalid statement format. Please try again.');
+  return best.slice(0, count);
 }
 
 export type StudySheetParams = {

@@ -77,15 +77,20 @@ export default function MatchScreen() {
     }
   }
 
-  function handleNext() {
+  // finalMatches is passed by UnifiedQuestion's onAnswer (fresh, includes the last
+  // pair). The footer button passes the current `matches` state explicitly. Never
+  // read `matches` from closure here — on the auto-advance it's stale and drops the
+  // final match, scoring the last pair as wrong.
+  function finishChallenge(finalMatches: string | Record<string, string>) {
+    const fm = typeof finalMatches === 'string' ? {} : finalMatches;
     const currentChallenge = challenges[currentIdx];
     let correctCount = 0;
     currentChallenge.pairs.forEach(p => {
-      if (matches[p.id] === p.id) correctCount++;
+      if (fm[p.id] === p.id) correctCount++;
     });
     const setScoreValue = Math.round((correctCount / currentChallenge.pairs.length) * 100);
     setScore(s => s + setScoreValue);
-    setResults(prev => [...prev, { q: currentChallenge, score: setScoreValue, userMatches: { ...matches } }]);
+    setResults(prev => [...prev, { q: currentChallenge, score: setScoreValue, userMatches: { ...fm } }]);
     if (currentIdx + 1 < challenges.length) {
       setCurrentIdx(c => c + 1);
     } else {
@@ -162,7 +167,7 @@ export default function MatchScreen() {
             pairs={challenges[currentIdx].pairs}
             currentMatches={matches}
             onMatchesChange={setMatches}
-            onAnswer={handleNext}
+            onAnswer={finishChallenge}
             isBookmarked={isQuestionBookmarked(challenges[currentIdx].id)}
             bookmarkNote={questionBookmarks.find(b => b.id === challenges[currentIdx].id)?.note}
             onToggleBookmark={(note) => {
@@ -186,7 +191,7 @@ export default function MatchScreen() {
 
       <View style={styles.footer}>
         <TouchableOpacity style={styles.skipBtn} onPress={handleSkip}><Text style={styles.skipBtnText}>SKIP</Text></TouchableOpacity>
-        <TouchableOpacity style={[styles.nextBtn, Object.keys(matches).length === 0 && styles.nextBtnDisabled]} onPress={handleNext} disabled={Object.keys(matches).length === 0}>
+        <TouchableOpacity style={[styles.nextBtn, Object.keys(matches).length === 0 && styles.nextBtnDisabled]} onPress={() => finishChallenge(matches)} disabled={Object.keys(matches).length === 0}>
           <Text style={styles.nextBtnText}>{currentIdx + 1 === challenges.length ? 'SAVE & FINISH' : 'SAVE & NEXT'}</Text>
         </TouchableOpacity>
       </View>

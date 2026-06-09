@@ -10,9 +10,10 @@ import * as Haptics from 'expo-haptics';
 import { Colors, Typography, Spacing, Radius, Shadows } from '@/theme';
 import { useBookmarkStore, BookmarkedQuestion } from '@/stores/bookmarkStore';
 import { AppHeader } from '@/components/AppHeader';
+import { SyncBadge } from '@/components/SyncBadge';
 
 export default function BookmarksScreen() {
-  const { questionBookmarks, removeQuestionBookmark, updateQuestionNote } = useBookmarkStore();
+  const { questionBookmarks, removeQuestionBookmark, updateQuestionNote, isSyncing } = useBookmarkStore();
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
   const isWide = useIsWide();
   const [attemptMode, setAttemptMode] = useState(false);
@@ -72,6 +73,7 @@ export default function BookmarksScreen() {
             <View style={styles.countBadge}>
                <Text style={styles.countText}>{questionBookmarks.length} ITEMS</Text>
             </View>
+            <SyncBadge visible={isSyncing} />
           </View>
 
           <TouchableOpacity 
@@ -94,8 +96,12 @@ export default function BookmarksScreen() {
             <View style={styles.emptyIconContainer}>
               <Ionicons name="bookmarks-outline" size={48} color={Colors.primary} />
             </View>
-            <Text style={styles.emptyTitle}>No saved questions yet</Text>
-            <Text style={styles.emptyDesc}>Bookmark challenging questions during your study sessions to review them here.</Text>
+            <Text style={styles.emptyTitle}>{isSyncing ? 'Syncing your saved questions…' : 'No saved questions yet'}</Text>
+            <Text style={styles.emptyDesc}>
+              {isSyncing
+                ? 'Pulling your bookmarks from the cloud.'
+                : 'Bookmark challenging questions during your study sessions to review them here.'}
+            </Text>
           </View>
         ) : (
           Object.entries(grouped).map(([groupName, items]) => (
@@ -334,6 +340,11 @@ function BookmarkItem({
       <View style={styles.cardInner}>
         <View style={styles.cardHeader}>
           <View style={styles.badgeRow}>
+            {!!item.psuName && (
+              <View style={styles.psuBadge}>
+                <Text style={styles.psuBadgeText} numberOfLines={1}>{item.psuName.toUpperCase()}</Text>
+              </View>
+            )}
             <View style={styles.branchBadge}>
               <Text style={styles.branchBadgeText}>{item.branchName?.toUpperCase() || 'GENERAL'}</Text>
             </View>
@@ -451,8 +462,8 @@ function BookmarkItem({
           </Text>
         </TouchableOpacity>}
 
-        {/* Explanation — gated: needs expand + (not attempt OR attempted) */}
-        {expanded && (!attemptMode || (isMatchQuestion ? currentAttempt === 'MATCH_DONE' : !!currentAttempt)) && (
+        {/* Explanation — shown by default; only hidden mid-attempt before the answer is revealed. */}
+        {!!item.explanation && (!attemptMode || (isMatchQuestion ? currentAttempt === 'MATCH_DONE' : !!currentAttempt)) && (
           <View style={styles.expandedContent}>
             <View style={styles.divider} />
             <View style={styles.reviewGrid}>
@@ -545,8 +556,21 @@ const styles = StyleSheet.create({
   cardAccent: { width: 6, backgroundColor: Colors.gold },
   cardInner: { flex: 1, padding: Spacing.lg },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.md },
-  badgeRow: { flexDirection: 'row', gap: Spacing.sm, alignItems: 'center' },
-  branchBadge: { 
+  badgeRow: { flexDirection: 'row', gap: Spacing.sm, alignItems: 'center', flexWrap: 'wrap' },
+  psuBadge: {
+    backgroundColor: Colors.gold,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 4,
+    borderRadius: Radius.sm,
+    maxWidth: 140,
+  },
+  psuBadgeText: {
+    ...Typography.labelCaps,
+    color: Colors.secondary,
+    fontSize: 9,
+    fontFamily: 'Inter_700Bold',
+  },
+  branchBadge: {
     backgroundColor: Colors.primary, 
     paddingHorizontal: Spacing.md, 
     paddingVertical: 4, 

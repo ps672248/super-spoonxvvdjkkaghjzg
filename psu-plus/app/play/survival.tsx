@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, ScrollView } from 'react-native';
 import { Alert } from '@/utils/alert';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -120,12 +120,12 @@ export default function SurvivalScreen() {
         </View>
       </View>
 
-      <View style={styles.content}>
+      <ScrollView style={styles.contentScroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.qHeader}>
           <Text style={styles.qTopic}>{(currentQ.topicTitle || 'General').toUpperCase()}</Text>
           <Text style={styles.qProgress}>QUESTION {currentIdx + 1} / {questions.length}</Text>
         </View>
-        
+
         <UnifiedQuestion
           type="mcq"
           mode="interactive"
@@ -149,7 +149,7 @@ export default function SurvivalScreen() {
             }
           }}
         />
-      </View>
+      </ScrollView>
 
       <View style={styles.footer}>
         <View style={styles.scoreBox}>
@@ -170,7 +170,8 @@ const styles = StyleSheet.create({
   headerCenter: { flex: 1, alignItems: 'center' },
   backBtn: { padding: Spacing.sm },
   livesRow: { flexDirection: 'row', alignItems: 'center' },
-  content: { flex: 1, padding: Spacing.xl },
+  contentScroll: { flex: 1 },
+  content: { padding: Spacing.xl, paddingBottom: Spacing.xxxl },
   qHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: Spacing.md },
   qTopic: { ...Typography.labelCaps, color: Colors.primary, letterSpacing: 2 },
   qProgress: { ...Typography.labelCaps, color: Colors.outline },

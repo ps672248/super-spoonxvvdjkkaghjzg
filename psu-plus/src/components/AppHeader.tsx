@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Modal, FlatList, Image } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, Radius } from '@/theme';
 import { useExamStore } from '@/stores/examStore';
 import { useSettingsStore } from '@/stores/settingsStore';
+import { useActivityStore } from '@/stores/activityStore';
+import { useLeaderboardStore } from '@/stores/leaderboardStore';
 import { BRANCHES, BranchConfig } from '@/config/branches';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -14,6 +16,12 @@ export function AppHeader() {
   const { selectedPSU, selectedBranch, setBranch } = useExamStore();
   const { primaryBranchId, setPrimaryBranch } = useSettingsStore();
   const [modalVisible, setModalVisible] = useState(false);
+  const { hasUnseen, passedCount, refreshBadge } = useLeaderboardStore();
+
+  // Refresh the leaderboard badge when the header mounts (app open / tab switch).
+  useEffect(() => {
+    refreshBadge(useActivityStore.getState().sessions);
+  }, []);
 
   const isHome = pathname === '/' || pathname === '/(tabs)';
 
@@ -53,13 +61,34 @@ export function AppHeader() {
           </View>
         </TouchableOpacity>
         
-        <TouchableOpacity 
-          style={styles.profileCircle}
-          onPress={() => router.push('/(tabs)/settings')}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="person-outline" size={20} color={Colors.primary} />
-        </TouchableOpacity>
+        <View style={styles.headerRight}>
+          <TouchableOpacity
+            style={styles.iconCircle}
+            onPress={() => router.push('/leaderboard' as any)}
+            activeOpacity={0.7}
+          >
+            <Ionicons
+              name={hasUnseen ? 'trophy' : 'trophy-outline'}
+              size={20}
+              color={hasUnseen ? Colors.gold : Colors.primary}
+            />
+            {hasUnseen && (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>
+                  {passedCount > 0 ? `↑${passedCount > 9 ? '9+' : passedCount}` : '!'}
+                </Text>
+              </View>
+            )}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.profileCircle}
+            onPress={() => router.push('/(tabs)/settings')}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="person-outline" size={20} color={Colors.primary} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <Modal
@@ -138,13 +167,37 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter_600SemiBold',
     marginTop: -2
   },
-  profileCircle: { 
-    width: 36, 
-    height: 36, 
-    borderRadius: 18, 
+  headerRight: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
+  iconCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: '#F2F4F7',
-    alignItems: 'center', 
-    justifyContent: 'center' 
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  badge: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    minWidth: 18,
+    height: 18,
+    paddingHorizontal: 4,
+    borderRadius: 9,
+    backgroundColor: Colors.error,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: '#FFF',
+  },
+  badgeText: { color: '#FFF', fontSize: 9, fontFamily: 'Inter_700Bold' },
+  profileCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#F2F4F7',
+    alignItems: 'center',
+    justifyContent: 'center'
   },
 
   // Modal styles

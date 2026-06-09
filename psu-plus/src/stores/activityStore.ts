@@ -99,6 +99,7 @@ interface ActivityState {
   sessions: StudySession[];
   interviewSessions: InterviewSession[];
   isLoaded: boolean;
+  isSyncing: boolean;
 
   /** Call after every game ends */
   logSession: (data: Omit<StudySession, 'id' | 'timestamp'>) => Promise<void>;
@@ -309,6 +310,7 @@ export const useActivityStore = create<ActivityState>((set, get) => ({
   sessions: [],
   interviewSessions: [],
   isLoaded: false,
+  isSyncing: false,
 
   // ── Log one session ─────────────────────────────────────────────────────────
   logSession: async (data) => {
@@ -350,10 +352,10 @@ export const useActivityStore = create<ActivityState>((set, get) => ({
     const local: StudySession[] = rawStudy ? JSON.parse(rawStudy) : [];
     const localInterview: InterviewSession[] = rawInterview ? JSON.parse(rawInterview) : [];
 
-    if (!uid) {
-      set({ sessions: local, interviewSessions: localInterview, isLoaded: true });
-      return;
-    }
+    // Show local immediately; flag a background sync when signed in.
+    set({ sessions: local, interviewSessions: localInterview, isLoaded: true, isSyncing: !!uid });
+
+    if (!uid) return;
 
     try {
       const [studySnap, interviewSnap] = await Promise.all([
@@ -393,10 +395,10 @@ export const useActivityStore = create<ActivityState>((set, get) => ({
         AsyncStorage.setItem(studyKey, JSON.stringify(merged)),
         AsyncStorage.setItem(interviewKey, JSON.stringify(mergedInterview)),
       ]);
-      set({ sessions: merged, interviewSessions: mergedInterview, isLoaded: true });
+      set({ sessions: merged, interviewSessions: mergedInterview, isLoaded: true, isSyncing: false });
     } catch (e) {
       console.warn('[Activity] Cloud sync failed, using local:', e);
-      set({ sessions: local, interviewSessions: localInterview, isLoaded: true });
+      set({ sessions: local, interviewSessions: localInterview, isLoaded: true, isSyncing: false });
     }
   },
 

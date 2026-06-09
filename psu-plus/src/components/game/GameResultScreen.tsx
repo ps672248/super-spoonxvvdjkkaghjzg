@@ -9,6 +9,7 @@ import { useSettingsStore } from '../../stores/settingsStore';
 import { useExamStore } from '../../stores/examStore';
 import { useActivityStore } from '../../stores/activityStore';
 import { useSeenQuestionsStore } from '../../stores/seenQuestionsStore';
+import { upsertLeaderboard } from '../../services/leaderboard';
 import { UnifiedQuestion } from './UnifiedQuestion';
 import * as Haptics from 'expo-haptics';
 
@@ -71,6 +72,9 @@ export const GameResultScreen = ({
   // Log session once when result screen mounts
   React.useEffect(() => {
     if (!selectedPSU || !selectedBranch) return;
+    const mode = (selectedMode ?? 'mcq');
+    // Log the session, then upsert leaderboards from the now-updated local sessions.
+    // Fire-and-forget — never block the results screen. upsert no-ops for guests/embed.
     logSession({
       psuId: selectedPSU.id,
       psuName: selectedPSU.name,
@@ -78,10 +82,17 @@ export const GameResultScreen = ({
       branchName: selectedBranch.name,
       sections: selectedSections,
       topics: selectedTopics,
-      gameMode: (selectedMode ?? 'mcq'),
+      gameMode: mode,
       questionsTotal: results.length,
       questionsCorrect: results.filter(r => r.isCorrect).length,
       score,
+    }).then(() => {
+      upsertLeaderboard(
+        mode,
+        fullName,
+        selectedBranch.id,
+        useActivityStore.getState().sessions,
+      );
     });
     // Log question texts to seen store so Gemini avoids them next session
     const questionTexts = results

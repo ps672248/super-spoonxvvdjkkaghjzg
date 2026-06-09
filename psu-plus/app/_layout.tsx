@@ -15,6 +15,7 @@ import { DownloadAppBanner } from '@/components/DownloadAppBanner';
 import { ToastProvider } from '@/context/ToastContext';
 import { EmbedGuard } from '@/components/EmbedGuard';
 import { isEmbed } from '@/utils/embed';
+import { pingDevice } from '@/services/deviceAnalytics';
 import { Colors } from '@/theme';
 
 SplashScreen.preventAutoHideAsync();
@@ -32,6 +33,7 @@ export default function RootLayout() {
   useEffect(() => {
     async function init() {
       initialize();
+      pingDevice(); // guest/device heartbeat (best-effort, fire-and-forget)
       await Promise.all([loadSettings(), loadConfig(), loadSeenQuestions()]);
     }
     init();
@@ -66,11 +68,13 @@ export default function RootLayout() {
             <Stack.Screen name="play/match" options={{ presentation: 'fullScreenModal' }} />
             <Stack.Screen name="play/slasher" options={{ presentation: 'fullScreenModal' }} />
             <Stack.Screen name="play/mario" options={{ presentation: 'fullScreenModal' }} />
+            <Stack.Screen name="play/tsunami" options={{ presentation: 'fullScreenModal' }} />
             <Stack.Screen name="api-setup" options={{ presentation: 'modal' }} />
             <Stack.Screen name="auth/login" options={{ presentation: 'modal', headerShown: false }} />
             <Stack.Screen name="auth/register" options={{ presentation: 'modal', headerShown: false }} />
             <Stack.Screen name="interview-prep" options={{ presentation: 'card' }} />
             <Stack.Screen name="interview-mock" options={{ presentation: 'fullScreenModal' }} />
+            <Stack.Screen name="leaderboard" options={{ presentation: 'card' }} />
           </Stack>
         </GestureHandlerRootView>
         {/* Overlays rendered outside GestureHandlerRootView — anchored to ToastProvider root (position:relative on web) */}

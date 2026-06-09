@@ -49,6 +49,7 @@ interface BookmarkState {
   bookmarks: BookmarkedTopic[];
   questionBookmarks: BookmarkedQuestion[];
   isLoaded: boolean;
+  isSyncing: boolean;
 
   loadBookmarks: () => Promise<void>;
   addBookmark: (item: Omit<BookmarkedTopic, 'savedAt'>) => Promise<void>;
@@ -97,6 +98,7 @@ export const useBookmarkStore = create<BookmarkState>((set, get) => ({
   bookmarks: [],
   questionBookmarks: [],
   isLoaded: false,
+  isSyncing: false,
 
   // ── Load (uid-scoped AsyncStorage first → merge with Firestore if logged in) ─
   loadBookmarks: async () => {
@@ -110,10 +112,10 @@ export const useBookmarkStore = create<BookmarkState>((set, get) => ({
     const local: BookmarkedTopic[] = raw ? JSON.parse(raw) : [];
     const localQ: BookmarkedQuestion[] = rawQ ? JSON.parse(rawQ) : [];
 
-    if (!uid) {
-      set({ bookmarks: local, questionBookmarks: localQ, isLoaded: true });
-      return;
-    }
+    // Show local immediately; flag a background sync when signed in.
+    set({ bookmarks: local, questionBookmarks: localQ, isLoaded: true, isSyncing: !!uid });
+
+    if (!uid) return;
 
     try {
       const [topicSnap, questionSnap] = await Promise.all([
@@ -136,10 +138,10 @@ export const useBookmarkStore = create<BookmarkState>((set, get) => ({
         AsyncStorage.setItem(qKey, JSON.stringify(mergedQuestions)),
       ]);
 
-      set({ bookmarks: mergedTopics, questionBookmarks: mergedQuestions, isLoaded: true });
+      set({ bookmarks: mergedTopics, questionBookmarks: mergedQuestions, isLoaded: true, isSyncing: false });
     } catch (e) {
       console.warn('[Bookmarks] Cloud sync failed, using local:', e);
-      set({ bookmarks: local, questionBookmarks: localQ, isLoaded: true });
+      set({ bookmarks: local, questionBookmarks: localQ, isLoaded: true, isSyncing: false });
     }
   },
 

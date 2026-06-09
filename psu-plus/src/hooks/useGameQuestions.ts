@@ -2,8 +2,8 @@ import { useState, useCallback } from 'react';
 import { useExamStore } from '../stores/examStore';
 import { useSettingsStore } from '../stores/settingsStore';
 import { useSeenQuestionsStore } from '../stores/seenQuestionsStore';
-export { MCQQuestion, MatchChallenge } from '../services/gemini';
-import { generateQuestions, generateMatchChallenges } from '../services/gemini';
+export { MCQQuestion, MatchChallenge, TFStatement } from '../services/gemini';
+import { generateQuestions, generateMatchChallenges, generateTrueFalse } from '../services/gemini';
 import { getSyllabusTopics } from '../config/syllabus';
 
 export const useGameQuestions = () => {
@@ -76,6 +76,9 @@ export const useGameQuestions = () => {
       if (gameMode === 'match') {
         // Special case for match challenges
         return await generateMatchChallenges(params);
+      } else if (gameMode === 'tsunami') {
+        // True/False statements for Tsunami swipe mode
+        return await generateTrueFalse(params);
       } else {
         return await generateQuestions(params);
       }

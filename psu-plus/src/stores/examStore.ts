@@ -3,7 +3,7 @@ import { useConfigStore } from './configStore';
 import { PSUConfig, PSUS } from '../config/psus';
 import { BranchConfig, BRANCHES } from '../config/branches';
 
-export type GameMode = 'mcq' | 'survival' | 'match' | 'slasher' | 'mario';
+export type GameMode = 'mcq' | 'survival' | 'match' | 'slasher' | 'mario' | 'tsunami';
 
 interface ExamState {
   selectedPSU: PSUConfig | null;

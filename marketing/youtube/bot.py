@@ -1,6 +1,7 @@
 # pip install google-api-python-client google-auth-oauthlib google-generativeai python-dotenv
 
 import os, time, random, json, logging
+from datetime import datetime, timezone, timedelta
 from dotenv import load_dotenv
 load_dotenv()  # loads .env from current folder
 from googleapiclient.discovery import build
@@ -27,13 +28,13 @@ CLIENT_SECRET  = 'client_secret.json'
 TOKEN_FILE     = 'token.json'
 HISTORY_FILE   = 'history.json'
 
-DAILY_COMMENT_LIMIT = 5
-DAILY_REPLY_LIMIT   = 10
+DAILY_COMMENT_LIMIT = 9999   # no artificial limit — YouTube API quota is the real cap (~10k units/day)
+DAILY_REPLY_LIMIT   = 9999   # same
 MIN_VIDEO_VIEWS     = 3000
 MAX_VIDEO_VIEWS     = 300000
 
 TEST_MODE = True   # True = short delays (testing) | False = full delays (production)
-APP_LINK  = 'https://aspirant-arcade.vercel.app'
+APP_LINK  = 'https://qr.ae/pFYza2'
 
 SEARCH_QUERIES = [
     'PSU interview preparation 2025',
@@ -52,7 +53,7 @@ SCOPES = ['https://www.googleapis.com/auth/youtube.force-ssl']
 
 APP_CONTEXT = """
 App name: Aspirant Arcade
-Platform: Web app — accessible at https://aspirant-arcade.vercel.app
+Platform: Web app — accessible at https://qr.ae/pFYza2
 Purpose: PSU exam preparation for Indian engineering graduates
 
 Key features:
@@ -64,7 +65,7 @@ Key features:
 6. Completely free to use — no signup required
 
 Target users: B.Tech graduates preparing for PSU jobs through GATE
-Website: https://aspirant-arcade.vercel.app
+Website: https://qr.ae/pFYza2
 """
 
 # ── GEMINI CLIENT ────────────────────────────────────────
@@ -151,10 +152,19 @@ Reply ONLY in this JSON format (no markdown, no code block):
 
 # ── GENERATE COMMENT VIA GEMINI ──────────────────────────
 def force_link(text: str) -> str:
-    """Guarantee link appears at end regardless of what Gemini wrote"""
+    """Remove any links — YouTube deletes comments with URLs. Name-only approach."""
     text = text.strip()
-    if APP_LINK not in text:
-        text = f"{text}\nTry it free at {APP_LINK}"
+    if not text:
+        return ''
+    # Strip any URLs Gemini included
+    import re
+    text = re.sub(r'https?://\S+', '', text)
+    text = re.sub(r'aspirant-arcade\.vercel\.app\S*', '', text)
+    text = re.sub(r'qr\.ae/\S+', '', text)
+    text = text.strip()
+    # Ensure app name is mentioned
+    if 'Aspirant Arcade' not in text and 'aspirant arcade' not in text.lower():
+        text = f"{text}\n— Aspirant Arcade (search on Google)"
     return text
 
 def generate_top_comment(video_title: str, video_description: str) -> str:
@@ -232,6 +242,15 @@ def search_videos(query: str, pub, max_results=8) -> list:
             if views < MIN_VIDEO_VIEWS or views > MAX_VIDEO_VIEWS:
                 continue
 
+            # Skip videos older than 2 weeks
+            published_at = s['snippet'].get('publishedAt', '')
+            if published_at:
+                pub_date = datetime.fromisoformat(published_at.replace('Z', '+00:00'))
+                age = datetime.now(timezone.utc) - pub_date
+                if age > timedelta(days=60):
+                    log.info(f"    Skip (too old: {age.days} days): {item['snippet']['title'][:50]}")
+                    continue
+
             videos.append({
                 'id': vid_id,
                 'title': item['snippet']['title'],
@@ -255,9 +274,16 @@ def get_video_comments(pub, video_id: str, max_results=30) -> list:
             textFormat='plainText'
         ).execute()
 
+        cutoff = datetime.now(timezone.utc) - timedelta(days=60)
         comments = []
         for item in res.get('items', []):
             snip = item['snippet']['topLevelComment']['snippet']
+            # Skip comments older than 2 weeks
+            published_at = snip.get('publishedAt', '')
+            if published_at:
+                pub_date = datetime.fromisoformat(published_at.replace('Z', '+00:00'))
+                if pub_date < cutoff:  # skip comments older than 60 days
+                    continue
             comments.append({
                 'id': item['snippet']['topLevelComment']['id'],
                 'text': snip['textOriginal'],

@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, Radius, Shadows } from '@/theme';
 import { useActivityStore, StudySession, InterviewSession } from '@/stores/activityStore';
 import { AppHeader } from '@/components/AppHeader';
+import { SyncBadge } from '@/components/SyncBadge';
 
 // ─── Label maps ───────────────────────────────────────────────────────────────
 
@@ -284,7 +285,7 @@ function computeRecurringWeakAreas(sessions: InterviewSession[]): { area: string
 }
 
 export default function InsightsScreen() {
-  const { sessions, interviewSessions, isLoaded } = useActivityStore();
+  const { sessions, interviewSessions, isLoaded, isSyncing } = useActivityStore();
   const isWide = useIsWide();
 
   const streak = useMemo(() => computeStreak(sessions), [sessions]);
@@ -341,7 +342,10 @@ export default function InsightsScreen() {
         contentContainerStyle={[styles.content, isWide && styles.contentWide]}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.pageTitle}>Insights</Text>
+        <View style={styles.titleRow}>
+          <Text style={styles.pageTitle}>Insights</Text>
+          <SyncBadge visible={isSyncing} />
+        </View>
 
         {/* ── Hero Stats ────────────────────────────────────────────────── */}
         <View style={styles.heroRow}>
@@ -601,10 +605,15 @@ const styles = StyleSheet.create({
   cardGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.xl },
   cardWide: { width: '48%' },
 
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: Spacing.sm,
+  },
   pageTitle: {
     ...Typography.h1,
     color: Colors.primary,
-    marginBottom: Spacing.sm,
   },
 
   // Hero row

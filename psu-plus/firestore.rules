@@ -77,5 +77,31 @@ service cloud.firestore {
         allow read, write: if request.auth.uid == userId;
       }
     }
+
+    // ── Device heartbeat (guest/install counting) ───────────────────────────
+    // Guests are unauthenticated, so writes are open but shape-validated and the
+    // collection is admin-read-only (privacy). Used to count guests + conversion.
+    match /analytics_devices/{deviceId} {
+      allow read: if request.auth.token.email == 'ps671248@gmail.com';
+      allow create, update: if request.resource.data.lastSeen is int
+        && request.resource.data.signedIn is bool
+        && request.resource.data.platform is string;
+    }
+
+    // ── Leaderboards (public read; owner writes own entry, sanity-capped) ─────
+    // Path: leaderboards/{boardId}/scores/{uid}  where boardId = "{metric}_{window}"
+    // No prize → within-cap fudging is harmless; the cap blocks the absurd score
+    // that would break the FOMO. Owner-only write prevents writing someone else's row.
+    match /leaderboards/{boardId}/scores/{uid} {
+      allow read: if true;
+      allow write: if request.auth != null
+        && request.auth.uid == uid
+        && request.resource.data.uid == uid
+        && request.resource.data.value is int
+        && request.resource.data.value >= 0
+        && request.resource.data.value <= 1000000
+        && request.resource.data.name is string
+        && request.resource.data.name.size() <= 40;
+    }
   }
 }

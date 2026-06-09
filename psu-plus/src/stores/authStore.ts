@@ -9,6 +9,9 @@ import { useSettingsStore } from './settingsStore';
 import { useBookmarkStore } from './bookmarkStore';
 import { useActivityStore } from './activityStore';
 import { useSeenQuestionsStore } from './seenQuestionsStore';
+import { syncAllLeaderboards } from '@/services/leaderboard';
+import { useLeaderboardStore } from './leaderboardStore';
+import { pingDevice } from '@/services/deviceAnalytics';
 
 interface AuthState {
   user: User | null;
@@ -103,6 +106,16 @@ export const useAuthStore = create<AuthState>((set) => ({
         useBookmarkStore.getState().loadBookmarks(),
         useActivityStore.getState().loadSessions(),
       ]);
+
+      // Publish full history to the leaderboards + refresh the header badge.
+      // Fire-and-forget — a guest who just signed in sees their grind land on the board.
+      const s = useSettingsStore.getState();
+      const sessions = useActivityStore.getState().sessions;
+      syncAllLeaderboards(user.displayName || s.fullName, s.primaryBranchId, sessions)
+        .then(() => useLeaderboardStore.getState().refreshBadge(sessions));
+
+      // Flip this device's heartbeat to signed-in (tracks guest→user conversion).
+      pingDevice();
     });
   },
 

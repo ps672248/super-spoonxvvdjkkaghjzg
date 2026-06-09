@@ -57,6 +57,14 @@ const GAME_MODES: {
       icon: 'game-controller',
       accent: '#1A237E',
     },
+    {
+      id: 'tsunami',
+      title: 'True/False Tsunami',
+      desc: 'Swipe right for TRUE, left for FALSE. Keep the combo alive — 3 lives, fast reflexes, big scores.',
+      icon: 'swap-horizontal',
+      accent: '#0097A7',
+      showHearts: true,
+    },
   ];
 
 import { AppHeader } from '@/components/AppHeader';
