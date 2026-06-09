@@ -47,16 +47,5 @@ jobs:
           git diff --staged --quiet || git commit -m "chore: update youtube bot history [skip ci]"
           git push
 
-      - name: Update YT_TOKEN secret if token was refreshed
-        if: always()
-        run: |
-          NEW_TOKEN=$(cat marketing/youtube/token.json)
-          echo "Token file exists. If refreshed, update YT_TOKEN secret manually."
-          # Auto-update via gh CLI:
-          echo '${{ secrets.YT_TOKEN }}' > /tmp/old_token.json
-          if ! diff -q marketing/youtube/token.json /tmp/old_token.json > /dev/null 2>&1; then
-            echo "Token was refreshed — updating secret..."
-            echo "$NEW_TOKEN" | gh secret set YT_TOKEN
-          fi
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # refresh_token never expires for verified apps used regularly.
+      # google-auth auto-refreshes the access token each run — no secret update needed.
