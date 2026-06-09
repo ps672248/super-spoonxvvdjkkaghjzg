@@ -2,7 +2,7 @@ module.exports = {
   expo: {
     name: "Aspirant Arcade",
     slug: "aspirant-arcade",
-    version: "1.0.0",
+    version: "1.0.1",
     orientation: "portrait",
     icon: "./assets/icon.png",
     userInterfaceStyle: "light",
@@ -18,6 +18,7 @@ module.exports = {
       bundleIdentifier: "com.aspirantarcade.app",
     },
     android: {
+      versionCode: 2,
       adaptiveIcon: {
         foregroundImage: "./assets/adaptive-icon.png",
         backgroundColor: "#0A0E17",
