@@ -48,6 +48,7 @@ export const metadata: Metadata = {
     description: "AI-powered PSU prep that feels like a game. Free on Android.",
     images: [OG_IMAGE],
   },
+  alternates: { canonical: SITE_URL },
   robots: { index: true, follow: true },
   icons: {
     icon: [
