@@ -11,9 +11,9 @@ const OG_IMAGE = "https://cwhpybswvsmoiwzkyhlj.supabase.co/storage/v1/object/pub
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: "Aspirant Arcade — Free PSU Exam Preparation App for GATE Engineers",
+  title: "Aspirant Arcade — Free PSU & Board Exam Prep App | Class 9–12, GATE, PSU",
   description:
-    "Free PSU exam preparation app for GATE engineers. Available on Android and web. Practice MCQs for BHEL, ONGC, NTPC, IOCL, HPCL, PGCIL with gamified modes — MCQ Blitz, Survival, Syllabus Slasher. AI mock GD and Technical PI interview simulator. No signup required.",
+    "Free AI-powered exam prep app for PSU GATE aspirants and Class 9–12 students. Practice MCQs, True/False, and Match challenges across HPCL, BHEL, ONGC, NTPC, CBSE Physics, Chemistry, Maths and more. Play free from our shared question bank — no API key needed.",
   keywords: [
     "PSU exam preparation free",
     "GATE PSU preparation app",
@@ -32,6 +32,16 @@ export const metadata: Metadata = {
     "PGCIL HAL BEL preparation",
     "PSU exam app Android free",
     "best PSU preparation app 2026",
+    "CBSE board exam preparation free",
+    "class 9 10 MCQ app",
+    "class 11 12 practice app",
+    "NCERT MCQ practice free",
+    "board exam preparation Android",
+    "class 12 physics MCQ",
+    "class 10 science practice",
+    "NCERT chapter wise MCQ",
+    "free board exam app India",
+    "class 9 10 11 12 preparation free",
   ],
   authors: [{ name: "Aspirant Arcade" }],
   openGraph: {
@@ -60,7 +70,7 @@ export const metadata: Metadata = {
   },
 };
 
-const jsonLd = {
+const appJsonLd = {
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
   "name": "Aspirant Arcade",
@@ -68,7 +78,7 @@ const jsonLd = {
   "applicationCategory": "EducationApplication",
   "operatingSystem": "Android, Web",
   "offers": { "@type": "Offer", "price": "0", "priceCurrency": "INR" },
-  "description": "Free PSU exam preparation app for GATE-qualified engineers. Gamified MCQ practice, AI mock GD, Technical PI simulator for HPCL, BHEL, ONGC, NTPC, IOCL and more. No login required.",
+  "description": "Free AI-powered exam prep app for PSU GATE aspirants and Class 9–12 students. Gamified MCQ practice, AI mock GD, Technical PI simulator for HPCL, BHEL, ONGC, NTPC and more. Also covers CBSE/NCERT Class 9–12 subjects. No login required.",
   "featureList": [
     "MCQ Blitz — rapid-fire PSU syllabus questions",
     "Survival Mode — timed CBT simulation with 3 lives",
@@ -76,15 +86,31 @@ const jsonLd = {
     "Technical PI Simulator — AI mock panel interview",
     "Syllabus Slasher — gamified topic mastery",
     "Insights Dashboard — accuracy tracking per topic",
-    "Smart Bookmarks — save and annotate tough questions"
+    "Smart Bookmarks — save and annotate tough questions",
+    "CBSE/NCERT Chapter-wise MCQ Practice",
+    "True/False Challenges (Tsunami mode)",
+    "Free Question Bank — no API key needed",
+    "Class 9–12 Board Exam Preparation"
   ],
   "audience": {
     "@type": "Audience",
-    "audienceType": "GATE-qualified engineers targeting PSU jobs in India"
+    "audienceType": "Engineering students, GATE aspirants, and Class 9–12 students in India"
   },
   "inLanguage": ["en", "hi"],
   "isAccessibleForFree": true,
   "image": OG_IMAGE,
+};
+
+const websiteJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "Aspirant Arcade",
+  "url": SITE_URL,
+  "potentialAction": {
+    "@type": "SearchAction",
+    "target": `${SITE_URL}/?q={search_term_string}`,
+    "query-input": "required name=search_term_string",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -93,7 +119,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(appJsonLd) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
         />
       </head>
       <body className="min-h-screen bg-[#0A0E17] text-white antialiased font-sans">

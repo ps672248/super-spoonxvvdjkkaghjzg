@@ -35,13 +35,21 @@ const FAQS = [
     q: "Which PSUs are covered?",
     a: "HPCL, Coal India, BHEL, ONGC, NTPC, SAIL, IOCL, GAIL, BPCL and more. Interview Simulator available for PSUs with GD/PI rounds like HPCL and BHEL.",
   },
+  {
+    q: "Is Aspirant Arcade only for PSU aspirants?",
+    a: "No. Class 9–12 students can practice CBSE/NCERT chapter-wise MCQs, True/False challenges, and Match the Following across Science, Maths, Physics, Chemistry, Biology, SST, and English. Select Schooling on the home screen after downloading.",
+  },
+  {
+    q: "Do I need a Gemini API key to play?",
+    a: "No. You can play immediately from our shared question bank — no key or signup required. Adding a free Gemini key (Google AI Studio, 2 minutes, no billing) unlocks unlimited freshly generated questions every session.",
+  },
 ];
 
 export default function FaqSection() {
   const [open, setOpen] = useState<number | null>(null);
 
   return (
-    <section className="py-12 md:py-20 px-4 bg-[#0F1520]">
+    <section id="faq" className="py-12 md:py-20 px-4 bg-[#0F1520]">
       <div className="max-w-3xl mx-auto">
 
         {/* Header */}

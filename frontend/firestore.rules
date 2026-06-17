@@ -1,0 +1,116 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Static config (public read, admin write only) ────────────────────────
+    match /psus/{doc} {
+      allow read: if true;
+      allow write: if request.auth.token.email == 'ps671248@gmail.com';
+    }
+    match /branches/{doc} {
+      allow read: if true;
+      allow write: if request.auth.token.email == 'ps671248@gmail.com';
+    }
+    match /syllabus/{doc} {
+      allow read: if true;
+      allow write: if request.auth.token.email == 'ps671248@gmail.com';
+    }
+    match /metadata/{doc} {
+      allow read: if true;
+      allow write: if request.auth.token.email == 'ps671248@gmail.com';
+    }
+
+    // ── App config (public read, admin write only) ───────────────────────────
+    // Docs: maintenance, update, whats_new
+    match /app_config/{doc} {
+      allow read: if true;
+      allow write: if request.auth.token.email == 'ps671248@gmail.com';
+    }
+
+    // ── Shared question bank (public read; writes ONLY via Admin SDK backend) ──
+    // Clients read banked questions when they have no Gemini key. All writes go
+    // through the backend service (validated) — never directly from the client,
+    // which prevents poisoning. Admin retains an override for moderation.
+    match /question_bank/{questionId} {
+      allow read: if true;
+      allow write: if request.auth.token.email == 'ps671248@gmail.com';
+    }
+
+    // ── Mock test attempts (owner read/create, admin full) ───────────────────
+    match /mock_attempts/{attemptId} {
+      allow read: if request.auth != null
+        && (request.auth.uid == resource.data.userId
+            || request.auth.token.email == 'ps671248@gmail.com');
+      allow create: if request.auth != null
+        && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if request.auth.token.email == 'ps671248@gmail.com';
+    }
+
+    // ── Ratings (anyone creates, admin reads/manages) ────────────────────────
+    match /ratings/{ratingId} {
+      allow create: if true;
+      allow read, update, delete: if request.auth.token.email == 'ps671248@gmail.com';
+    }
+
+    // ── Support tickets (owner + admin) ─────────────────────────────────────
+    match /support_tickets/{ticketId} {
+      allow read: if request.auth != null
+        && (request.auth.uid == resource.data.userId
+            || request.auth.token.email == 'ps671248@gmail.com');
+      allow create: if request.auth != null
+        && request.resource.data.userId == request.auth.uid;
+      allow update: if request.auth != null
+        && (request.auth.uid == resource.data.userId
+            || request.auth.token.email == 'ps671248@gmail.com');
+      allow delete: if request.auth.token.email == 'ps671248@gmail.com';
+
+      match /messages/{msgId} {
+        allow read, write: if request.auth != null;
+      }
+    }
+
+    // ── User data (bookmarks, settings, sessions) — own data only ───────────
+    match /users/{userId} {
+      allow read, write: if request.auth.uid == userId;
+
+      match /topic_bookmarks/{bookmarkId} {
+        allow read, write: if request.auth.uid == userId;
+      }
+      match /question_bookmarks/{bookmarkId} {
+        allow read, write: if request.auth.uid == userId;
+      }
+      match /sessions/{sessionId} {
+        allow read, write: if request.auth.uid == userId;
+      }
+      match /interviewSessions/{sessionId} {
+        allow read, write: if request.auth.uid == userId;
+      }
+    }
+
+    // ── Device heartbeat (guest/install counting) ───────────────────────────
+    // Guests are unauthenticated, so writes are open but shape-validated and the
+    // collection is admin-read-only (privacy). Used to count guests + conversion.
+    match /analytics_devices/{deviceId} {
+      allow read: if request.auth.token.email == 'ps671248@gmail.com';
+      allow create, update: if request.resource.data.lastSeen is int
+        && request.resource.data.signedIn is bool
+        && request.resource.data.platform is string;
+    }
+
+    // ── Leaderboards (public read; owner writes own entry, sanity-capped) ─────
+    // Path: leaderboards/{boardId}/scores/{uid}  where boardId = "{metric}_{window}"
+    // No prize → within-cap fudging is harmless; the cap blocks the absurd score
+    // that would break the FOMO. Owner-only write prevents writing someone else's row.
+    match /leaderboards/{boardId}/scores/{uid} {
+      allow read: if true;
+      allow write: if request.auth != null
+        && request.auth.uid == uid
+        && request.resource.data.uid == uid
+        && request.resource.data.value is int
+        && request.resource.data.value >= 0
+        && request.resource.data.value <= 1000000
+        && request.resource.data.name is string
+        && request.resource.data.name.size() <= 40;
+    }
+  }
+}

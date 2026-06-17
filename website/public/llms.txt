@@ -1,51 +1,70 @@
 # Aspirant Arcade
 
-> Free PSU exam preparation app for GATE-qualified engineers in India. Available on Android and web. No login required.
+> Free exam prep app for PSU aspirants and Class 9–12 students in India. Gamified. Android and web. No login required.
 
 ## What it is
 
-Aspirant Arcade is a gamified PSU (Public Sector Undertaking) exam preparation app for Indian engineering graduates who have qualified GATE and are targeting PSU jobs. It uses Google Gemini AI to generate fresh, non-repetitive questions every session calibrated to the user's specific PSU, engineering branch, and exam syllabus.
+Aspirant Arcade is a free gamified exam preparation app covering two categories:
 
-The app is completely free. Users bring their own Google Gemini API key (free from Google AI Studio). No data is stored on any server — all progress is local to the device.
+**PSU Exams** — for GATE-qualified engineers targeting PSU recruitment (HPCL, BHEL, ONGC, NTPC, IOCL, GAIL, Coal India, SAIL, BPCL, POWERGRID, NALCO, MSTC and more). Questions are calibrated to the user's specific PSU, engineering branch, and syllabus.
+
+**Schooling (CBSE / NCERT)** — for Class 9–12 students preparing for board exams. Chapter-wise MCQ, True/False, and Match the Following across Science, Maths, Physics, Chemistry, Biology, SST, and English.
+
+Play free from a shared question bank — no API key or signup needed. Users can optionally add a free Google Gemini API key (Google AI Studio, no billing) for unlimited AI-generated questions every session.
+
+No data is stored on any server — all progress is local to the device.
 
 ## Who it is for
 
-- GATE-qualified B.Tech/B.E. engineers preparing for PSU written tests (CBT) and interviews
-- Engineers targeting: HPCL, BHEL, ONGC, NTPC, IOCL, GAIL, SAIL, BPCL, PGCIL, HAL, BEL, Coal India, NMDC, NFL, AAI, and more
+- GATE-qualified engineers preparing for PSU written tests (CBT) and interviews
+- Engineers targeting: HPCL, BHEL, ONGC, NTPC, IOCL, GAIL, SAIL, BPCL, POWERGRID, NALCO, MSTC, Coal India, BEL, HAL, MECL, NFL, AAI, NMDC
 - Supported engineering branches: Electrical, Mechanical, Civil, Chemical, Instrumentation, CS/IT
+- Class 9–12 students preparing for CBSE/NCERT board exams
+- Students practicing chapter-wise MCQs across Science, Maths, Physics, Chemistry, Biology, SST, English
 
 ## Key Features
 
-- **MCQ Blitz**: Rapid-fire multiple choice questions on PSU syllabus
+- **MCQ Blitz**: Rapid-fire multiple choice questions on exam syllabus
 - **Survival Mode**: Timed MCQs with 3 lives — simulates real CBT exam pressure
-- **Match the Following**: Pair concepts with definitions
+- **Match the Following**: Pair concepts with definitions (PSU and board exam content)
 - **Syllabus Slasher**: Gamified topic mastery mode
 - **Technical PI Simulator**: AI mock panel interview with branch-specific technical questions
 - **AI Mock GD**: Group Discussion practice with AI candidates on real PSU GD topics
 - **Insights Dashboard**: Accuracy tracking per topic over time
 - **Smart Bookmarks**: Save tough questions with personal notes
+- **Shared Question Bank**: Pre-seeded questions playable without any API key
 
 ## Platforms
 
-- Web app: https://aspirant-arcade.xyz
-- Android APK: Direct install, no Play Store required
+- Web: https://aspirant-arcade.xyz
+- Try Web: https://aspirant-arcade.xyz/demo
+- Android APK: https://aspirant-arcade.xyz/download (direct install, no Play Store required)
 
 ## How it works
 
 1. Open the web app or install the Android APK
-2. Get a free Gemini API key from Google AI Studio (no billing required)
-3. Select target PSU, engineering branch, and topics
-4. AI generates unique questions every session
+2. Play free immediately from the shared question bank — no key needed
+   OR add a free Gemini API key from Google AI Studio for unlimited AI questions
+3. Select your exam: PSU + engineering branch + topics, or Class 9–12 subject + chapter
+4. Play, track accuracy, bookmark weak questions
+
+## Coverage
+
+### PSU Exams
+HPCL · BHEL · ONGC · NTPC · IOCL · GAIL · SAIL · BPCL · POWERGRID · NALCO · MSTC · Coal India · BEL · HAL · MECL · NFL · AAI · NMDC
+Question types: Technical MCQ · Aptitude · GK / English · Interview Simulator
+
+### Schooling (CBSE / NCERT)
+- Class 9–10: Science · Mathematics · Social Science · English
+- Class 11–12: Physics · Chemistry · Mathematics · Biology · English
+Question types: MCQ · True / False · Match the Following
 
 ## Privacy
 
-No account creation. No email or phone required. All progress stored locally on device. Gemini API key stored on-device only — never sent to Aspirant Arcade servers. Zero ads, zero tracking.
-
-## PSUs Supported
-
-HPCL, BHEL, ONGC, NTPC, IOCL, GAIL, SAIL, BPCL, PGCIL, HAL, BEL, Coal India, NMDC, NFL, AAI, MECL, NHPC, Oil India, THDC, NEEPCO, SJVN, EIL, NALCO, RITES, IRCON
+No account creation. No email or phone required. All progress stored locally on device. Gemini API key (if added) stored on-device only — never sent to Aspirant Arcade servers. Zero ads, zero tracking.
 
 ## Links
 
 - Website: https://aspirant-arcade.xyz
-- Android APK: https://cwhpybswvsmoiwzkyhlj.supabase.co/storage/v1/object/public/app-releases/aspirant-arcade/aspirant_arcade_1.0.1_mobile.apk
+- Download: https://aspirant-arcade.xyz/download
+- Try Web: https://aspirant-arcade.xyz/demo

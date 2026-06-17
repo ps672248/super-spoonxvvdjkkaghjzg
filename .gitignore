@@ -49,4 +49,9 @@ yarn-error.log*
 # ── Marketing bot secrets ─────────────────────────────────
 marketing/youtube/client_secret.json
 marketing/youtube/token.json
+marketing/youtube/schooling_token.json
 marketing/youtube/bot.log
+marketing/youtube/schooling_bot.log
+marketing/youtube/.env
+marketing/reddit/.env
+marketing/reddit/token.json

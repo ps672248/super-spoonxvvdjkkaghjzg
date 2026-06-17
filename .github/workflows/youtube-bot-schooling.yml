@@ -1,9 +1,9 @@
-name: YouTube Comment Bot
+name: YouTube Schooling Bot
 
 on:
   schedule:
-    - cron: '0 */2 * * *'   # every 2 hours (12 runs/day)
-  workflow_dispatch:         # allow manual trigger from GitHub Actions tab
+    - cron: '0 1,3,5,7,9,11,13,15,17,19,21,23 * * *'  # odd hours — offset from PSU bot
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -31,23 +31,20 @@ jobs:
         working-directory: marketing/youtube
         run: |
           echo '${{ secrets.YT_CLIENT_SECRET }}' > client_secret.json
-          echo '${{ secrets.YT_TOKEN }}' > token.json
+          echo '${{ secrets.YT_TOKEN_SCHOOLING }}' > schooling_token.json
 
-      - name: Run bot
+      - name: Run schooling bot
         working-directory: marketing/youtube
         env:
           YT_API_KEY: ${{ secrets.YT_API_KEY }}
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-        run: python bot.py
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY_SCHOOL }}
+        run: python schooling_bot.py
 
       - name: Save updated history back to repo
         working-directory: marketing/youtube
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add psu_history.json
-          git diff --staged --quiet || git commit -m "chore: update psu bot history [skip ci]"
+          git add schooling_history.json
+          git diff --staged --quiet || git commit -m "chore: update schooling bot history [skip ci]"
           git push
-
-      # refresh_token never expires for verified apps used regularly.
-      # google-auth auto-refreshes the access token each run — no secret update needed.

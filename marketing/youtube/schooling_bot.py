@@ -3,7 +3,7 @@
 import os, time, random, json, logging
 from datetime import datetime, timezone, timedelta
 from dotenv import load_dotenv
-load_dotenv()  # loads .env from current folder
+load_dotenv()
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.oauth2.credentials import Credentials
@@ -15,83 +15,89 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s | %(levelname)s | %(message)s',
     handlers=[
-        logging.FileHandler('bot.log', encoding='utf-8'),
+        logging.FileHandler('schooling_bot.log', encoding='utf-8'),
         logging.StreamHandler()
     ]
 )
 log = logging.getLogger(__name__)
 
 # ── CONFIG ───────────────────────────────────────────────
-YT_API_KEY     = os.environ.get('YT_API_KEY', '')      # set env var OR paste key here
-GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')  # set env var OR paste key here
+YT_API_KEY     = os.environ.get('YT_API_KEY', '')
+GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')
 CLIENT_SECRET  = 'client_secret.json'
-TOKEN_FILE     = 'token.json'
-HISTORY_FILE   = 'psu_history.json'
+TOKEN_FILE     = 'schooling_token.json'
+HISTORY_FILE   = 'schooling_history.json'
 
-DAILY_COMMENT_LIMIT = 3   # per run — bot runs every 2h via scheduler
-DAILY_REPLY_LIMIT   = 3   # per run
+DAILY_COMMENT_LIMIT = 3
+DAILY_REPLY_LIMIT   = 3
 MIN_VIDEO_VIEWS     = 3000
-MAX_VIDEO_VIEWS     = 300000
+MAX_VIDEO_VIEWS     = 500000
 
-TEST_MODE = False  # True = short delays (testing) | False = full delays (production)
-APP_LINK  = 'https://aspirant-arcade.xyz'
+TEST_MODE = False
 
 SEARCH_QUERIES = [
-    'PSU interview preparation 2025',
-    'BHEL interview tips engineering',
-    'ONGC recruitment preparation',
-    'NTPC GD PI round preparation',
-    'how to crack PSU interview',
-    'PSU group discussion tips',
-    'GATE PSU selection process',
-    'IOCL PGCIL interview preparation',
-    'PSU technical interview engineering',
-    'HAL BEL recruitment preparation',
+    'class 10 board exam preparation 2026',
+    'class 12 physics CBSE preparation',
+    'NCERT class 9 science chapter wise',
+    'class 11 chemistry important questions',
+    'class 10 maths MCQ practice',
+    'CBSE class 12 board exam tips',
+    'class 9 science MCQ NCERT',
+    'how to score 90 percent in class 10 boards',
+    'class 12 maths important chapters',
+    'class 11 physics preparation strategy',
+    'class 10 science board exam revision',
+    'NCERT class 12 chemistry solutions',
+    'class 9 maths important questions',
+    'board exam 2026 preparation tips',
+    'class 12 biology NCERT chapter wise',
+    'SST class 10 important questions',
+    'class 11 maths limits derivatives',
+    'CBSE class 9 english grammar',
+    'class 10 hindi board exam preparation',
+    'NCERT class 11 physics concepts',
 ]
 
 SCOPES = ['https://www.googleapis.com/auth/youtube.force-ssl']
 
 APP_CONTEXT = """
 App name: Aspirant Arcade
-Platform: Web app — accessible at https://qr.ae/pFYza2
-Purpose: PSU exam preparation for Indian engineering graduates
+Purpose: Free MCQ and exam practice for Class 9–12 CBSE/NCERT students
 
 Key features:
-1. Gamified MCQ modes: MCQ Blitz, Survival (one wrong = game over), Match, Syllabus Slasher, Mario Runner
-2. AI-powered interview simulation: Group Discussion with 3 AI candidates, Technical PI round, HR PI round
-3. Branch-specific content: EE, ME, CE, ECE, CS, Chemical, Petroleum
-4. PSU-specific: filters by BHEL, ONGC, NTPC, IOCL, PGCIL, HAL, BEL, etc.
-5. Uses user's own Gemini API key — questions generated fresh, stored on device only
-6. Completely free to use — no signup required
+1. Chapter-wise MCQ practice for Science, Maths, Physics, Chemistry, Biology, SST, English
+2. True/False challenges and Match the Following across NCERT chapters
+3. Covers Class 9, 10, 11, 12 — all major CBSE subjects
+4. Free question bank — no API key or signup needed
+5. Available on Android and web
 
-Target users: B.Tech graduates preparing for PSU jobs through GATE
-Website: https://qr.ae/pFYza2
+Target users: Class 9–12 students preparing for CBSE/NCERT board exams
+(Do NOT include any URLs or links in comments — mention app name only)
 """
 
 # ── GEMINI CLIENT ────────────────────────────────────────
 genai.configure(api_key=GEMINI_API_KEY)
 model = genai.GenerativeModel('gemini-3.1-flash-lite')
 
-GEMINI_CALL_DELAY = 5  # seconds between Gemini calls — free tier = 15 RPM = 1 per 4s
+GEMINI_CALL_DELAY = 5
 
 def gemini(prompt: str, retries: int = 4) -> str:
     import re as _re
     for attempt in range(retries):
         try:
-            time.sleep(GEMINI_CALL_DELAY)  # throttle before every call
+            time.sleep(GEMINI_CALL_DELAY)
             resp = model.generate_content(prompt)
             return resp.text.strip()
         except Exception as e:
             err = str(e)
             log.error(f"Gemini error: {e}")
-            # Extract retry_delay from 429 response and wait
             m = _re.search(r'retry_delay\s*\{\s*seconds:\s*(\d+)', err)
             wait = int(m.group(1)) + 5 if m else 60 * (attempt + 1)
             if '429' in err or 'quota' in err.lower() or 'rate' in err.lower():
                 log.warning(f"  Rate limited. Waiting {wait}s before retry {attempt+1}/{retries}...")
                 time.sleep(wait)
             else:
-                return ''  # non-quota error, don't retry
+                return ''
     log.error("Gemini failed after all retries.")
     return ''
 
@@ -107,7 +113,7 @@ def load_history():
                     data['replied_comments'] = {}
                 return data
         except (json.JSONDecodeError, ValueError):
-            log.warning("history.json corrupt or empty — starting fresh")
+            log.warning("schooling_history.json corrupt — starting fresh")
     return {'commented_videos': {}, 'replied_comments': {}}
 
 def save_history(h):
@@ -132,79 +138,50 @@ def get_auth_client():
 def get_public_client():
     return build('youtube', 'v3', developerKey=YT_API_KEY)
 
-# ── RELEVANCY CHECK VIA KEYWORDS (no Gemini — saves quota) ──
+# ── VIDEO KEYWORDS ───────────────────────────────────────
 VIDEO_KEYWORDS = [
-    # ── App-supported PSUs (short codes) ──
-    'bhel', 'ongc', 'ntpc', 'hpcl', 'iocl', 'gail', 'sail', 'bpcl',
-    'pgcil', 'hal', 'bel', 'nmdc', 'nfl', 'aai', 'mecl', 'nhpc',
-    'moil', 'eil', 'wapcos', 'rites', 'ircon', 'concor', 'nalco',
-    'balco', 'hpcl', 'mrpl', 'cpcl', 'numaligarh', 'brbcl', 'thdc',
-    'neepco', 'sjvn', 'recl', 'pfc', 'ireda', 'ongc videsh',
-    'oil india', 'oil and natural gas',
+    # Class levels
+    'class 9', 'class 10', 'class 11', 'class 12',
+    '9th class', '10th class', '11th class', '12th class',
+    '9th standard', '10th standard', '11th standard', '12th standard',
+    'secondary school', 'higher secondary',
 
-    # ── Full names ──
-    'bharat heavy electricals', 'bharat electronics', 'hindustan aeronautics',
-    'hindustan petroleum', 'indian oil', 'oil and natural gas corporation',
-    'national thermal power', 'power grid corporation', 'gas authority',
-    'steel authority', 'coal india', 'national fertilizers',
-    'airports authority', 'mineral exploration', 'national hydroelectric',
-    'engineers india', 'rashtriya ispat', 'vizag steel',
+    # Boards / curriculum
+    'cbse', 'ncert', 'icse', 'isc', 'state board', 'up board', 'mp board',
+    'board exam', 'board exams', 'boards 2025', 'boards 2026',
+    'term 1', 'term 2', 'annual exam',
 
-    # ── Exam / recruitment terms ──
-    'psu', 'gate', 'recruitment', 'interview', 'selection process',
-    'group discussion', 'gd pi', 'technical interview', 'hr round',
-    'merit list', 'cutoff', 'shortlist', 'document verification',
-    'joining letter', 'offer letter', 'medical test', 'physical test',
-    'written test', 'cbt', 'online test', 'aptitude test',
-    'executive trainee', 'management trainee', 'graduate trainee',
-    'junior engineer', 'assistant manager', 'trainee engineer',
-    'get ', 'et ', 'mt ', 'je ', 'am ',
+    # Subjects
+    'science mcq', 'maths mcq', 'physics ncert', 'chemistry ncert',
+    'biology ncert', 'sst', 'social science', 'english grammar',
+    'accountancy', 'business studies', 'economics class',
+    'hindi vyakaran', 'sanskrit class',
 
-    # ── Designations / roles ──
-    'engineer trainee', 'project engineer', 'assistant engineer',
-    'deputy manager', 'manager trainee',
+    # Study terms
+    'important questions', 'chapter wise', 'revision notes',
+    'sample paper', 'previous year paper', 'mock test class',
+    'padhna hai', 'taiyari kaise', 'study tips class',
+    'ncert solutions', 'short notes', 'quick revision',
 
-    # ── Exam-specific ──
-    'gate 2024', 'gate 2025', 'gate 2026', 'gate score', 'gate rank',
-    'gate cutoff', 'gate marks', 'gate result', 'gate scorecard',
-    'ibps', 'hrrl', 'oel', 'non gate', 'without gate',
-
-    # ── Hindi / Hinglish ──
-    'sarkari naukri', 'govt job', 'government job', 'engineering job',
-    'naukri', 'bharti', 'vacancy', 'notification', 'apply online',
-    'last date', 'admit card', 'hall ticket', 'result',
-    'taiyari', 'preparation tips', 'kaise crack', 'psu crack',
+    # Scoring / results
+    '90 percent boards', '95 percent class 12', 'topper strategy',
+    'score high boards', 'cbse result', 'marksheet',
 ]
 
+# ── COMMENT KEYWORDS (for scanning replies) ──────────────
 COMMENT_KEYWORDS = [
-    # ── Preparation asks ──
-    'prepare', 'preparation', 'how to prepare', 'how to crack',
+    'prepare', 'preparation', 'how to prepare', 'how to score',
     'suggest', 'resource', 'material', 'study material', 'notes',
-    'study', 'practice', 'mock test', 'mock interview', 'mock gd',
+    'study', 'practice', 'mock test', 'sample paper',
     'tips', 'help', 'guide', 'recommend', 'strategy', 'plan',
     'syllabus', 'pattern', 'book', 'reference', 'pdf',
-
-    # ── Platforms / tools ──
-    'app', 'website', 'online', 'youtube', 'coaching', 'self study',
-    'telegram', 'channel', 'playlist', 'course',
-
-    # ── Emotional signals ──
+    'app', 'website', 'online', 'channel', 'playlist',
     'nervous', 'scared', 'worried', 'confused', 'struggling',
-    'stressed', 'anxious', 'not sure', 'don\'t know', 'lost',
+    'stressed', 'anxious', 'not sure', "don't know", 'lost',
     'first time', 'no idea', 'any idea',
-
-    # ── Interview specific ──
-    'interview', 'gd', 'pi', 'group discussion', 'technical round',
-    'hr round', 'personal interview', 'panel interview',
-    'gd topics', 'pi questions', 'technical questions',
-    'document', 'joining', 'offer', 'medical', 'verification',
-
-    # ── Hinglish ──
     'kaise', 'kya', 'batao', 'suggest karo', 'koi bata',
-    'padhai', 'taiyari', 'crack kaise', 'select kaise',
-    'koi app', 'koi website', 'best resource', 'sahi resource',
-    'help chahiye', 'guidance chahiye', 'pls help', 'please help',
-    'bhai', 'yaar', 'sir', 'mam',
+    'padhai', 'taiyari', 'crack kaise', 'koi app', 'best resource',
+    'help chahiye', 'pls help', 'please help', 'bhai', 'yaar',
 ]
 
 def is_video_relevant(title: str, description: str) -> tuple[bool, str]:
@@ -212,7 +189,7 @@ def is_video_relevant(title: str, description: str) -> tuple[bool, str]:
     matched = [kw for kw in VIDEO_KEYWORDS if kw in text]
     if matched:
         return True, f"matched: {', '.join(matched[:3])}"
-    return False, 'no PSU keywords found'
+    return False, 'no schooling keywords found'
 
 def is_comment_relevant(comment_text: str) -> tuple[bool, str]:
     text = comment_text.lower()
@@ -222,8 +199,8 @@ def is_comment_relevant(comment_text: str) -> tuple[bool, str]:
     return False, 'no relevant keywords'
 
 # ── GENERATE COMMENT VIA GEMINI ──────────────────────────
-def force_link(text: str) -> str:
-    """Remove any links — YouTube deletes comments with URLs."""
+def force_no_link(text: str) -> str:
+    """Strip any URLs — YouTube deletes comments with links."""
     text = text.strip()
     if not text:
         return ''
@@ -231,15 +208,13 @@ def force_link(text: str) -> str:
     text = re.sub(r'https?://\S+', '', text)
     text = re.sub(r'aspirant-arcade\.\S+', '', text)
     text = re.sub(r'qr\.ae/\S+', '', text)
-    text = text.strip()
-    return text
+    return text.strip()
 
 def generate_top_comment(video_title: str, video_description: str) -> str:
-    # 80% purely helpful (no app mention), 20% mention app naturally
     mention_app = random.random() < 0.20
 
     if mention_app:
-        prompt = f"""Write a genuine YouTube comment from a PSU aspirant who naturally mentions using an app.
+        prompt = f"""Write a genuine YouTube comment from a student who naturally mentions using an app for board exam prep.
 
 {APP_CONTEXT}
 
@@ -247,24 +222,24 @@ Video title: {video_title}
 Video description: {video_description[:300]}
 
 Rules:
-- Sound like a real person sharing their own experience, NOT promoting
+- Sound like a real student sharing their own experience, NOT promoting
 - Mention Aspirant Arcade once, naturally, as something you personally use
 - Max 2-3 sentences total
 - Casual tone, Hinglish OK
 - No exclamation marks, no "Great video!", no fake hype
-- Do NOT include any URLs
+- Do NOT include any URLs or website links — name only
 
 Write ONLY the comment text."""
     else:
-        prompt = f"""Write a genuine, helpful YouTube comment from a PSU aspirant on this video.
+        prompt = f"""Write a genuine, helpful YouTube comment from a student on this board exam prep video.
 
 Video title: {video_title}
 Video description: {video_description[:300]}
 
 Rules:
-- Sound like a real person who watched this video
-- Share a useful tip, personal experience, or ask a genuine question related to the video topic
-- About PSU preparation, GATE, interviews, GD/PI — whatever the video is about
+- Sound like a real student who watched this video
+- Share a useful tip, personal experience, or ask a genuine question about the topic
+- About board exam preparation, CBSE NCERT — whatever the video is about
 - 1-3 sentences, casual, Hinglish OK
 - Do NOT mention any app, product, or website
 - Do NOT say "Great video!" or fake compliments
@@ -272,13 +247,13 @@ Rules:
 Write ONLY the comment text."""
 
     text = gemini(prompt)
-    return force_link(text)
+    return force_no_link(text)
 
 def generate_reply(comment_text: str, video_title: str) -> str:
-    mention_app = random.random() < 0.30  # 30% chance mention app in replies
+    mention_app = random.random() < 0.30
 
     if mention_app:
-        prompt = f"""Write a helpful reply to this YouTube comment. You personally use an app called Aspirant Arcade for PSU prep.
+        prompt = f"""Write a helpful reply to this YouTube comment. You personally use an app called Aspirant Arcade for board exam prep.
 
 {APP_CONTEXT}
 
@@ -293,21 +268,21 @@ Rules:
 
 Write ONLY the reply text."""
     else:
-        prompt = f"""Write a helpful, genuine reply to this YouTube comment about PSU preparation.
+        prompt = f"""Write a helpful, genuine reply to this YouTube comment about board exam preparation.
 
 Video context: {video_title}
 Comment: "{comment_text}"
 
 Rules:
 - Directly address what they asked or said
-- Give actually useful advice from a fellow aspirant's perspective
+- Give actually useful advice from a fellow student's perspective
 - 1-3 sentences, casual, Hinglish OK
 - Do NOT mention any app, product, or website
 
 Write ONLY the reply text."""
 
     text = gemini(prompt)
-    return force_link(text)
+    return force_no_link(text)
 
 # ── YOUTUBE ACTIONS ──────────────────────────────────────
 def search_videos(query: str, pub, max_results=8) -> list:
@@ -343,7 +318,6 @@ def search_videos(query: str, pub, max_results=8) -> list:
             if views < MIN_VIDEO_VIEWS or views > MAX_VIDEO_VIEWS:
                 continue
 
-            # Skip videos older than 2 weeks
             published_at = s['snippet'].get('publishedAt', '')
             if published_at:
                 pub_date = datetime.fromisoformat(published_at.replace('Z', '+00:00'))
@@ -375,15 +349,14 @@ def get_video_comments(pub, video_id: str, max_results=30) -> list:
             textFormat='plainText'
         ).execute()
 
-        cutoff = datetime.now(timezone.utc) - timedelta(days=60)
+        cutoff = datetime.now(timezone.utc) - timedelta(days=30)
         comments = []
         for item in res.get('items', []):
             snip = item['snippet']['topLevelComment']['snippet']
-            # Skip comments older than 2 weeks
             published_at = snip.get('publishedAt', '')
             if published_at:
                 pub_date = datetime.fromisoformat(published_at.replace('Z', '+00:00'))
-                if pub_date < cutoff:  # skip comments older than 60 days
+                if pub_date < cutoff:
                     continue
             comments.append({
                 'id': item['snippet']['topLevelComment']['id'],
@@ -432,7 +405,7 @@ def post_reply(auth, parent_comment_id: str, text: str) -> bool:
 
 # ── MAIN ─────────────────────────────────────────────────
 def run():
-    log.info("=== Bot starting ===")
+    log.info("=== Schooling Bot starting ===")
     history = load_history()
     pub  = get_public_client()
     auth = get_auth_client()
@@ -456,7 +429,6 @@ def run():
             vid_id = video['id']
             log.info(f"  Video: {video['title'][:60]} | {video['views']:,} views")
 
-            # Skip entirely if already commented — assume replies done too
             if str(vid_id) in history['commented_videos']:
                 log.info(f"    Skip (already handled): {video['title'][:50]}")
                 continue
@@ -467,7 +439,6 @@ def run():
                 continue
             log.info(f"    Relevant: {reason}")
 
-            # Top-level comment
             if comment_count < DAILY_COMMENT_LIMIT:
                 comment_text = generate_top_comment(video['title'], video['description'])
                 if not comment_text:
@@ -489,7 +460,6 @@ def run():
                     log.info(f"    Waiting {delay}s...")
                     time.sleep(delay)
 
-            # Replies
             if reply_count < DAILY_REPLY_LIMIT:
                 comments = get_video_comments(pub, vid_id)
                 log.info(f"    Scanning {len(comments)} comments...")

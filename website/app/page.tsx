@@ -6,21 +6,21 @@ import DemoPhone from "./components/DemoPhone";
 const APK_URL = "https://cwhpybswvsmoiwzkyhlj.supabase.co/storage/v1/object/public/app-releases/aspirant-arcade/aspirant_arcade_1.0.1_mobile.apk";
 
 const FEATURES = [
-  { icon: "🎮", title: "6 Game Modes", desc: "MCQ, Survival, Match the Following, Slasher, Mario-style & Interview Simulator. Same PSU syllabus — completely different energy." },
-  { icon: "🤖", title: "AI-Generated Questions", desc: "Fresh questions every session calibrated to your specific PSU, branch, and syllabus. Never the same stale bank twice." },
+  { icon: "🎮", title: "6 Game Modes", desc: "MCQ, Survival, Match the Following, Slasher, Mario-style & Interview Simulator. PSU and board exam content — completely different energy." },
+  { icon: "🤖", title: "AI + Question Bank", desc: "Play free from our shared question bank — no API key needed. Add your Gemini key for unlimited fresh questions per your branch, PSU, and topic." },
   { icon: "🎤", title: "Interview Simulator", desc: "Mock HPCL/BHEL panel powered by Gemini AI. Branch-specific technical PI + GD topic bank with real topics." },
   { icon: "📊", title: "Insights Dashboard", desc: "See exactly which topics you're weak in. Track accuracy over time. Know where to focus before the examiner tells you." },
   { icon: "🔖", title: "Smart Bookmarks", desc: "Bookmark tough questions mid-game. Add notes. Revisit your personal weak-spot bank anytime." },
   { icon: "⚡", title: "Survival Mode", desc: "Timed MCQs, lose lives on wrong answers. Closest thing to real CBT pressure you'll find on your phone." },
 ];
 
-const PSUS = ["HPCL", "Coal India", "BHEL", "ONGC", "NTPC", "SAIL", "IOCL", "GAIL"];
+const PSUS = ["HPCL", "Coal India", "BHEL", "ONGC", "NTPC", "SAIL", "IOCL", "GAIL", "BPCL", "POWERGRID", "NALCO", "MSTC"];
 
 const STEPS = [
   { step: "01", title: "Download APK", desc: "Free. No Play Store needed. Direct install on Android." },
-  { step: "02", title: "Add Gemini Key", desc: "Get a free API key from Google AI Studio in 2 minutes. No billing required." },
-  { step: "03", title: "Pick your PSU & Branch", desc: "Select your target PSU, engineering branch and topics." },
-  { step: "04", title: "Start Playing", desc: "AI generates fresh questions. You play, learn, and track progress." },
+  { step: "02", title: "Play from Question Bank", desc: "Play free immediately from our shared question bank — no key needed. Or add a free Gemini API key for unlimited fresh AI questions." },
+  { step: "03", title: "Pick your Exam & Topic", desc: "Select your PSU and branch, or Class 9–12 subject and chapter." },
+  { step: "04", title: "Start Playing", desc: "Questions load from bank or AI. Play, learn, and track progress." },
 ];
 
 export default function Home() {
@@ -36,13 +36,17 @@ export default function Home() {
               Aspirant <span className="text-[#FDC003]">Arcade</span>
             </span>
           </div>
-          <a
-            href={APK_URL}
-            className="flex-shrink-0 bg-[#FDC003] text-[#0A0E17] font-bold text-xs md:text-sm px-3 md:px-4 py-2 rounded-full hover:brightness-110 transition-all whitespace-nowrap"
-          >
-            <span className="sm:hidden">Download</span>
-            <span className="hidden sm:inline">Download & Practice Free</span>
-          </a>
+          <div className="flex items-center gap-2 md:gap-4">
+            <a href="/demo" className="hidden md:inline text-gray-400 hover:text-[#FDC003] text-xs font-medium transition-colors whitespace-nowrap">Try Web</a>
+            <a href="/#faq" className="hidden md:inline text-gray-400 hover:text-[#FDC003] text-xs font-medium transition-colors">FAQ</a>
+            <a
+              href="/download"
+              className="flex-shrink-0 bg-[#FDC003] text-[#0A0E17] font-bold text-xs md:text-sm px-3 md:px-4 py-2 rounded-full hover:brightness-110 transition-all whitespace-nowrap"
+            >
+              <span className="sm:hidden">Download</span>
+              <span className="hidden sm:inline">Download & Practice Free</span>
+            </a>
+          </div>
         </div>
       </nav>
 
@@ -50,14 +54,14 @@ export default function Home() {
       <div className="fixed top-14 md:top-16 left-0 right-0 z-40 bg-[#0F1520] border-b border-[#1E2535] h-7 md:h-8 flex items-center overflow-hidden">
         <div className="flex-shrink-0 flex items-center gap-2 px-2 md:px-3 border-r border-[#1E2535] h-full bg-[#0F1520] z-10">
           <span className="text-[10px] md:text-[12px] font-black tracking-widest uppercase whitespace-nowrap" style={{ color: "#10B981" }}>
-            CBT &amp; GT/PI
+            PSU &amp; BOARDS
           </span>
           <span style={{ color: "#10B981", fontSize: "6px" }}>▶</span>
         </div>
         <div className="ticker-wrap h-full flex items-center">
           <div className="ticker-track items-center">
             {(() => {
-              const items = ["HPCL","Coal India","BHEL","ONGC","NTPC","SAIL","IOCL","GAIL","BPCL","NFL","NMDC","AAI","MECL","BEL"];
+              const items = ["HPCL","Coal India","BHEL","ONGC","CLASS 9","CLASS 10","NTPC","SAIL","CLASS 11","CLASS 12","IOCL","GAIL","CBSE","NCERT","BPCL","NFL","NMDC","AAI","MECL","BEL"];
               return [...items,...items,...items,...items].map((name, i) => (
                 <span key={i} className="ticker-item">
                   <span className="text-[#FDC003] font-bold text-[10px] md:text-[11px] tracking-widest uppercase">{name}</span>
@@ -93,42 +97,42 @@ export default function Home() {
             </h1>
 
             <p className="text-base md:text-xl text-gray-400 max-w-2xl mx-auto lg:mx-0 mb-8 leading-relaxed">
-              AI-powered PSU exam prep that feels like a game.{" "}
+              AI-powered exam prep for PSU aspirants and Class 9–12 students — feels like a game.{" "}
               <span className="text-white font-semibold">
                 Your idle scroll time = your{" "}
                 <span className="bg-gradient-to-r from-[#FDC003] to-[#FF8C00] bg-clip-text text-transparent font-bold">
-                  rank improvement
+                  score improvement
                 </span>
                 .
               </span>
             </p>
 
             <div className="flex flex-col gap-3 items-center lg:items-start mb-10">
-              <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto justify-center lg:justify-start">
+              <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto justify-center lg:justify-start">
                 <a
-                  href={APK_URL}
-                  className="flex items-center gap-3 bg-[#FDC003] text-[#0A0E17] font-black text-base md:text-lg px-8 py-4 rounded-2xl hover:brightness-110 transition-all justify-center"
+                  href="/download"
+                  className="flex items-center gap-3 bg-[#FDC003] text-[#0A0E17] font-black text-base md:text-lg px-8 py-4 rounded-2xl hover:brightness-110 transition-all justify-center whitespace-nowrap"
                 >
                   <AndroidIcon size={20} color="#0A0E17" /> Download & Practice Free
                 </a>
                 <a
-                  href="#live-demo"
-                  className="flex items-center gap-2 bg-transparent border border-[#FDC003]/50 text-[#FDC003] font-bold text-base md:text-lg px-8 py-4 rounded-2xl hover:bg-[#FDC003]/10 transition-all justify-center lg:hidden"
+                  href="/demo"
+                  className="flex items-center gap-2 bg-transparent border border-[#FDC003]/50 text-[#FDC003] font-bold text-base md:text-lg px-8 py-4 rounded-2xl hover:bg-[#FDC003]/10 transition-all justify-center whitespace-nowrap"
                 >
-                  ⚡ Try a Free Quiz
+                  ⚡ Try Web
                 </a>
               </div>
               <div className="flex items-center gap-2 text-gray-500 text-xs md:text-sm">
                 <span className="w-2 h-2 bg-green-400 rounded-full inline-block flex-shrink-0" />
-                Free · No login needed · Android
+                Free · No login needed · Android &amp; Web
               </div>
             </div>
 
             <div className="grid grid-cols-4 gap-2 md:gap-6 text-center lg:text-left max-w-md mx-auto lg:mx-0">
               {[
                 { val: "6", label: "Game Modes" },
-                { val: "10+", label: "PSUs Covered" },
-                { val: "AI", label: "Questions" },
+                { val: "10+", label: "PSU Exams" },
+                { val: "9–12", label: "Class Levels" },
                 { val: "Free", label: "Always" },
               ].map((s) => (
                 <div key={s.label}>
@@ -186,7 +190,7 @@ export default function Home() {
                 Nothing you don&apos;t.
               </span>
             </h2>
-            <p className="text-gray-400 text-sm md:text-lg">Built specifically for PSU aspirants. Not a generic quiz app.</p>
+            <p className="text-gray-400 text-sm md:text-lg">Built for PSU aspirants and Class 9–12 students. Not a generic quiz app.</p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {FEATURES.map((f) => (
@@ -200,23 +204,57 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── PSU COVERAGE ── */}
+      {/* ── COVERAGE ── */}
       <section className="py-10 md:py-16 px-4 bg-[#0F1520]">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-2xl md:text-4xl font-black mb-2 md:mb-3 text-white">
-            Your PSU.{" "}
+            What We{" "}
             <span className="bg-gradient-to-r from-[#FDC003] to-[#FF8C00] bg-clip-text text-transparent">
-              Your Syllabus.
+              Cover.
             </span>
           </h2>
-          <p className="text-gray-400 text-sm md:text-base mb-6 md:mb-10">Questions calibrated to actual exam difficulty — not GATE level, not too easy.</p>
-          <div className="flex flex-wrap justify-center gap-2 md:gap-3 mb-6 md:mb-10">
-            {PSUS.map((p) => (
-              <div key={p} className="bg-[#0A0E17] border border-[#1E2535] rounded-full px-4 md:px-6 py-2 md:py-3 font-bold text-white text-xs md:text-sm">
-                {p}
+          <p className="text-gray-400 text-sm md:text-base mb-6 md:mb-8">Questions calibrated to actual exam difficulty — not GATE level, not too easy.</p>
+
+          {/* Two-column: PSU | Schooling */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-5 mb-6 md:mb-8 text-left">
+
+            {/* PSU card */}
+            <div className="bg-[#0A0E17] border border-[#1E2535] rounded-2xl p-5 md:p-6 hover:border-[#FDC003]/30 transition-all">
+              <div className="flex items-center gap-2 mb-4">
+                <span className="w-2 h-2 rounded-full bg-[#FDC003] flex-shrink-0" />
+                <p className="text-[10px] font-black text-[#FDC003] uppercase tracking-widest">PSU Exams</p>
               </div>
-            ))}
+              <div className="flex flex-wrap gap-2 mb-4">
+                {PSUS.map((p) => (
+                  <span key={p} className="bg-[#0F1520] border border-[#1E2535] rounded-full px-3 py-1 text-[11px] font-bold text-white">
+                    {p}
+                  </span>
+                ))}
+              </div>
+              <p className="text-gray-500 text-[11px]">Technical · Aptitude · GK / English · Interview Simulator</p>
+            </div>
+
+            {/* Schooling card */}
+            <div className="bg-[#0A0E17] border border-[#1E2535] rounded-2xl p-5 md:p-6 hover:border-[#10B981]/30 transition-all">
+              <div className="flex items-center gap-2 mb-4">
+                <span className="w-2 h-2 rounded-full bg-[#10B981] flex-shrink-0" />
+                <p className="text-[10px] font-black uppercase tracking-widest" style={{ color: "#10B981" }}>Schooling (CBSE / NCERT)</p>
+              </div>
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                <div className="bg-[#0F1520] border border-[#1E2535] rounded-xl p-3">
+                  <p className="text-[11px] font-black text-white mb-1">Class 9 – 10</p>
+                  <p className="text-gray-500 text-[10px] leading-relaxed">Science · Maths · SST · English</p>
+                </div>
+                <div className="bg-[#0F1520] border border-[#1E2535] rounded-xl p-3">
+                  <p className="text-[11px] font-black text-white mb-1">Class 11 – 12</p>
+                  <p className="text-gray-500 text-[10px] leading-relaxed">Physics · Chemistry · Maths · Biology · English</p>
+                </div>
+              </div>
+              <p className="text-gray-500 text-[11px]">MCQ · True / False · Match the Following</p>
+            </div>
           </div>
+
+          {/* Urgency callouts */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
             <div className="bg-[#0A0E17] border border-red-500/30 rounded-2xl p-4 md:p-6 text-left">
               <div className="text-xl md:text-2xl mb-2">🎤</div>
@@ -302,8 +340,9 @@ export default function Home() {
             <span className="ml-1">· Practice. Play. Progress.</span>
           </div>
           <div className="flex gap-4 md:gap-6">
-            <span>Free on Android</span>
-            <span>AI-Powered</span>
+            <a href="/download" className="hover:text-[#FDC003] transition-colors">Download APK</a>
+            <a href="/demo" className="hover:text-[#FDC003] transition-colors">Try Web</a>
+            <a href="/#faq" className="hover:text-[#FDC003] transition-colors">FAQ</a>
             <span>No Ads</span>
           </div>
         </div>

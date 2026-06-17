@@ -1,0 +1,6 @@
+token.json
+schooling_token.json
+client_secret.json
+*.log
+.env
+history.json
