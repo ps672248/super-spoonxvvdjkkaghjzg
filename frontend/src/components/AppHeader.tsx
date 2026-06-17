@@ -26,9 +26,9 @@ export function AppHeader() {
   const isHome = pathname === '/' || pathname === '/(tabs)';
 
   const handleLogoPress = () => {
-    if (isHome) {
+    if (isHome && categoryId === 'psu') {
       setModalVisible(true);
-    } else {
+    } else if (!isHome) {
       router.push('/');
     }
   };

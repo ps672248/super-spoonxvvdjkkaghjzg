@@ -140,6 +140,13 @@ app.post('/submitQuestions', async (req, res) => {
       }
     }));
 
+    // Keep seed_catalog in sync — only MCQ type has catalog docs.
+    if (written > 0 && type === 'mcq') {
+      db.collection('seed_catalog').doc(bankKey)
+        .update({ seeded: admin.firestore.FieldValue.increment(written) })
+        .catch(() => {}); // doc may not exist for keys outside seed catalog — ignore
+    }
+
     return res.json({ written, skipped });
   } catch (e) {
     console.error('[submitQuestions]', e);
@@ -171,6 +178,61 @@ app.post('/reportQuestion', async (req, res) => {
   } catch (e) {
     if (e.http === 404) return res.status(404).json({ error: 'not found' });
     console.error('[reportQuestion]', e);
+    return res.status(500).json({ error: 'internal error' });
+  }
+});
+
+/**
+ * POST /unflagQuestion
+ * body: { questionId }
+ * Decrements reportCount by 1; un-hides if it drops below threshold.
+ */
+app.post('/unflagQuestion', async (req, res) => {
+  try {
+    if (!checkSecret(req, res)) return;
+    const { questionId } = req.body || {};
+    if (!questionId) return res.status(400).json({ error: 'questionId required' });
+
+    const ref = db.collection(BANK).doc(questionId);
+    const newCount = await db.runTransaction(async (tx) => {
+      const snap = await tx.get(ref);
+      if (!snap.exists) throw Object.assign(new Error('not found'), { http: 404 });
+      const count = Math.max(0, (snap.get('reportCount') || 0) - 1);
+      tx.update(ref, { reportCount: count, hidden: count >= REPORT_HIDE_THRESHOLD });
+      return count;
+    });
+
+    return res.json({ reportCount: newCount, hidden: newCount >= REPORT_HIDE_THRESHOLD });
+  } catch (e) {
+    if (e.http === 404) return res.status(404).json({ error: 'not found' });
+    console.error('[unflagQuestion]', e);
+    return res.status(500).json({ error: 'internal error' });
+  }
+});
+
+/**
+ * POST /editQuestion
+ * body: { questionId, payload? }
+ * Admin: update payload and clear all flags (reportCount=0, hidden=false).
+ * Omit payload to only clear flags without changing question content.
+ */
+app.post('/editQuestion', async (req, res) => {
+  try {
+    if (!checkSecret(req, res)) return;
+    const { questionId, payload } = req.body || {};
+    if (!questionId) return res.status(400).json({ error: 'questionId required' });
+
+    const update = {
+      reportCount: 0,
+      hidden: false,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    };
+    if (payload) update.payload = payload;
+
+    await db.collection(BANK).doc(questionId).update(update);
+    return res.json({ ok: true });
+  } catch (e) {
+    console.error('[editQuestion]', e);
     return res.status(500).json({ error: 'internal error' });
   }
 });

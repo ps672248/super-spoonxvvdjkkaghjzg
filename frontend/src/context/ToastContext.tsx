@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, Animated, Modal, BackHandler, Platform } from 'react-native';
+import { View, Text, StyleSheet, Animated, BackHandler, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -101,27 +101,15 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     <ToastContext.Provider value={{ showToast }}>
       <View style={styles.root}>
         {children}
-        {/* On web Modal is broken — render toasts inline with absolute positioning */}
-        {Platform.OS === 'web' && toasts.length > 0 && (
-          <View style={[styles.container, styles.webContainer]}>
+        {toasts.length > 0 && (
+          <View
+            style={[styles.container, Platform.OS === 'web' && styles.webContainer]}
+            pointerEvents="none"
+          >
             {toastList}
           </View>
         )}
       </View>
-      {/* Native: use Modal so toasts float above all other Modals */}
-      {Platform.OS !== 'web' && (
-        <Modal
-          visible={toasts.length > 0}
-          transparent
-          animationType="none"
-          statusBarTranslucent
-          onRequestClose={() => setToasts([])}
-        >
-          <View style={styles.container}>
-            {toastList}
-          </View>
-        </Modal>
-      )}
     </ToastContext.Provider>
   );
 };
@@ -145,7 +133,8 @@ const styles = StyleSheet.create({
     left: 16,
     right: 16,
     gap: 8,
-    pointerEvents: 'none' as const,
+    zIndex: 9999,
+    elevation: 9999,
   },
   webContainer: {
     zIndex: 9999,

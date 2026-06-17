@@ -15,6 +15,7 @@ import { getSyllabusTopics } from '@/config/syllabus';
 import { useGameQuestions } from '@/hooks/useGameQuestions';
 import { UnifiedQuestion } from '@/components/game/UnifiedQuestion';
 import { GameResultScreen, GenericResultItem } from '@/components/game/GameResultScreen';
+import { ApiKeyModal } from '@/components/ApiKeyModal';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const GROUND_LEVEL = 100;
@@ -52,6 +53,7 @@ export default function MarioScreen() {
   const { addQuestionBookmark, isQuestionBookmarked, removeQuestionBookmark, questionBookmarks } = useBookmarkStore();
 
   const [gameState, setGameState] = useState<GameState>('start');
+  const [showApiModal, setShowApiModal] = useState(false);
   const gameStateRef = useRef<GameState>('start');
 
   useEffect(() => {
@@ -102,7 +104,7 @@ export default function MarioScreen() {
 
   const psu = selectedPSU!;
 
-  const { loadQuestions: fetchQuestions, loading: questionsLoading } = useGameQuestions();
+  const { loadQuestions: fetchQuestions, loading: questionsLoading, bankingPending } = useGameQuestions();
 
   useEffect(() => {
     if (selectedPSU) loadQuestions();
@@ -123,7 +125,8 @@ export default function MarioScreen() {
       const qs = await fetchQuestions('mario', 10);
       setQuestions(qs as MCQQuestion[]);
       setGameState('start');
-    } catch (e) {
+    } catch (e: any) {
+      if (e.needsApiKey) { setShowApiModal(true); return; }
       console.error(e);
       router.back();
     }
@@ -550,6 +553,11 @@ export default function MarioScreen() {
       <SafeAreaView style={styles.loadingCenter} edges={['top', 'bottom']}>
         <ActivityIndicator size="large" color="#5c94fc" />
         <Text style={styles.loadingText}>Loading World 1-1...</Text>
+        <ApiKeyModal
+          visible={showApiModal}
+          onClose={() => { setShowApiModal(false); router.back(); }}
+          onConfigure={() => router.replace('/api-setup' as any)}
+        />
       </SafeAreaView>
     );
   }
@@ -581,6 +589,8 @@ export default function MarioScreen() {
         onRestart={startGame}
         onHome={() => router.replace('/')}
         personalMessage={lives > 0 ? "You conquered the academic world!" : "A brave attempt! Study the bookmarks to come back stronger."}
+        extraStats={{ level, marioMode: marioMode as 'small' | 'super' | 'fire' }}
+        bankingPending={bankingPending}
       />
     );
   }

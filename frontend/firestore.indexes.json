@@ -26,6 +26,16 @@
         { "fieldPath": "hidden", "order": "ASCENDING" },
         { "fieldPath": "difficulty", "order": "ASCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "question_bank",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "bankKey", "order": "ASCENDING" },
+        { "fieldPath": "hidden", "order": "ASCENDING" },
+        { "fieldPath": "difficulty", "order": "ASCENDING" },
+        { "fieldPath": "rand", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

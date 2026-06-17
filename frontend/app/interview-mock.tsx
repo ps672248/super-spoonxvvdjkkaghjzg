@@ -11,6 +11,11 @@ import { useExamStore } from '@/stores/examStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { useInterviewStore } from '@/stores/interviewStore';
 import { useActivityStore } from '@/stores/activityStore';
+import { ScoreCardSheet } from '@/components/scorecard/ScoreCardSheet';
+import { PICard } from '@/components/scorecard/cards/PICard';
+import { GDCard } from '@/components/scorecard/cards/GDCard';
+import type { CardVars } from '@/config/scorecard-templates';
+import type { StudySession } from '@/stores/activityStore';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -345,6 +350,31 @@ export default function InterviewMockScreen() {
   const [summary, setSummary] = useState<SessionSummary | null>(null);
   const [isInitializing, setIsInitializing] = useState(true);
   const [isYourTurn, setIsYourTurn] = useState(false);
+  const [showScoreCard, setShowScoreCard] = useState(false);
+
+  const { sessions } = useActivityStore();
+
+  const buildCardVars = useCallback((s: SessionSummary): CardVars | null => {
+    if (!selectedPSU || !selectedBranch) return null;
+    const now = Date.now();
+    const weekMs = 7 * 24 * 60 * 60 * 1000;
+    const sessionsThisWeek = sessions.filter((sess: StudySession) => now - sess.timestamp < weekMs).length;
+    const dayMs = 24 * 60 * 60 * 1000;
+    const uniqueDays = new Set(sessions.map((sess: StudySession) => Math.floor(sess.timestamp / dayMs)));
+    let streak = 0;
+    for (let d = Math.floor(now / dayMs); uniqueDays.has(d); d--) streak++;
+    const variant = (s.overallRating % 3) as 0 | 1 | 2;
+    return {
+      exam: selectedPSU,
+      branchId: selectedBranch.id,
+      score: s.overallRating,
+      sessionsThisWeek,
+      streak,
+      interviewType: mode === 'gd' ? 'gd' : mode === 'hr' ? 'hr' : 'technical',
+      gdTopic: useInterviewStore.getState().gdTopic ?? undefined,
+      variant,
+    };
+  }, [selectedPSU, selectedBranch, sessions, mode]);
 
   const flatListRef = useRef<FlatList>(null);
 
@@ -683,11 +713,19 @@ export default function InterviewMockScreen() {
 
             <View style={styles.summaryActions}>
               <TouchableOpacity
+                style={[styles.summaryBtn, styles.summaryBtnShare]}
+                onPress={() => setShowScoreCard(true)}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="share-social-outline" size={16} color={Colors.primary} />
+                <Text style={styles.summaryBtnTextShare}>Share</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
                 style={[styles.summaryBtn, styles.summaryBtnSecondary]}
                 onPress={() => { setMessages([]); setHistory([]); setSessionEnded(false); setSummary(null); startSession(); }}
                 activeOpacity={0.8}
               >
-                <Text style={styles.summaryBtnTextSecondary}>Start Again</Text>
+                <Text style={styles.summaryBtnTextSecondary}>Again</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.summaryBtn, styles.summaryBtnPrimary]}
@@ -699,6 +737,15 @@ export default function InterviewMockScreen() {
             </View>
           </ScrollView>
         </View>
+      )}
+
+      {showScoreCard && summary && (
+        <ScoreCardSheet visible={showScoreCard} onClose={() => setShowScoreCard(false)}>
+          {mode === 'gd'
+            ? <GDCard vars={buildCardVars(summary)!} />
+            : <PICard vars={buildCardVars(summary)!} />
+          }
+        </ScoreCardSheet>
       )}
     </SafeAreaView>
   );
@@ -869,4 +916,6 @@ const styles = StyleSheet.create({
   summaryBtnSecondary: { backgroundColor: Colors.surfaceContainerLow, borderWidth: 1, borderColor: Colors.outlineVariant },
   summaryBtnTextPrimary: { ...Typography.button, color: Colors.white },
   summaryBtnTextSecondary: { ...Typography.button, color: Colors.onSurface },
+  summaryBtnShare: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: Colors.gold + '20', borderWidth: 1, borderColor: Colors.gold + '60' },
+  summaryBtnTextShare: { ...Typography.button, color: Colors.primary },
 });

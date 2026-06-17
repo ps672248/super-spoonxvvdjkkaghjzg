@@ -15,7 +15,6 @@ function bankHeaders(): Record<string, string> {
 }
 
 const COLLECTION = 'question_bank';
-const OVERFETCH = 4; // pull more than needed, then shuffle + dedup client-side
 
 export type BankType = 'mcq' | 'tf' | 'match';
 
@@ -41,9 +40,10 @@ export type BankMeta = {
 };
 
 /**
- * Fetch banked questions for a key, within a difficulty range, excluding texts
- * the user has already seen. Returns the stored `payload` objects (already in the
- * app's MCQQuestion / TFStatement / MatchChallenge shape). `[]` if too sparse.
+ * Fetch banked questions for a key using a random cursor — different questions
+ * each session. Uses `rand` field (stored at insert time) with a wrap-around
+ * second pass so the full bank is reachable regardless of cursor position.
+ * Difficulty is filtered client-side; seen texts are excluded.
  */
 export async function fetchFromBank(
   bankKey: string,
@@ -52,28 +52,57 @@ export async function fetchFromBank(
   seenTexts: string[] = [],
 ): Promise<any[]> {
   const [minD, maxD] = range;
-  const q = query(
+  const seen = new Set(seenTexts);
+  const r = Math.random();
+
+  // Overfetch slightly to absorb difficulty + seen filtering losses
+  const fetchLimit = Math.ceil(count * 2);
+
+  function extractPayloads(snap: any): any[] {
+    return snap.docs
+      .map((d: any) => d.data())
+      .filter((d: any) => d && d.payload)
+      .map((d: any) => d.payload as any)
+      .filter((p: any) => {
+        const text: string = p.question ?? p.statement ?? '';
+        return !text || !seen.has(text);
+      });
+  }
+
+  // Primary pass: rand >= r within difficulty range
+  // orderBy('difficulty') required before orderBy('rand') when difficulty has inequality filter
+  const primary = query(
     collection(db, COLLECTION),
     where('bankKey', '==', bankKey),
     where('hidden', '==', false),
     where('difficulty', '>=', minD),
     where('difficulty', '<=', maxD),
+    where('rand', '>=', r),
     orderBy('difficulty'),
-    limit(count * OVERFETCH),
+    orderBy('rand'),
+    limit(fetchLimit),
   );
+  const snap1 = await getDocs(primary);
+  const items = extractPayloads(snap1);
 
-  const snap = await getDocs(q);
-  const seen = new Set(seenTexts);
-  const items = snap.docs
-    .map(d => d.data())
-    .filter(d => d && d.payload)
-    .map(d => d.payload as any)
-    .filter(p => {
-      const text: string = p.question ?? p.statement ?? '';
-      return !text || !seen.has(text);
-    });
+  // Wrap-around: rand < r, same difficulty range
+  if (items.length < count) {
+    const wrap = query(
+      collection(db, COLLECTION),
+      where('bankKey', '==', bankKey),
+      where('hidden', '==', false),
+      where('difficulty', '>=', minD),
+      where('difficulty', '<=', maxD),
+      where('rand', '<', r),
+      orderBy('difficulty'),
+      orderBy('rand'),
+      limit(fetchLimit - items.length),
+    );
+    const snap2 = await getDocs(wrap);
+    items.push(...extractPayloads(snap2));
+  }
 
-  // Fisher–Yates shuffle so repeated keyless sessions vary their ordering.
+  // Shuffle to mix primary + wrap results
   for (let i = items.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [items[i], items[j]] = [items[j], items[i]];
@@ -97,17 +126,58 @@ export async function submitToBank(meta: BankMeta, questions: any[]): Promise<vo
   }
 }
 
-/** Report a wrong/low-quality question. Returns true on a 2xx response. */
-export async function reportToBank(questionId: string): Promise<boolean> {
+export type ReportResult = 'ok' | 'not_in_bank' | 'error';
+
+/** Report a wrong/low-quality question. */
+export async function reportToBank(questionId: string): Promise<ReportResult> {
+  console.log('[questionBank] reportToBank →', questionId, 'url:', `${BANK_BASE_URL}/reportQuestion`);
   try {
     const res = await fetch(`${BANK_BASE_URL}/reportQuestion`, {
       method: 'POST',
       headers: bankHeaders(),
       body: JSON.stringify({ questionId }),
     });
+    console.log('[questionBank] reportToBank status:', res.status);
+    if (res.ok) return 'ok';
+    if (res.status === 404) {
+      console.warn('[questionBank] reportToBank 404 — question not yet in bank:', questionId);
+      return 'not_in_bank';
+    }
+    const body = await res.text().catch(() => '(unreadable)');
+    console.warn('[questionBank] reportToBank non-ok:', res.status, body);
+    return 'error';
+  } catch (e) {
+    console.warn('[questionBank] reportToBank network error:', e);
+    return 'error';
+  }
+}
+
+/** Undo a report — decrements reportCount by 1. Returns true on 2xx. */
+export async function unflagFromBank(questionId: string): Promise<boolean> {
+  try {
+    const res = await fetch(`${BANK_BASE_URL}/unflagQuestion`, {
+      method: 'POST',
+      headers: bankHeaders(),
+      body: JSON.stringify({ questionId }),
+    });
     return res.ok;
   } catch (e) {
-    console.warn('[questionBank] report failed:', e);
+    console.warn('[questionBank] unflag failed:', e);
+    return false;
+  }
+}
+
+/** Admin: update question payload + clear all flags. Omit payload to only clear flags. */
+export async function editQuestionInBank(questionId: string, payload?: Record<string, any>): Promise<boolean> {
+  try {
+    const res = await fetch(`${BANK_BASE_URL}/editQuestion`, {
+      method: 'POST',
+      headers: bankHeaders(),
+      body: JSON.stringify({ questionId, ...(payload ? { payload } : {}) }),
+    });
+    return res.ok;
+  } catch (e) {
+    console.warn('[questionBank] edit failed:', e);
     return false;
   }
 }

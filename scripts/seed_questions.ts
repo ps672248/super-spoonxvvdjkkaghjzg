@@ -188,10 +188,6 @@ async function seedUnit(u: Unit): Promise<SeedResult> {
 
   const countSnap = await db.collection(BANK).where('bankKey', '==', u.bankKey).count().get();
   const have = countSnap.data().count;
-  if (have >= TARGET) {
-    console.log(`  skip — already ${have}/${TARGET}`);
-    return { written: 0, skipped: 0, invalid: 0, actualCount: have };
-  }
 
   let written = 0, skipped = 0, invalid = 0;
   for (const d of LEVELS) {
@@ -288,14 +284,22 @@ async function main(): Promise<void> {
   }
 
   const all = catalogSnap.docs.map(d => d.data() as CatalogEntry);
-  const total = all.length;
-  const complete = all.filter(e => e.seeded >= e.target).length;
+
+  function printCatalogStats(entries: CatalogEntry[], label: string) {
+    const nothing  = entries.filter(e => e.seeded === 0).length;
+    const partial  = entries.filter(e => e.seeded > 0 && e.seeded < e.target).length;
+    const complete = entries.filter(e => e.seeded >= e.target).length;
+    console.log(`${label}: ${nothing} not started | ${partial} partial | ${complete} complete (total ${entries.length})`);
+  }
+
+  printCatalogStats(all, 'Start');
+
   const queue = all
     .filter(e => e.seeded < e.target)
     .sort((a, b) => a.seeded - b.seeded)
     .slice(0, TOPICS_PER_RUN);
 
-  console.log(`Progress: ${complete}/${total} complete | ${total - complete} remaining | seeding ${queue.length} this run\n`);
+  console.log(`Seeding ${queue.length} topic${queue.length === 1 ? '' : 's'} this run\n`);
 
   if (queue.length === 0) {
     console.log('All topics fully seeded!');
@@ -325,7 +329,45 @@ async function main(): Promise<void> {
     });
   }
 
-  console.log('\nRun complete.');
+  // Re-read catalog to show accurate end stats
+  const endSnap = await db.collection(CATALOG).get();
+  const allEnd = endSnap.docs.map(d => d.data() as CatalogEntry);
+  console.log('');
+  printCatalogStats(allEnd, 'End');
+  console.log('Run complete.');
+  process.exit(0);
+}
+
+// ── catalog:bump — raise targets so more questions get seeded ─────────────────
+async function bumpCatalog(): Promise<void> {
+  const units = buildUnits();
+  const unitByKey = new Map(units.map(u => [u.bankKey, u]));
+
+  console.log(`\nBumping seed_catalog targets — per-level=${PER_DIFFICULTY} (model=${MODEL})\n`);
+
+  const snap = await db.collection(CATALOG).get();
+  if (snap.empty) {
+    console.error('seed_catalog is empty — run: npm run catalog:init');
+    process.exit(1);
+  }
+
+  let bumped = 0, skipped = 0;
+  for (let i = 0; i < snap.docs.length; i += 500) {
+    const batch = db.batch();
+    for (const doc of snap.docs.slice(i, i + 500)) {
+      const entry = doc.data() as CatalogEntry;
+      const u = unitByKey.get(entry.bankKey);
+      if (!u) { skipped++; continue; }
+      const newTarget = (u.difficultyRange[1] - u.difficultyRange[0] + 1) * PER_DIFFICULTY;
+      if (newTarget <= entry.target) { skipped++; continue; } // never lower the target
+      batch.update(db.collection(CATALOG).doc(entry.bankKey), { target: newTarget });
+      bumped++;
+    }
+    await batch.commit();
+  }
+
+  console.log(`Done — bumped=${bumped} skipped/unchanged=${skipped}`);
+  console.log(`Run 'npm run seed' to fill the gap.`);
   process.exit(0);
 }
 
@@ -333,6 +375,8 @@ async function main(): Promise<void> {
 const CMD = process.argv[2];
 if (CMD === 'init') {
   initCatalog().catch(e => { console.error(e); process.exit(1); });
+} else if (CMD === 'bump') {
+  bumpCatalog().catch(e => { console.error(e); process.exit(1); });
 } else {
   main().catch(e => { console.error(e); process.exit(1); });
 }

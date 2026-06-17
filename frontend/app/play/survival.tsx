@@ -12,6 +12,7 @@ import { useBookmarkStore } from '@/stores/bookmarkStore';
 import { useGameQuestions, MCQQuestion } from '@/hooks/useGameQuestions';
 import { GameResultScreen, GenericResultItem } from '@/components/game/GameResultScreen';
 import { UnifiedQuestion } from '@/components/game/UnifiedQuestion';
+import { ApiKeyModal } from '@/components/ApiKeyModal';
 
 type GameState = 'loading' | 'playing' | 'result';
 
@@ -28,8 +29,9 @@ export default function SurvivalScreen() {
   const [score, setScore] = useState(0);
   const [lives, setLives] = useState(3);
   const [results, setResults] = useState<{ q: MCQQuestion; chosen: string; correct: boolean }[]>([]);
+  const [showApiModal, setShowApiModal] = useState(false);
 
-  const { loadQuestions: fetchQuestions } = useGameQuestions();
+  const { loadQuestions: fetchQuestions, bankingPending } = useGameQuestions();
 
   useEffect(() => {
     loadSurvival();
@@ -42,6 +44,7 @@ export default function SurvivalScreen() {
       setQuestions(data as MCQQuestion[]);
       setGameState('playing');
     } catch (e: any) {
+      if (e.needsApiKey) { setShowApiModal(true); return; }
       Alert.alert('Connection Failure', e.message);
       router.back();
     }
@@ -74,6 +77,11 @@ export default function SurvivalScreen() {
       <SafeAreaView style={styles.center} edges={['top', 'bottom']}>
         <ActivityIndicator size="large" color={Colors.primary} />
         <Text style={styles.loadingTitle}>Initializing Simulator...</Text>
+        <ApiKeyModal
+          visible={showApiModal}
+          onClose={() => { setShowApiModal(false); router.back(); }}
+          onConfigure={() => router.replace('/api-setup' as any)}
+        />
       </SafeAreaView>
     );
   }
@@ -100,6 +108,7 @@ export default function SurvivalScreen() {
         results={genericResults}
         onRestart={() => router.replace('/play/survival')}
         onHome={() => router.replace('/')}
+        bankingPending={bankingPending}
       />
     );
   }

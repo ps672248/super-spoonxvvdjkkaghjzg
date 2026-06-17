@@ -13,9 +13,18 @@ import { upsertLeaderboard } from '../../services/leaderboard';
 import { categoryIdForExam } from '../../config/categories';
 import { useConfigStore } from '../../stores/configStore';
 import { UnifiedQuestion } from './UnifiedQuestion';
-import { reportToBank } from '../../services/questionBank';
+import { reportToBank, unflagFromBank } from '../../services/questionBank';
 import { useToast } from '../../context/ToastContext';
 import * as Haptics from 'expo-haptics';
+import { ScoreCardSheet } from '../scorecard/ScoreCardSheet';
+import { MCQCard } from '../scorecard/cards/MCQCard';
+import { SurvivalCard } from '../scorecard/cards/SurvivalCard';
+import { MatchCard } from '../scorecard/cards/MatchCard';
+import { MarioCard } from '../scorecard/cards/MarioCard';
+import { SlasherCard } from '../scorecard/cards/SlasherCard';
+import { TsunamiCard } from '../scorecard/cards/TsunamiCard';
+import type { CardVars } from '../../config/scorecard-templates';
+import type { StudySession } from '../../stores/activityStore';
 
 export interface GenericResultItem {
   id: string;
@@ -50,6 +59,14 @@ interface GameResultScreenProps {
   onRestart: () => void;
   onHome: () => void;
   personalMessage?: string;
+  bankingPending?: boolean;
+  extraStats?: {
+    bestCombo?: number;
+    level?: number;
+    round?: number;
+    combo?: number;
+    marioMode?: 'small' | 'super' | 'fire';
+  };
 }
 
 export const GameResultScreen = ({
@@ -60,7 +77,9 @@ export const GameResultScreen = ({
   results,
   onRestart,
   onHome,
-  personalMessage
+  personalMessage,
+  bankingPending,
+  extraStats,
 }: GameResultScreenProps) => {
   const { fullName } = useSettingsStore();
   const { selectedPSU, selectedBranch, selectedSections, selectedTopics, selectedMode } = useExamStore();
@@ -72,15 +91,69 @@ export const GameResultScreen = ({
   const [noteModalItem, setNoteModalItem] = React.useState<GenericResultItem | null>(null);
   const [localNote, setLocalNote] = React.useState('');
   const [reportedIds, setReportedIds] = React.useState<Set<string>>(new Set());
+  const [showScoreCard, setShowScoreCard] = React.useState(true);
+
+  const { sessions } = useActivityStore();
+
+  const buildCardVars = React.useCallback((): CardVars | null => {
+    if (!selectedPSU || !selectedBranch) return null;
+    const now = Date.now();
+    const weekMs = 7 * 24 * 60 * 60 * 1000;
+    const sessionsThisWeek = sessions.filter((s: StudySession) => now - s.timestamp < weekMs).length;
+    const dayMs = 24 * 60 * 60 * 1000;
+    const uniqueDays = new Set(sessions.map((s: StudySession) => Math.floor(s.timestamp / dayMs)));
+    let streak = 0;
+    for (let d = Math.floor(now / dayMs); uniqueDays.has(d); d--) streak++;
+    const correctCount = results.filter(r => r.isCorrect).length;
+    const variant = (correctCount % 3) as 0 | 1 | 2;
+
+    return {
+      exam: selectedPSU,
+      branchId: selectedBranch.id,
+      score: correctCount,
+      totalAsked: results.length,
+      sessionsThisWeek,
+      streak,
+      bestCombo: extraStats?.bestCombo,
+      level: extraStats?.level,
+      round: extraStats?.round,
+      combo: extraStats?.combo,
+      variant,
+    };
+  }, [selectedPSU, selectedBranch, results, sessions, extraStats]);
+
+  const renderCard = () => {
+    const vars = buildCardVars();
+    if (!vars) return null;
+    switch (selectedMode) {
+      case 'survival': return <SurvivalCard vars={vars} />;
+      case 'match':    return <MatchCard vars={vars} />;
+      case 'mario':    return <MarioCard vars={vars} marioMode={extraStats?.marioMode} />;
+      case 'slasher':  return <SlasherCard vars={vars} />;
+      case 'tsunami':  return <TsunamiCard vars={vars} />;
+      default:         return <MCQCard vars={vars} />;
+    }
+  };
 
   const handleReport = async (item: GenericResultItem) => {
-    if (reportedIds.has(item.id)) return;
-    setReportedIds(prev => new Set(prev).add(item.id));
-    const ok = await reportToBank(item.id);
-    showToast(
-      ok ? 'Reported — we’ll review this question.' : 'Could not send report. Try again later.',
-      ok ? 'success' : 'error',
-    );
+    if (bankingPending) {
+      showToast('Saving your question — try reporting in a moment.', 'info');
+      return;
+    }
+    if (reportedIds.has(item.id)) {
+      setReportedIds(prev => { const s = new Set(prev); s.delete(item.id); return s; });
+      unflagFromBank(item.id); // fire-and-forget; 1 report alone never hides the question
+    } else {
+      setReportedIds(prev => new Set(prev).add(item.id));
+      const result = await reportToBank(item.id);
+      if (result !== 'ok') setReportedIds(prev => { const s = new Set(prev); s.delete(item.id); return s; });
+      const msg = result === 'ok'
+        ? `Reported — we'll review this question.`
+        : result === 'not_in_bank'
+          ? `This question isn't in our bank yet — it'll be reportable after a few more sessions.`
+          : `Could not send report. Try again later.`;
+      showToast(msg, result === 'ok' ? 'success' : 'error');
+    }
   };
 
   const firstName = fullName.split(' ')[0];
@@ -95,8 +168,8 @@ export const GameResultScreen = ({
     logSession({
       psuId: selectedPSU.id,
       psuName: selectedPSU.name,
-      branchId: selectedBranch.id,
-      branchName: selectedBranch.name,
+      branchId: selectedBranch?.id || '',
+      branchName: selectedBranch?.name || '',
       sections: selectedSections,
       topics: selectedTopics,
       gameMode: mode,
@@ -107,9 +180,10 @@ export const GameResultScreen = ({
       upsertLeaderboard(
         mode,
         fullName,
-        selectedBranch.id,
+        selectedBranch?.id || '',
         useActivityStore.getState().sessions,
         categoryIdForExam(selectedPSU.id, categories),
+        selectedBranch?.name || '',
       );
     });
     // Log question texts to seen store so Gemini avoids them next session
@@ -166,18 +240,18 @@ export const GameResultScreen = ({
                     </Text>
                   </View>
                   <View style={styles.cardActions}>
-                    <TouchableOpacity onPress={() => handleReport(item)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                      <Ionicons
-                        name={reported ? 'flag' : 'flag-outline'}
-                        size={20}
-                        color={reported ? Colors.survivalRed : Colors.outline}
-                      />
-                    </TouchableOpacity>
                     <TouchableOpacity onPress={() => handleBookmarkPress(item)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                       <Ionicons
                         name={bookmarked ? 'bookmark' : 'bookmark-outline'}
                         size={22}
                         color={bookmarked ? Colors.gold : Colors.outline}
+                      />
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => handleReport(item)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                      <Ionicons
+                        name={reported ? 'flag' : 'flag-outline'}
+                        size={20}
+                        color={reported ? Colors.survivalRed : bankingPending ? Colors.outlineVariant : Colors.outline}
                       />
                     </TouchableOpacity>
                   </View>
@@ -222,6 +296,10 @@ export const GameResultScreen = ({
         )}
 
         <View style={styles.footerActions}>
+          <TouchableOpacity style={styles.shareBtn} onPress={() => setShowScoreCard(true)}>
+            <Ionicons name="share-social-outline" size={18} color={Colors.primary} />
+            <Text style={styles.shareBtnText}>SHARE</Text>
+          </TouchableOpacity>
           <TouchableOpacity style={styles.restartBtn} onPress={onRestart}>
             <Text style={styles.restartBtnText}>RESTART</Text>
           </TouchableOpacity>
@@ -230,6 +308,12 @@ export const GameResultScreen = ({
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      {showScoreCard && (
+        <ScoreCardSheet visible={showScoreCard} onClose={() => setShowScoreCard(false)}>
+          {renderCard()}
+        </ScoreCardSheet>
+      )}
 
       <Modal visible={!!noteModalItem} transparent animationType="fade" onRequestClose={() => setNoteModalItem(null)}>
         <View style={styles.noteOverlay}>
@@ -255,6 +339,10 @@ export const GameResultScreen = ({
                   if (noteModalItem) {
                     await addQuestionBookmark({
                       ...noteModalItem.rawQuestion,
+                      // Explicitly override fields that raw question object may not have
+                      type: noteModalItem.type,
+                      question: noteModalItem.question,          // MatchChallenge uses `scenario`, not `question`
+                      topicTitle: noteModalItem.topic || '',
                       yourAnswer: noteModalItem.type === 'mcq' ? noteModalItem.yourAnswer : JSON.stringify(noteModalItem.matchPairs),
                       psuName: selectedPSU?.name || 'PSU',
                       branchName: selectedBranch?.name || 'General',
@@ -278,7 +366,7 @@ export const GameResultScreen = ({
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#F9FBFF' },
   scrollContent: { paddingBottom: Spacing.xxxl },
-  cardActions: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
+  cardActions: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xl, flexShrink: 0 },
   headerCard: { 
     backgroundColor: '#1A237E', 
     padding: Spacing.xl, 
@@ -317,7 +405,7 @@ const styles = StyleSheet.create({
     borderTopColor: Colors.gold
   },
   reviewCardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.md },
-  questionTag: { backgroundColor: '#FFF9E6', paddingHorizontal: Spacing.md, paddingVertical: 4, borderRadius: Radius.pill },
+  questionTag: { backgroundColor: '#FFF9E6', paddingHorizontal: Spacing.md, paddingVertical: 4, borderRadius: Radius.pill, flex: 1, marginRight: Spacing.sm },
   questionTagText: { ...Typography.labelCaps, color: '#B8860B', fontSize: 9, fontFamily: 'Inter_700Bold' },
   noteOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: Spacing.xl },
   noteCard: { backgroundColor: '#FFF', borderRadius: Radius.xl, padding: Spacing.xl, gap: Spacing.lg, ...Shadows.cardHover },
@@ -369,6 +457,8 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
   footerActions: { flexDirection: 'row', padding: Spacing.lg, gap: Spacing.md },
+  shareBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, paddingHorizontal: Spacing.md, paddingVertical: Spacing.lg, borderRadius: Radius.md, backgroundColor: '#F2F4F7', borderWidth: 1, borderColor: Colors.primary + '30' },
+  shareBtnText: { ...Typography.button, color: Colors.primary, fontSize: 12 },
   restartBtn: { flex: 1, backgroundColor: '#F2F4F7', paddingVertical: Spacing.lg, borderRadius: Radius.md, alignItems: 'center' },
   restartBtnText: { ...Typography.button, color: Colors.onSurfaceVariant },
   homeBtn: { flex: 1, backgroundColor: Colors.gold, paddingVertical: Spacing.lg, borderRadius: Radius.md, alignItems: 'center', ...Shadows.button },

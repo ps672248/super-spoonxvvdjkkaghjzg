@@ -1,7 +1,6 @@
 import React from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  Image, Modal
+  View, Text, ScrollView, TouchableOpacity, StyleSheet, Image,
 } from 'react-native';
 import { useIsWide } from '@/hooks/useColumns';
 import { useRouter } from 'expo-router';
@@ -10,7 +9,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { Colors, Typography, Spacing, Radius, Shadows } from '@/theme';
 import { useExamStore, GameMode } from '@/stores/examStore';
-import { useSettingsStore } from '@/stores/settingsStore';
 
 const GAME_MODES: {
   id: GameMode;
@@ -72,17 +70,11 @@ import { AppHeader } from '@/components/AppHeader';
 export default function GameModeScreen() {
   const router = useRouter();
   const { selectedPSU, setMode, questionCount, setQuestionCount } = useExamStore();
-  const { geminiApiKey } = useSettingsStore();
-  const [showApiModal, setShowApiModal] = React.useState(false);
   const isWide = useIsWide();
 
   if (!selectedPSU) { router.replace('/'); return null; }
 
   const handleSelect = (mode: GameMode) => {
-    if (!geminiApiKey) {
-      setShowApiModal(true);
-      return;
-    }
     setMode(mode);
     router.push(`/play/${mode}`);
   };
@@ -152,15 +144,6 @@ export default function GameModeScreen() {
         </View>
       </ScrollView>
 
-      {/* API Key Modal */}
-      <ApiKeyModal 
-        visible={showApiModal} 
-        onClose={() => setShowApiModal(false)}
-        onGoToSettings={() => {
-          setShowApiModal(false);
-          router.push('/api-setup');
-        }}
-      />
     </SafeAreaView>
   );
 }
@@ -202,49 +185,6 @@ function ModeCard({ mode, onPress, isWide }: { mode: any; onPress: () => void; i
   );
 }
 
-function ApiKeyModal({ visible, onClose, onGoToSettings }: any) {
-  return (
-    <Modal visible={visible} transparent animationType="fade">
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalCard}>
-          <View style={styles.modalTopAccent} />
-          
-          <View style={styles.modalHeaderRow}>
-            <View style={styles.keyIconSquare}>
-              <Ionicons name="key" size={24} color={Colors.white} />
-            </View>
-            <Ionicons name="information-circle-outline" size={28} color={Colors.onSurface} />
-          </View>
-
-          <Text style={styles.modalTitle}>API Key Required</Text>
-          <Text style={styles.modalDesc}>
-            To generate personalized practice questions and syllabus-specific study guides, an active Gemini API key is required. This ensures high-quality AI assistance tailored to your PSU curriculum.
-          </Text>
-
-          <View style={styles.unlockBanner}>
-            <View style={styles.sparkleCircle}>
-              <Ionicons name="sparkles" size={24} color={Colors.secondary} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.unlockTitle}>Unlock AI Generation</Text>
-              <Text style={styles.unlockDesc}>Activate features like "Explain Concept" and "Custom Quiz".</Text>
-            </View>
-          </View>
-
-          <View style={styles.modalFooter}>
-            <TouchableOpacity style={styles.modalCancelBtn} onPress={onClose}>
-              <Text style={styles.modalCancelText}>Cancel</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.modalSettingsBtn} onPress={onGoToSettings}>
-              <Text style={styles.modalSettingsText}>Configure AI Access</Text>
-              <Ionicons name="key" size={18} color={Colors.secondary} />
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
-    </Modal>
-  );
-}
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#F9FBFF' },
@@ -380,111 +320,4 @@ const styles = StyleSheet.create({
     marginTop: Spacing.md,
     resizeMode: 'cover'
   },
-
-  // Modal Styles
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 6, 102, 0.4)', // Dimmed navy
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: Spacing.xl
-  },
-  modalCard: {
-    backgroundColor: '#FFF',
-    borderRadius: Radius.lg,
-    width: '100%',
-    padding: Spacing.xl,
-    overflow: 'hidden',
-    ...Shadows.cardHover
-  },
-  modalTopAccent: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 4,
-    backgroundColor: Colors.gold,
-    width: '35%'
-  },
-  modalHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: Spacing.lg
-  },
-  keyIconSquare: {
-    width: 48,
-    height: 48,
-    backgroundColor: Colors.primary,
-    borderRadius: Radius.md,
-    alignItems: 'center',
-    justifyContent: 'center'
-  },
-  modalTitle: {
-    ...Typography.h2,
-    color: Colors.primary,
-    marginBottom: Spacing.md
-  },
-  modalDesc: {
-    ...Typography.bodyMd,
-    color: Colors.onSurfaceVariant,
-    lineHeight: 24,
-    marginBottom: Spacing.xl
-  },
-  unlockBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F2F4F7',
-    padding: Spacing.lg,
-    borderRadius: Radius.md,
-    gap: Spacing.md,
-    marginBottom: Spacing.xxl
-  },
-  sparkleCircle: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#FFF',
-    alignItems: 'center',
-    justifyContent: 'center'
-  },
-  unlockTitle: {
-    ...Typography.h4,
-    color: Colors.primary
-  },
-  unlockDesc: {
-    ...Typography.bodySm,
-    color: Colors.onSurfaceVariant,
-    marginTop: 2
-  },
-  modalFooter: {
-    gap: Spacing.md
-  },
-  modalCancelBtn: {
-    width: '100%',
-    paddingVertical: Spacing.lg,
-    borderRadius: Radius.md,
-    borderWidth: 2,
-    borderColor: Colors.primary,
-    alignItems: 'center'
-  },
-  modalCancelText: {
-    ...Typography.button,
-    color: Colors.primary
-  },
-  modalSettingsBtn: {
-    width: '100%',
-    paddingVertical: Spacing.lg,
-    borderRadius: Radius.md,
-    backgroundColor: Colors.gold,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: Spacing.sm,
-    ...Shadows.button
-  },
-  modalSettingsText: {
-    ...Typography.button,
-    color: Colors.secondary
-  }
 });

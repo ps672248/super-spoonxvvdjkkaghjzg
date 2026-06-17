@@ -33,6 +33,8 @@ export interface SlasherLogic {
   stats: { correct: number; incorrect: number; totalAsked: number };
   results: SlasherResult[];
   feedbackMessage: { text: string; type: 'success' | 'error' } | null;
+  needsApiKey: boolean;
+  apiKeyError: string | null;
 }
 
 export const useSyllabusSlasherLogic = (): SlasherLogic => {
@@ -62,20 +64,34 @@ export const useSyllabusSlasherLogic = (): SlasherLogic => {
   const usedIndicesRef = useRef<number[]>([]);
   const questionsRef = useRef<MCQQuestion[]>([]);
   const isQuestionActiveRef = useRef(false);
+  // 2-second invincibility after any hit — prevents simultaneous life-loss from rapid events
+  const isInvincibleRef = useRef(false);
+  const invincibilityTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const { loadQuestions: fetchQuestions } = useGameQuestions();
+  const { loadQuestions: fetchQuestions, bankingPending } = useGameQuestions();
   const [loading, setLoading] = useState(true);
+
+  const [needsApiKey, setNeedsApiKey] = useState(false);
+  const [apiKeyError, setApiKeyError] = useState<string | null>(null);
 
   const loadQuestions = async () => {
     setLoading(true);
+    setNeedsApiKey(false);
+    setApiKeyError(null);
     try {
       const q = await fetchQuestions('slasher', storeQuestionCount || 20);
       setQuestions(q as MCQQuestion[]);
       questionsRef.current = q as MCQQuestion[];
       setGameState('playing');
-    } catch (error) {
-      console.error('Slasher question error:', error);
-      setGameState('playing'); 
+    } catch (error: any) {
+      if (error.needsApiKey) {
+        setNeedsApiKey(true);
+        setApiKeyError(error.message);
+        // Stay in loading gameState — game never starts without questions
+      } else {
+        console.error('Slasher question error:', error);
+        setGameState('playing');
+      }
     } finally {
       setLoading(false);
     }
@@ -88,8 +104,12 @@ export const useSyllabusSlasherLogic = (): SlasherLogic => {
   const comboTimer = useRef<NodeJS.Timeout | null>(null);
 
   const showLifeLossQuestion = useCallback(() => {
-    if (isQuestionActiveRef.current) return;
+    if (isQuestionActiveRef.current || isInvincibleRef.current) return;
     isQuestionActiveRef.current = true;
+    // Start 2-second invincibility immediately so rapid hits don't stack
+    isInvincibleRef.current = true;
+    if (invincibilityTimerRef.current) clearTimeout(invincibilityTimerRef.current);
+    invincibilityTimerRef.current = setTimeout(() => { isInvincibleRef.current = false; }, 2000);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
     const unUsed = questionsRef.current.filter((_, i) => !usedIndicesRef.current.includes(i));
     if (unUsed.length > 0) {
@@ -195,6 +215,8 @@ export const useSyllabusSlasherLogic = (): SlasherLogic => {
     setStats({ correct: 0, incorrect: 0, totalAsked: 0 });
     setFeedbackMessage(null);
     isQuestionActiveRef.current = false;
+    isInvincibleRef.current = false;
+    if (invincibilityTimerRef.current) clearTimeout(invincibilityTimerRef.current);
     setGameState('playing');
   };
 
@@ -209,6 +231,8 @@ export const useSyllabusSlasherLogic = (): SlasherLogic => {
     setStats({ correct: 0, incorrect: 0, totalAsked: 0 });
     setFeedbackMessage(null);
     isQuestionActiveRef.current = false;
+    isInvincibleRef.current = false;
+    if (invincibilityTimerRef.current) clearTimeout(invincibilityTimerRef.current);
     setGameState('loading');
     loadQuestions();
   };
@@ -217,6 +241,6 @@ export const useSyllabusSlasherLogic = (): SlasherLogic => {
     gameState, score, lives, combo, questions, currentQuestion, questionVisible,
     setQuestionVisible, recordSlice, recordMiss, handleQuestionResponse, isPaused,
     toggleBookmark, isQuestionBookmarked, startGame, resetGame, loading, stats, results,
-    feedbackMessage
+    feedbackMessage, needsApiKey, apiKeyError, bankingPending,
   };
 };

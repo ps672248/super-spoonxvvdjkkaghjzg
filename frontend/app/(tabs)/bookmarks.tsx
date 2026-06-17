@@ -11,6 +11,7 @@ import { Colors, Typography, Spacing, Radius, Shadows } from '@/theme';
 import { useBookmarkStore, BookmarkedQuestion } from '@/stores/bookmarkStore';
 import { AppHeader } from '@/components/AppHeader';
 import { SyncBadge } from '@/components/SyncBadge';
+import { UnifiedQuestion } from '@/components/game/UnifiedQuestion';
 
 export default function BookmarksScreen() {
   const { questionBookmarks, removeQuestionBookmark, updateQuestionNote, isSyncing } = useBookmarkStore();
@@ -206,7 +207,46 @@ function BookmarkItem({
   const [expanded, setExpanded] = useState(false);
   const [currentAttempt, setCurrentAttempt] = useState<string | null>(null);
 
-  // Auto-expand and reveal when attempted
+  const isMatchQuestion =
+    item.type === 'match' ||
+    item.correct === "MATCHING_TYPE" ||
+    item.topicTitle === "Matching Challenge" ||
+    (item.options && item.options.length > 0 && String(item.options?.[0]).includes('|')) ||
+    item.correct?.includes(' -> ');
+
+  // Stable pairs + scramble — computed once per item, never reshuffled on re-render
+  const pairs = React.useMemo(() => {
+    if (item.pairs && item.pairs.length > 0) return item.pairs;
+    const isStructured = item.options && item.options.length > 0 && String(item.options?.[0]).includes('|');
+    return (item.options || []).map((opt, idx) => {
+      if (isStructured) {
+        const [id, left, right] = opt.split('|');
+        return { id, left, right };
+      }
+      let left = 'Term';
+      if (item.correct?.includes(' -> ')) {
+        const parts = item.correct.split('; ');
+        const found = parts.find(p => p.endsWith(` -> ${opt}`));
+        if (found) left = found.split(' -> ')[0];
+      }
+      return { id: String(idx), left, right: opt };
+    });
+  }, [item.id]);
+
+  const scrambledRight = React.useMemo(
+    () => [...pairs].sort(() => Math.random() - 0.5),
+    [item.id], // only reshuffle when question changes, not on every render
+  );
+
+  // Auto-expand match cards when practice mode activates
+  React.useEffect(() => {
+    if (attemptMode && isMatchQuestion) {
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+      setExpanded(true);
+    }
+  }, [attemptMode]);
+
+  // Auto-expand when MCQ answer submitted
   React.useEffect(() => {
     if (currentAttempt) {
       LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -225,13 +265,6 @@ function BookmarkItem({
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
   };
 
-  const isMatchQuestion = 
-    item.type === 'match' ||
-    item.correct === "MATCHING_TYPE" || 
-    item.topicTitle === "Matching Challenge" || 
-    (item.options && item.options.length > 0 && String(item.options?.[0]).includes('|')) ||
-    item.correct?.includes(' -> ');
-
   const prevStatus = isMatchQuestion ? 'skipped' : (!item.yourAnswer ? 'skipped' : (item.yourAnswer === item.correct ? 'correct' : 'wrong'));
   const statusColors = {
     correct: Colors.success,
@@ -239,28 +272,9 @@ function BookmarkItem({
     skipped: Colors.outline
   };
 
-  // Helper to render Match Pairs
+  // Helper to render Match Pairs — uses memoized pairs + scrambledRight from component scope
   const renderMatchPairs = () => {
     const isStructured = item.options && item.options.length > 0 && String(item.options?.[0]).includes('|');
-    
-    const pairs = (item.pairs && item.pairs.length > 0) 
-      ? item.pairs 
-      : (item.options || []).map((opt, idx) => {
-          if (isStructured) {
-            const [id, left, right] = opt.split('|');
-            return { id, left, right };
-          }
-          let left = 'Term';
-          if (item.correct?.includes(' -> ')) {
-            const parts = item.correct.split('; ');
-            const found = parts.find(p => p.endsWith(` -> ${opt}`));
-            if (found) left = found.split(' -> ')[0];
-          }
-          return { id: String(idx), left, right: opt };
-        });
-    
-    // Scramble right side for attempt mode
-    const scrambledRight = [...pairs].sort(() => Math.random() - 0.5);
 
     let userMatches: Record<string, string> = {};
     if (isStructured && item.yourAnswer) {
@@ -274,31 +288,25 @@ function BookmarkItem({
     if (attemptMode && !showSolution) {
       return (
         <View style={styles.matchReviewContainer}>
-          <Text style={styles.sectionLabel}>MATCH THE TERMS (SCRAMBLED)</Text>
-          <View style={styles.scrambledGrid}>
-            <View style={styles.scrambledCol}>
-              <Text style={styles.scrambledLabel}>LEFT SIDE</Text>
-              {pairs.map((p, i) => (
-                <View key={i} style={styles.scrambledItem}><Text style={styles.matchText}>{p.left}</Text></View>
-              ))}
-            </View>
-            <View style={styles.scrambledCol}>
-              <Text style={styles.scrambledLabel}>RIGHT SIDE</Text>
-              {scrambledRight.map((p, i) => (
-                <View key={i} style={[styles.scrambledItem, { backgroundColor: Colors.primary + '10' }]}>
-                  <Text style={styles.matchText}>{p.right}</Text>
-                </View>
-              ))}
-            </View>
-          </View>
-          <TouchableOpacity 
-            style={styles.revealBtn} 
+          <Text style={styles.sectionLabel}>PRACTICE — TAP TO MATCH</Text>
+          <UnifiedQuestion
+            type="match"
+            mode="interactive"
+            theme="light"
+            pairs={pairs}
+            onAnswer={() => {
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              setCurrentAttempt('MATCH_DONE');
+            }}
+          />
+          <TouchableOpacity
+            style={[styles.revealBtn, { marginTop: Spacing.sm }]}
             onPress={() => {
               setCurrentAttempt('MATCH_DONE');
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
             }}
           >
-            <Text style={styles.revealBtnText}>Reveal Correct Pairs</Text>
+            <Text style={styles.revealBtnText}>Skip — Reveal Answers</Text>
           </TouchableOpacity>
         </View>
       );
@@ -340,9 +348,9 @@ function BookmarkItem({
       <View style={styles.cardInner}>
         <View style={styles.cardHeader}>
           <View style={styles.badgeRow}>
-            {!!item.psuName && (
+            {!!item.topicTitle && (
               <View style={styles.psuBadge}>
-                <Text style={styles.psuBadgeText} numberOfLines={1}>{item.psuName.toUpperCase()}</Text>
+                <Text style={styles.psuBadgeText} numberOfLines={1}>{item.topicTitle.toUpperCase()}</Text>
               </View>
             )}
             <View style={styles.branchBadge}>
@@ -354,7 +362,7 @@ function BookmarkItem({
               </Text>
             </View>
           </View>
-          <TouchableOpacity onPress={onRemove}>
+          <TouchableOpacity onPress={onRemove} style={styles.bookmarkBtn}>
             <Ionicons name="bookmark" size={22} color={Colors.primary} />
           </TouchableOpacity>
         </View>
@@ -555,14 +563,16 @@ const styles = StyleSheet.create({
   },
   cardAccent: { width: 6, backgroundColor: Colors.gold },
   cardInner: { flex: 1, padding: Spacing.lg },
-  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.md },
-  badgeRow: { flexDirection: 'row', gap: Spacing.sm, alignItems: 'center', flexWrap: 'wrap' },
+  cardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.md, gap: Spacing.sm },
+  badgeRow: { flex: 1, flexDirection: 'row', gap: Spacing.sm, alignItems: 'center', flexWrap: 'wrap' },
+  bookmarkBtn: { flexShrink: 0 },
   psuBadge: {
     backgroundColor: Colors.gold,
     paddingHorizontal: Spacing.md,
     paddingVertical: 4,
     borderRadius: Radius.sm,
-    maxWidth: 140,
+    flexShrink: 1,
+    minWidth: 0,
   },
   psuBadgeText: {
     ...Typography.labelCaps,

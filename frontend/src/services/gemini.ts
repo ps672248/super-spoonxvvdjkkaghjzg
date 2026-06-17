@@ -12,6 +12,14 @@ function hashContent(text: string): string {
   return h.toString(36);
 }
 
+/** Strip explicit difficulty suffixes Gemini sometimes appends (e.g. "Binary Trees - Difficulty 7" → "Binary Trees"). */
+function cleanTopic(raw: any, fallback: string): string {
+  if (typeof raw !== 'string' || !raw.trim()) return fallback;
+  return raw
+    .replace(/\s*[-–(]\s*(?:difficulty|diff|level)\s*\d*\s*[/)–-]?.*/gi, '')
+    .trim() || fallback;
+}
+
 /** Coerce a model-tagged difficulty to a 1–10 integer, or undefined if absent/invalid. */
 function clampDiff(v: any): number | undefined {
   const n = Math.round(Number(v));
@@ -364,7 +372,7 @@ Generate exactly ${count} MCQs. Each question:
 2. Has exactly 4 options: A), B), C), D)
 3. Has exactly ONE correct answer
 4. Has a concise 1–2 sentence explanation
-5. Has a "topic" field naming the SINGLE specific topic it tests — pick exactly one from: ${topicTitle}
+5. Has a "topic" field: must be EXACTLY one of these values copied verbatim — ${topicTitle}. Do not paraphrase, abbreviate, or add anything.
 6. ${diffText}
 
 NO PREAMBLE. NO THINKING. NO CHATTER. OUTPUT ONLY RAW JSON ARRAY.
@@ -389,8 +397,7 @@ Exactly 4 options, one correct answer, 1-2 sentence explanation.`;
       correct:     q.correct     || 'A',
       explanation: q.explanation || '',
       id:          hashContent(q.question || ''),
-      // Per-question specific topic (Gemini-tagged); fall back to the combined label.
-      topicTitle:  (typeof q.topic === 'string' && q.topic.trim()) ? q.topic.trim() : topicTitle,
+      topicTitle:  cleanTopic(q.topic, topicTitle),
       difficulty:  clampDiff(q.difficulty),
     }));
   }
@@ -533,7 +540,7 @@ Rules:
 3. Calibrated to the real ${psuName} exam difficulty.
 4. "isTrue" is a boolean (true/false) — the actual truth of the statement.
 5. Include a concise 1-sentence "explanation" of why it is true or false.
-6. "topic" names the single specific topic it tests — pick one from: ${topicTitle}.
+6. "topic" field: must be EXACTLY one of these values copied verbatim — ${topicTitle}. Do not paraphrase, abbreviate, or add anything.
 7. ${diffText}
 
 NO PREAMBLE. NO THINKING. NO CHATTER. OUTPUT ONLY RAW JSON ARRAY.
@@ -547,7 +554,7 @@ Format: [{"statement":"...","isTrue":true,"explanation":"...","topic":"...","dif
       isTrue:      s.isTrue === true || s.isTrue === 'true',
       explanation: s.explanation || '',
       id:          hashContent(typeof s.statement === 'string' ? s.statement : ''),
-      topicTitle:  (typeof s.topic === 'string' && s.topic.trim()) ? s.topic.trim() : topicTitle,
+      topicTitle:  cleanTopic(s.topic, topicTitle),
       difficulty:  clampDiff(s.difficulty),
     }));
   }

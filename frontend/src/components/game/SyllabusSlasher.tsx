@@ -63,7 +63,7 @@ interface FloatingText {
 export const SyllabusSlasher = ({ logic, onRestart, onHome }: { logic: SlasherLogic; onRestart?: () => void; onHome?: () => void }) => {
     const { gameState, score, lives, combo, questionVisible, currentQuestion,
             recordSlice, recordMiss, handleQuestionResponse, isPaused, results,
-            stats, feedbackMessage } = logic;
+            stats, feedbackMessage, bankingPending } = logic;
     const { fullName } = useSettingsStore();
     const { addQuestionBookmark, removeQuestionBookmark, isQuestionBookmarked } = useBookmarkStore();
     const { selectedPSU, selectedBranch } = useExamStore();
@@ -355,6 +355,10 @@ export const SyllabusSlasher = ({ logic, onRestart, onHome }: { logic: SlasherLo
                 const missedFruit = activeFruits.current.find(f => !f.isSliced && !f.isBomb && f.y > SCREEN_HEIGHT + 50);
                 if (missedFruit) {
                     missInProgressRef.current = true;
+                    // Remove immediately — game pauses during question, so without this the
+                    // fruit stays at y>50 and is re-detected as a miss the moment the game resumes.
+                    activeFruits.current = activeFruits.current.filter(f => f.id !== missedFruit.id);
+                    setFruits(prev => prev.filter(f => f.id !== missedFruit.id));
                     triggerShake(8);
                     spawnFloatingText(missedFruit.x, SCREEN_HEIGHT - 100, 'MISS!', '#EF5350');
                     recordMissRef.current();
@@ -445,6 +449,7 @@ export const SyllabusSlasher = ({ logic, onRestart, onHome }: { logic: SlasherLo
                 personalMessage={lives <= 0
                     ? `The dojo was tough today, ${firstName}! Keep training.`
                     : `Masterful slashing, ${firstName}!`}
+                bankingPending={bankingPending}
             />
         );
     }

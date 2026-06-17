@@ -15,6 +15,7 @@ import { MCQQuestion } from '@/services/gemini';
 import { useGameQuestions } from '@/hooks/useGameQuestions';
 import { GameResultScreen, GenericResultItem } from '@/components/game/GameResultScreen';
 import { UnifiedQuestion } from '@/components/game/UnifiedQuestion';
+import { ApiKeyModal } from '@/components/ApiKeyModal';
 
 type SessionState = 'loading' | 'playing' | 'result';
 
@@ -30,11 +31,12 @@ export default function MCQScreen() {
   const [score, setScore] = useState(0);
   const [results, setResults] = useState<{ q: MCQQuestion; chosen: string | null; correct: boolean }[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [showApiModal, setShowApiModal] = useState(false);
 
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const psu = selectedPSU!;
 
-  const { loadQuestions: fetchQuestions } = useGameQuestions();
+  const { loadQuestions: fetchQuestions, bankingPending } = useGameQuestions();
 
   useEffect(() => {
     loadQuestions();
@@ -48,6 +50,7 @@ export default function MCQScreen() {
       setQuestions(qs as MCQQuestion[]);
       setState('playing');
     } catch (e: any) {
+      if (e.needsApiKey) { setShowApiModal(true); return; }
       setError(e.message ?? 'Failed to load questions');
     }
   }
@@ -99,12 +102,14 @@ export default function MCQScreen() {
         ) : (
           <View style={styles.loadingState}>
             <ActivityIndicator size="large" color={Colors.primary} />
-            <Text style={styles.loadingTitle}>Generating Questions</Text>
-            <Text style={styles.loadingDesc}>
-              {geminiModel} is crafting {questionCount} questions tailored to {psu.name}...
-            </Text>
+            <Text style={styles.loadingTitle}>Preparing your questions…</Text>
           </View>
         )}
+        <ApiKeyModal
+          visible={showApiModal}
+          onClose={() => { setShowApiModal(false); router.back(); }}
+          onConfigure={() => router.replace('/api-setup' as any)}
+        />
       </SafeAreaView>
     );
   }
@@ -131,6 +136,7 @@ export default function MCQScreen() {
         results={genericResults}
         onRestart={() => router.replace('/play/mcq')}
         onHome={() => router.replace('/')}
+        bankingPending={bankingPending}
       />
     );
   }

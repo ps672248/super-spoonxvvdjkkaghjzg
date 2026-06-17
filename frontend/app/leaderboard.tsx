@@ -138,8 +138,8 @@ export default function LeaderboardScreen() {
           <Text style={[styles.rowName, isMe && styles.rowNameMe]} numberOfLines={1}>
             {item.name}{isMe ? ' (you)' : ''}
           </Text>
-          {!!item.branchId && (
-            <Text style={styles.rowBranch} numberOfLines={1}>{item.branchId}</Text>
+          {!!(item.branchName || item.branchId) && (
+            <Text style={styles.rowBranch} numberOfLines={1}>{item.branchName || item.branchId}</Text>
           )}
         </View>
         <Text style={styles.rowValue}>{item.value}</Text>

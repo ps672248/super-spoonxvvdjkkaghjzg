@@ -13,6 +13,7 @@ import { useExamStore } from '@/stores/examStore';
 import { useBookmarkStore } from '@/stores/bookmarkStore';
 import { useGameQuestions, TFStatement } from '@/hooks/useGameQuestions';
 import { GameResultScreen, GenericResultItem } from '@/components/game/GameResultScreen';
+import { ApiKeyModal } from '@/components/ApiKeyModal';
 
 type GameState = 'loading' | 'playing' | 'result';
 
@@ -35,13 +36,14 @@ export default function TsunamiScreen() {
   const [bestCombo, setBestCombo] = useState(0);
   const [lives, setLives] = useState(3);
   const [results, setResults] = useState<{ s: TFStatement; choice: boolean; correct: boolean }[]>([]);
+  const [showApiModal, setShowApiModal] = useState(false);
 
   // Note modal (bookmark with an optional note)
   const [noteModalVisible, setNoteModalVisible] = useState(false);
   const [localNote, setLocalNote] = useState('');
 
   const pan = useRef(new Animated.ValueXY()).current;
-  const { loadQuestions } = useGameQuestions();
+  const { loadQuestions, bankingPending } = useGameQuestions();
 
   useEffect(() => { load(); }, []);
 
@@ -55,6 +57,7 @@ export default function TsunamiScreen() {
       setStatements(data as TFStatement[]);
       setGameState('playing');
     } catch (e: any) {
+      if (e.needsApiKey) { setShowApiModal(true); return; }
       Alert.alert('Connection Failure', e.message);
       router.back();
     }
@@ -134,6 +137,11 @@ export default function TsunamiScreen() {
       <SafeAreaView style={styles.center} edges={['top', 'bottom']}>
         <ActivityIndicator size="large" color={Colors.primary} />
         <Text style={styles.loadingTitle}>Summoning the Tsunami…</Text>
+        <ApiKeyModal
+          visible={showApiModal}
+          onClose={() => { setShowApiModal(false); router.back(); }}
+          onConfigure={() => router.replace('/api-setup' as any)}
+        />
       </SafeAreaView>
     );
   }
@@ -165,6 +173,8 @@ export default function TsunamiScreen() {
         results={generic}
         onRestart={() => router.replace('/play/tsunami')}
         onHome={() => router.replace('/')}
+        extraStats={{ bestCombo }}
+        bankingPending={bankingPending}
       />
     );
   }

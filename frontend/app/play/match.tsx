@@ -16,6 +16,7 @@ import { MatchChallenge, MatchPair } from '@/services/gemini';
 import { useGameQuestions } from '@/hooks/useGameQuestions';
 import { GameResultScreen, GenericResultItem } from '@/components/game/GameResultScreen';
 import { UnifiedQuestion } from '@/components/game/UnifiedQuestion';
+import { ApiKeyModal } from '@/components/ApiKeyModal';
 
 type GameState = 'loading' | 'playing' | 'result';
 
@@ -37,7 +38,7 @@ export default function MatchScreen() {
   const [matches, setMatches] = useState<Record<string, string>>({}); // leftId -> rightId
   const [shuffledRights, setShuffledRights] = useState<MatchPair[]>([]);
   const [results, setResults] = useState<{ q: MatchChallenge; score: number; userMatches: Record<string, string> }[]>([]);
-
+  const [showApiModal, setShowApiModal] = useState(false);
 
   useEffect(() => {
     loadMatchChallenges();
@@ -51,7 +52,7 @@ export default function MatchScreen() {
     }
   }, [currentIdx, challenges]);
 
-  const { loadQuestions: fetchQuestions } = useGameQuestions();
+  const { loadQuestions: fetchQuestions, bankingPending } = useGameQuestions();
 
   async function loadMatchChallenges() {
     setGameState('loading');
@@ -60,6 +61,7 @@ export default function MatchScreen() {
       setChallenges(data as MatchChallenge[]);
       setGameState('playing');
     } catch (e: any) {
+      if (e.needsApiKey) { setShowApiModal(true); return; }
       Alert.alert('Connection Failure', e.message);
       router.back();
     }
@@ -103,6 +105,11 @@ export default function MatchScreen() {
       <SafeAreaView style={styles.center} edges={['top', 'bottom']}>
         <ActivityIndicator size="large" color={Colors.primary} />
         <Text style={styles.loadingTitle}>Preparing Challenges...</Text>
+        <ApiKeyModal
+          visible={showApiModal}
+          onClose={() => { setShowApiModal(false); router.back(); }}
+          onConfigure={() => router.replace('/api-setup' as any)}
+        />
       </SafeAreaView>
     );
   }
@@ -137,6 +144,7 @@ export default function MatchScreen() {
         results={genericResults}
         onRestart={() => router.replace('/play/match')}
         onHome={() => router.replace('/')}
+        bankingPending={bankingPending}
       />
     );
   }

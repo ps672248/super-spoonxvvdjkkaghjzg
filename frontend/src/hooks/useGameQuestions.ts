@@ -12,15 +12,32 @@ import {
 import { useToast } from '../context/ToastContext';
 import { isEmbed } from '@/utils/embed';
 
+type SectionRef = { id: string; name: string; branchSpecific: boolean; difficultyRange: [number, number]; [k: string]: any };
+type TopicRef = { id: string; title: string };
+type SectionTopicPair = { sec: SectionRef; topic: TopicRef };
+
+/** Match a question's `topic` string back to one of the active topic IDs. */
+function matchTopicId(questionTopic: string | undefined, pairs: SectionTopicPair[]): string | null {
+  if (!questionTopic) return null;
+  const q = questionTopic.toLowerCase().trim();
+  const exact = pairs.find(p => p.topic.title.toLowerCase() === q);
+  if (exact) return exact.topic.id;
+  const partial = pairs.find(p => {
+    const t = p.topic.title.toLowerCase();
+    return q.includes(t) || t.includes(q);
+  });
+  return partial?.topic.id ?? null;
+}
+
 export const useGameQuestions = () => {
-  const { 
-    selectedPSU, 
-    selectedBranch, 
-    selectedSections, 
-    selectedTopics, 
-    questionCount: storeCount 
+  const {
+    selectedPSU,
+    selectedBranch,
+    selectedSections,
+    selectedTopics,
+    questionCount: storeCount
   } = useExamStore();
-  
+
   const { geminiApiKey, geminiModel } = useSettingsStore();
   const getSeenForPsu = useSeenQuestionsStore(s => s.getSeenForPsu);
   const { showToast } = useToast();
@@ -28,6 +45,7 @@ export const useGameQuestions = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [servedFromBank, setServedFromBank] = useState(false);
+  const [bankingPending, setBankingPending] = useState(false);
 
   const loadQuestions = useCallback(async (gameMode: string, countOverride?: number) => {
     if (!selectedPSU) {
@@ -49,16 +67,26 @@ export const useGameQuestions = () => {
         : activeSections.map(s => s.name).join(' + ');
       const sectionId = activeSections.map(s => s.id).join('_');
 
-      // Gather topics from ALL active sections
-      const allTopics = activeSections.flatMap(sec => getSyllabusTopics(sec.id, selectedBranch?.id));
+      // Build per-(section, topic) pairs for individual bank key routing.
+      // Seeded questions are stored under single-topic keys; combined keys have no entries.
+      const sectionTopicPairs: SectionTopicPair[] = [];
+      for (const sec of activeSections) {
+        const secTopics = getSyllabusTopics(sec.id, selectedBranch?.id);
+        const matched = secTopics.filter(t => selectedTopics.includes(t.id));
+        if (matched.length === 0) continue; // skip sections with no selected topics
+        for (const topic of matched) sectionTopicPairs.push({ sec: sec as SectionRef, topic });
+      }
+      // Safety fallback — only if no pairs at all (shouldn't happen through normal UI)
+      if (sectionTopicPairs.length === 0) {
+        const sec = activeSections[0];
+        const secTopics = getSyllabusTopics(sec.id, selectedBranch?.id);
+        if (secTopics.length > 0) sectionTopicPairs.push({ sec: sec as SectionRef, topic: secTopics[0] });
+      }
 
-      // Use ALL user-selected topics — combine titles so Gemini mixes questions across them
-      const matchingTopics = allTopics.filter(t => selectedTopics.includes(t.id));
-      const activeTopics = matchingTopics.length > 0 ? matchingTopics : [allTopics[0]];
-      const topicTitle = activeTopics.length === 1
-        ? activeTopics[0].title
-        : activeTopics.map(t => t.title).join(', ');
-      const topicId = activeTopics.map(t => t.id).join('_');
+      // Combined title/id for Gemini prompt — Gemini still sees all topics at once
+      const activeTopicTitles = sectionTopicPairs.map(p => p.topic.title);
+      const topicTitle = activeTopicTitles.length === 1 ? activeTopicTitles[0] : activeTopicTitles.join(', ');
+      const topicId = sectionTopicPairs.map(p => p.topic.id).join('_');
 
       const seenQuestions = getSeenForPsu(selectedPSU.id);
 
@@ -89,12 +117,42 @@ export const useGameQuestions = () => {
       };
 
       const type = gameModeToType(gameMode);
-      const bankKey = buildBankKey(params.branchId, sectionId, topicId, type);
       const hasKey = !!geminiApiKey;
+
+      // Helper: branchId for a section's bank key (non-branch-specific sections use 'all')
+      const keyBranch = (sec: SectionRef) =>
+        sec.branchSpecific ? (selectedBranch?.id || 'all') : 'all';
 
       // ── No Gemini key → serve from the shared question bank ──
       if (!hasKey) {
-        const banked = await fetchFromBank(bankKey, [diffMin, diffMax], params.count, seenQuestions);
+        let banked: any[];
+        const needed = params.count;
+
+        if (sectionTopicPairs.length === 1) {
+          const { sec, topic } = sectionTopicPairs[0];
+          banked = await fetchFromBank(
+            buildBankKey(keyBranch(sec), sec.id, topic.id, type),
+            [diffMin, diffMax], needed, seenQuestions,
+          );
+        } else {
+          // Fetch `needed` from each topic independently — handles imbalanced banks
+          // (topic with fewer questions contributes less; others fill the gap).
+          const allFetched = await Promise.all(
+            sectionTopicPairs.map(({ sec, topic }) =>
+              fetchFromBank(
+                buildBankKey(keyBranch(sec), sec.id, topic.id, type),
+                [diffMin, diffMax], needed, seenQuestions,
+              )
+            )
+          );
+          const merged = allFetched.flat();
+          for (let i = merged.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [merged[i], merged[j]] = [merged[j], merged[i]];
+          }
+          banked = merged.slice(0, needed);
+        }
+
         if (banked.length > 0) {
           setServedFromBank(true);
           if (banked.length < (params.count ?? 10)) {
@@ -104,7 +162,10 @@ export const useGameQuestions = () => {
           }
           return banked;
         }
-        throw new Error('No saved questions yet for this selection. Add a Gemini key in Settings to generate fresh questions.');
+        // Bank is empty — mark the error so play screens can offer the configure CTA
+        const err: any = new Error('No questions have been seeded for this topic yet. Add a Gemini key in Settings to generate fresh questions.');
+        err.needsApiKey = true;
+        throw err;
       }
 
       // ── Has key → generate live, then bank the batch (fire-and-forget) ──
@@ -116,18 +177,44 @@ export const useGameQuestions = () => {
 
       // Skip banking inside the embed demo (single-call quota, proxy-keyed).
       if (!isEmbed()) {
-        const meta: BankMeta = {
-          branchId: params.branchId, sectionId, topicId, type,
-          sourceExamId: selectedPSU.id, difficultyRange: [diffMin, diffMax],
-        };
-        void submitToBank(meta, result as any[]);
+        setBankingPending(true);
+        const submitPromises: Promise<void>[] = [];
+
+        if (sectionTopicPairs.length === 1) {
+          const { sec, topic } = sectionTopicPairs[0];
+          const meta: BankMeta = {
+            branchId: keyBranch(sec), sectionId: sec.id, topicId: topic.id, type,
+            sourceExamId: selectedPSU.id, difficultyRange: [diffMin, diffMax],
+          };
+          submitPromises.push(submitToBank(meta, result as any[]));
+        } else {
+          // Multi-(section+topic): match each question's topic field to individual key.
+          // Unmatched questions are skipped — don't pollute the bank with wrong-keyed entries.
+          const byTopic = new Map<string, any[]>();
+          for (const q of result as any[]) {
+            const tId = matchTopicId(q.topic, sectionTopicPairs);
+            if (!tId) continue;
+            if (!byTopic.has(tId)) byTopic.set(tId, []);
+            byTopic.get(tId)!.push(q);
+          }
+          for (const [tId, qs] of byTopic) {
+            const pair = sectionTopicPairs.find(p => p.topic.id === tId)!;
+            const meta: BankMeta = {
+              branchId: keyBranch(pair.sec), sectionId: pair.sec.id, topicId: tId, type,
+              sourceExamId: selectedPSU.id, difficultyRange: [diffMin, diffMax],
+            };
+            submitPromises.push(submitToBank(meta, qs));
+          }
+        }
+
+        Promise.all(submitPromises).finally(() => setBankingPending(false));
       }
 
       return result;
     } catch (err: any) {
       const msg = err.message || 'Failed to generate questions';
       setError(msg);
-      console.error('[useGameQuestions] Error:', err);
+      if (!err.needsApiKey) console.error('[useGameQuestions] Error:', err);
       throw err;
     } finally {
       setLoading(false);
@@ -139,6 +226,7 @@ export const useGameQuestions = () => {
     loading,
     error,
     servedFromBank,
+    bankingPending,
     psu: selectedPSU,
     branch: selectedBranch,
   };

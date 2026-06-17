@@ -43,6 +43,7 @@ export interface BoardEntry {
   uid: string;
   name: string;
   branchId: string;
+  branchName: string;
   value: number;
   updatedAt: number;
 }
@@ -116,13 +117,14 @@ export async function upsertLeaderboard(
   branchId: string,
   sessions: StudySession[],
   category: string,
+  branchName = '',
 ): Promise<void> {
   const uid = auth.currentUser?.uid;
   if (!uid || isEmbed()) return;
 
   const { startMs } = currentWeek();
   const displayName = (name?.trim() || 'Aspirant').slice(0, 40);
-  const meta = { uid, name: displayName, branchId: branchId || '', updatedAt: Date.now() };
+  const meta = { uid, name: displayName, branchId: branchId || '', branchName: branchName || '', updatedAt: Date.now() };
 
   // Only count this category's sessions toward this category's board.
   const scoped = sessionsForCategory(sessions, category);
@@ -155,7 +157,7 @@ export async function upsertLeaderboard(
  */
 export async function syncAllLeaderboards(
   name: string,
-  branchId: string,
+  _legacyBranchId: string,
   sessions: StudySession[],
 ): Promise<void> {
   const uid = auth.currentUser?.uid;
@@ -163,7 +165,6 @@ export async function syncAllLeaderboards(
 
   const { startMs } = currentWeek();
   const displayName = (name?.trim() || 'Aspirant').slice(0, 40);
-  const meta = { uid, name: displayName, branchId: branchId || '', updatedAt: Date.now() };
 
   // Write every category the user has actually played in — so both PSU and
   // Schooling boards land at once on sign-in.
@@ -173,6 +174,16 @@ export async function syncAllLeaderboards(
 
   for (const category of categoryIds) {
     const scoped = sessionsForCategory(sessions, category);
+    // Derive branch from the most recent session in this category (correct per-category branch).
+    const latest = scoped.reduce<StudySession | null>((a, b) => (!a || b.timestamp > a.timestamp) ? b : a, null);
+    const meta = {
+      uid,
+      name: displayName,
+      branchId: latest?.branchId || '',
+      branchName: latest?.branchName || '',
+      updatedAt: Date.now(),
+    };
+
     const correct = correctTotals(scoped, startMs);
     batch.set(doc(scoresCol(category, 'global_correct', 'week'), uid), { ...meta, value: correct.week });
     batch.set(doc(scoresCol(category, 'global_correct', 'alltime'), uid), { ...meta, value: correct.all });

@@ -1,19 +1,34 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SyllabusSlasher } from '@/components/game/SyllabusSlasher';
 import { useSyllabusSlasherLogic } from '@/hooks/useSyllabusSlasherLogic';
+import { ApiKeyModal } from '@/components/ApiKeyModal';
 import { Colors, Typography } from '@/theme';
 
 export default function SlasherScreen() {
   const logic = useSyllabusSlasherLogic();
   const router = useRouter();
+  const [showApiModal, setShowApiModal] = useState(false);
 
-  if (logic.loading) {
+  useEffect(() => {
+    if (!logic.loading && logic.needsApiKey) setShowApiModal(true);
+  }, [logic.loading, logic.needsApiKey]);
+
+  if (logic.loading || logic.needsApiKey) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color={Colors.primary} />
-        <Text style={styles.loadingText}>PREPARING DOJO...</Text>
+        {logic.loading && (
+          <>
+            <ActivityIndicator size="large" color={Colors.primary} />
+            <Text style={styles.loadingText}>PREPARING DOJO...</Text>
+          </>
+        )}
+        <ApiKeyModal
+          visible={showApiModal}
+          onClose={() => { setShowApiModal(false); router.back(); }}
+          onConfigure={() => router.replace('/api-setup' as any)}
+        />
       </View>
     );
   }
