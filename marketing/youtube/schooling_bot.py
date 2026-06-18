@@ -28,34 +28,53 @@ CLIENT_SECRET  = 'client_secret.json'
 TOKEN_FILE     = 'schooling_token.json'
 HISTORY_FILE   = 'schooling_history.json'
 
-DAILY_COMMENT_LIMIT = 3
-DAILY_REPLY_LIMIT   = 3
-MIN_VIDEO_VIEWS     = 3000
+DAILY_COMMENT_LIMIT = 4
+DAILY_REPLY_LIMIT   = 4
+MIN_VIDEO_VIEWS     = 1000
 MAX_VIDEO_VIEWS     = 500000
+MAX_VIDEO_AGE_DAYS  = 90
 
 TEST_MODE = False
 
 SEARCH_QUERIES = [
-    'class 10 board exam preparation 2026',
-    'class 12 physics CBSE preparation',
-    'NCERT class 9 science chapter wise',
-    'class 11 chemistry important questions',
-    'class 10 maths MCQ practice',
-    'CBSE class 12 board exam tips',
-    'class 9 science MCQ NCERT',
-    'how to score 90 percent in class 10 boards',
-    'class 12 maths important chapters',
-    'class 11 physics preparation strategy',
-    'class 10 science board exam revision',
-    'NCERT class 12 chemistry solutions',
-    'class 9 maths important questions',
-    'board exam 2026 preparation tips',
-    'class 12 biology NCERT chapter wise',
-    'SST class 10 important questions',
-    'class 11 maths limits derivatives',
-    'CBSE class 9 english grammar',
-    'class 10 hindi board exam preparation',
-    'NCERT class 11 physics concepts',
+    # ── Evergreen NCERT concept explanations ─────────────────
+    'class 10 science NCERT chapter explained',
+    'class 9 science NCERT tutorial hindi',
+    'class 12 physics NCERT concepts explained',
+    'class 11 chemistry organic reactions NCERT',
+    'class 10 maths NCERT chapter solution',
+    'class 12 biology NCERT chapter notes',
+    'class 11 physics mechanics NCERT',
+    'class 9 maths NCERT chapter explanation',
+    'class 10 electricity NCERT',
+    'photosynthesis class 10 science NCERT',
+    'motion class 9 science NCERT explained',
+    'class 10 trigonometry maths tutorial',
+    'class 12 organic chemistry NCERT reactions',
+    'class 11 thermodynamics physics NCERT',
+    'class 10 heredity evolution science',
+
+    # ── JEE / NEET foundation (always active) ────────────────
+    'neet 2027 class 11 biology preparation',
+    'jee 2027 class 11 physics preparation',
+    'neet foundation class 11 chemistry NCERT',
+    'jee mains class 11 maths preparation',
+    'class 12 neet biology chapter wise revision',
+    'class 11 jee physics important chapters',
+
+    # ── New academic session (June–Aug annually) ─────────────
+    'class 11 new session 2026 how to study',
+    'class 9 new session study plan 2026',
+    'class 10 syllabus 2026 27 cbse preparation',
+    'class 12 boards 2027 preparation start now',
+    'how to study class 11 physics from scratch',
+    'class 10 maths preparation 2027 boards',
+
+    # ── Hinglish / regional (high Indian traffic) ─────────────
+    'class 10 science padhai kaise kare',
+    'NCERT class 11 physics kaise padhe',
+    'class 12 chemistry MCQ practice hindi',
+    'class 9 10 study tips hindi',
 ]
 
 SCOPES = ['https://www.googleapis.com/auth/youtube.force-ssl']
@@ -66,12 +85,13 @@ Purpose: Free MCQ and exam practice for Class 9–12 CBSE/NCERT students
 
 Key features:
 1. Chapter-wise MCQ practice for Science, Maths, Physics, Chemistry, Biology, SST, English
-2. True/False challenges and Match the Following across NCERT chapters
-3. Covers Class 9, 10, 11, 12 — all major CBSE subjects
-4. Free question bank — no API key or signup needed
-5. Available on Android and web
+2. True/False, Match the Following, and survival-style MCQ game modes
+3. Covers Class 9, 10, 11, 12 — all major CBSE/NCERT subjects
+4. Also useful for JEE/NEET foundation — all NCERT chapters covered
+5. Free — no signup needed for basic practice
+6. Available on Android and web
 
-Target users: Class 9–12 students preparing for CBSE/NCERT board exams
+Target users: Class 9–12 students — board exam prep AND JEE/NEET foundation via NCERT
 (Do NOT include any URLs or links in comments — mention app name only)
 """
 
@@ -211,81 +231,82 @@ def force_no_link(text: str) -> str:
     return text.strip()
 
 def generate_top_comment(video_title: str, video_description: str) -> str:
-    mention_app = random.random() < 0.20
+    mention_app = random.random() < 0.25
 
     if mention_app:
-        prompt = f"""Write a genuine YouTube comment from a student who naturally mentions using an app for board exam prep.
+        prompt = f"""Write a genuine YouTube comment from a class 9-12 student who naturally mentions using an app for NCERT/CBSE practice.
 
 {APP_CONTEXT}
 
 Video title: {video_title}
-Video description: {video_description[:300]}
+Video description (first 400 chars): {video_description[:400]}
 
 Rules:
-- Sound like a real student sharing their own experience, NOT promoting
-- Mention Aspirant Arcade once, naturally, as something you personally use
-- Max 2-3 sentences total
-- Casual tone, Hinglish OK
-- No exclamation marks, no "Great video!", no fake hype
-- Do NOT include any URLs or website links — name only
+- Read the video title carefully and make the comment SPECIFIC to what the video is about
+- Sound like a real student sharing personal experience, NOT advertising
+- Mention Aspirant Arcade once, naturally, as something you personally use for MCQ practice
+- 2 sentences max — tight, casual, Hinglish OK
+- No exclamation marks, no "Great video!", no hollow praise
+- No URLs or links — app name only
+- If video is about JEE/NEET, comment as a class 11-12 student using NCERT MCQ practice
 
-Write ONLY the comment text."""
+Write ONLY the comment text, nothing else."""
     else:
-        prompt = f"""Write a genuine, helpful YouTube comment from a student on this board exam prep video.
+        prompt = f"""Write a genuine YouTube comment from a student watching this NCERT/CBSE video.
 
 Video title: {video_title}
-Video description: {video_description[:300]}
+Video description (first 400 chars): {video_description[:400]}
 
 Rules:
-- Sound like a real student who watched this video
-- Share a useful tip, personal experience, or ask a genuine question about the topic
-- About board exam preparation, CBSE NCERT — whatever the video is about
-- 1-3 sentences, casual, Hinglish OK
+- Comment must be SPECIFIC to the topic in this video — mention the subject, chapter, or concept
+- Share a real study tip, ask a genuine question about the topic, or relate a personal experience with this subject
+- Sound like a real class 9-12 student, NOT a bot
+- 1-2 sentences, casual, Hinglish OK
+- Do NOT say "Great video!" or any generic praise
 - Do NOT mention any app, product, or website
-- Do NOT say "Great video!" or fake compliments
 
-Write ONLY the comment text."""
+Write ONLY the comment text, nothing else."""
 
     text = gemini(prompt)
     return force_no_link(text)
 
 def generate_reply(comment_text: str, video_title: str) -> str:
-    mention_app = random.random() < 0.30
+    mention_app = random.random() < 0.35
 
     if mention_app:
-        prompt = f"""Write a helpful reply to this YouTube comment. You personally use an app called Aspirant Arcade for board exam prep.
+        prompt = f"""Write a helpful reply to this YouTube comment from a fellow student who uses Aspirant Arcade for NCERT MCQ practice.
 
 {APP_CONTEXT}
 
-Video context: {video_title}
+Video: {video_title}
 Comment: "{comment_text}"
 
 Rules:
-- Directly answer what they asked first
-- Mention Aspirant Arcade naturally, once, as your own experience
-- 2-3 sentences max, casual, Hinglish OK
-- No URLs, no salesy language
+- Directly answer or address what they said first — don't skip to the app
+- Mention Aspirant Arcade once, naturally, as your own go-to for NCERT MCQ practice
+- 2 sentences max, casual, Hinglish OK
+- No URLs, no salesy tone, no emojis
 
-Write ONLY the reply text."""
+Write ONLY the reply text, nothing else."""
     else:
-        prompt = f"""Write a helpful, genuine reply to this YouTube comment about board exam preparation.
+        prompt = f"""Write a helpful, genuine reply to this YouTube comment from a fellow student.
 
-Video context: {video_title}
+Video: {video_title}
 Comment: "{comment_text}"
 
 Rules:
-- Directly address what they asked or said
-- Give actually useful advice from a fellow student's perspective
-- 1-3 sentences, casual, Hinglish OK
-- Do NOT mention any app, product, or website
+- Directly address what they said — give real, specific advice relevant to their question
+- Sound like a fellow class 9-12 student, not a tutor or promoter
+- 1-2 sentences, casual, Hinglish OK
+- Do NOT mention any app, website, or product
 
-Write ONLY the reply text."""
+Write ONLY the reply text, nothing else."""
 
     text = gemini(prompt)
     return force_no_link(text)
 
 # ── YOUTUBE ACTIONS ──────────────────────────────────────
-def search_videos(query: str, pub, max_results=8) -> list:
+def search_videos(query: str, pub, max_results=10) -> list:
     try:
         res = pub.search().list(
             q=query,
@@ -294,7 +315,7 @@ def search_videos(query: str, pub, max_results=8) -> list:
             maxResults=max_results,
             relevanceLanguage='hi',
             regionCode='IN',
-            order='date',
+            order='relevance',
             videoDuration='medium',
         ).execute()
 
@@ -322,7 +343,7 @@ def search_videos(query: str, pub, max_results=8) -> list:
             if published_at:
                 pub_date = datetime.fromisoformat(published_at.replace('Z', '+00:00'))
                 age = datetime.now(timezone.utc) - pub_date
-                if age > timedelta(days=30):
+                if age > timedelta(days=MAX_VIDEO_AGE_DAYS):
                     log.info(f"    Skip (too old: {age.days} days): {item['snippet']['title'][:50]}")
                     continue
 
@@ -349,7 +370,7 @@ def get_video_comments(pub, video_id: str, max_results=30) -> list:
             textFormat='plainText'
         ).execute()
 
-        cutoff = datetime.now(timezone.utc) - timedelta(days=30)
+        cutoff = datetime.now(timezone.utc) - timedelta(days=MAX_VIDEO_AGE_DAYS)
         comments = []
         for item in res.get('items', []):
             snip = item['snippet']['topLevelComment']['snippet']
