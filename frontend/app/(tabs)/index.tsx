@@ -1,16 +1,18 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import * as Haptics from 'expo-haptics';
 import { Colors, Typography, Spacing, Radius, Shadows } from '@/theme';
 import { BRANCHES, BranchConfig } from '@/config/branches';
 import { PSUS, ExamConfig } from '@/config/psus';
 import { getCategory, examIdsForCategory } from '@/config/categories';
 import { useExamStore } from '@/stores/examStore';
 import { useSettingsStore } from '@/stores/settingsStore';
+import { useWishlistStore } from '@/stores/wishlistStore';
 import { AppHeader } from '@/components/AppHeader';
 import { useColumns } from '@/hooks/useColumns';
 
@@ -19,6 +21,15 @@ export default function HomeScreen() {
   const { selectedPSU, setPSU, setBranch } = useExamStore();
   const { categoryId, primaryBranchId, setPrimaryBranch } = useSettingsStore();
   const cols = useColumns();
+  const { ids: wishlistIds, toggle: toggleWishlist, load: loadWishlist } = useWishlistStore();
+
+  useEffect(() => { loadWishlist(); }, []);
+
+  const isWishlisted = (id: string) => wishlistIds.has(id);
+  const handleHeart = (id: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    toggleWishlist(id);
+  };
 
   // Grid card sizing: each card grows to fill the row. flexBasis caps items
   // per row to `cols`; flexGrow lets fewer items stretch to use all space.
@@ -35,9 +46,17 @@ export default function HomeScreen() {
   // Branch step only for branch-first categories (PSU) that haven't picked one yet.
   const showBranchSelect = branchFirst && !primaryBranchId;
 
-  const visibleExams = branchFirst
+  const rawExams = branchFirst
     ? (primaryBranchId ? categoryExams.filter(p => p.branches.includes(primaryBranchId)) : [])
     : categoryExams;
+
+  const visibleExams = [...rawExams].sort((a, b) =>
+    (isWishlisted(b.id) ? 1 : 0) - (isWishlisted(a.id) ? 1 : 0)
+  );
+
+  const sortedBranches = [...BRANCHES].sort((a, b) =>
+    (isWishlisted(b.id) ? 1 : 0) - (isWishlisted(a.id) ? 1 : 0)
+  );
 
   const title = showBranchSelect
     ? `Select Your ${category.branchLabel ?? 'Branch'}`
@@ -71,7 +90,7 @@ export default function HomeScreen() {
 
         <View style={[styles.list, cols > 1 && styles.grid]}>
           {showBranchSelect
-            ? BRANCHES.map(branch => (
+            ? sortedBranches.map(branch => (
                 <TouchableOpacity
                   key={branch.id}
                   style={[styles.card, gridCardStyle]}
@@ -88,6 +107,17 @@ export default function HomeScreen() {
                       <Text style={styles.sub}>TAP TO SELECT</Text>
                     </View>
                   </View>
+                  <TouchableOpacity
+                    style={styles.heartBtn}
+                    onPress={() => handleHeart(branch.id)}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <Ionicons
+                      name={isWishlisted(branch.id) ? 'heart' : 'heart-outline'}
+                      size={20}
+                      color={isWishlisted(branch.id) ? '#E91E63' : Colors.outlineVariant}
+                    />
+                  </TouchableOpacity>
                 </TouchableOpacity>
               ))
             : visibleExams.map(psu => (
@@ -116,6 +146,17 @@ export default function HomeScreen() {
                       <Ionicons name="checkmark-circle" size={24} color={Colors.primary} />
                     )}
                   </View>
+                  <TouchableOpacity
+                    style={styles.heartBtn}
+                    onPress={() => handleHeart(psu.id)}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <Ionicons
+                      name={isWishlisted(psu.id) ? 'heart' : 'heart-outline'}
+                      size={20}
+                      color={isWishlisted(psu.id) ? '#E91E63' : Colors.outlineVariant}
+                    />
+                  </TouchableOpacity>
                 </TouchableOpacity>
               ))
           }
@@ -196,5 +237,12 @@ const styles = StyleSheet.create({
     color: Colors.outline,
     marginTop: 4,
     fontSize: 10,
+  },
+  heartBtn: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    padding: 4,
+    zIndex: 10,
   },
 });

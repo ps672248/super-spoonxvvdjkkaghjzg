@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Modal, FlatList, Image } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { Colors, Typography, Spacing, Radius } from '@/theme';
 import { useExamStore } from '@/stores/examStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { useActivityStore } from '@/stores/activityStore';
 import { useLeaderboardStore } from '@/stores/leaderboardStore';
+import { useWishlistStore } from '@/stores/wishlistStore';
 import { BRANCHES, BranchConfig } from '@/config/branches';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -17,6 +19,17 @@ export function AppHeader() {
   const { primaryBranchId, setPrimaryBranch, categoryId } = useSettingsStore();
   const [modalVisible, setModalVisible] = useState(false);
   const { hasUnseen, passedCount, refreshBadge } = useLeaderboardStore();
+  const { ids: wishlistIds, toggle: toggleWishlist } = useWishlistStore();
+
+  const isWishlisted = (id: string) => wishlistIds.has(id);
+  const handleHeart = (id: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    toggleWishlist(id);
+  };
+
+  const sortedBranches = [...BRANCHES].sort((a, b) =>
+    (isWishlisted(b.id) ? 1 : 0) - (isWishlisted(a.id) ? 1 : 0)
+  );
 
   // Refresh the leaderboard badge when the header mounts or the category changes.
   useEffect(() => {
@@ -105,11 +118,12 @@ export function AppHeader() {
             </TouchableOpacity>
           </View>
           <FlatList
-            data={BRANCHES}
+            data={sortedBranches}
             keyExtractor={(item: BranchConfig) => item.id}
             contentContainerStyle={{ padding: Spacing.lg }}
             renderItem={({ item }: { item: BranchConfig }) => {
               const active = primaryBranchId === item.id;
+              const wishlisted = isWishlisted(item.id);
               return (
                 <TouchableOpacity
                   style={[styles.psuItem, active && styles.psuItemSelected]}
@@ -128,6 +142,17 @@ export function AppHeader() {
                     <Text style={styles.psuItemFull} numberOfLines={1}>{item.shortName || item.name}</Text>
                   </View>
                   {active && <Ionicons name="checkmark-circle" size={22} color={Colors.primary} />}
+                  <TouchableOpacity
+                    onPress={() => handleHeart(item.id)}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    style={{ padding: 4 }}
+                  >
+                    <Ionicons
+                      name={wishlisted ? 'heart' : 'heart-outline'}
+                      size={20}
+                      color={wishlisted ? '#E91E63' : Colors.outlineVariant}
+                    />
+                  </TouchableOpacity>
                 </TouchableOpacity>
               );
             }}

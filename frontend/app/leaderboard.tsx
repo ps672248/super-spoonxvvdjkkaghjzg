@@ -183,9 +183,6 @@ export default function LeaderboardScreen() {
           </TouchableOpacity>
         ))}
       </View>
-                                  {/* Weekly 
-
-
       {/* Metric chips */}
       <View style={styles.chipRow}>
         {METRICS.map(m => (
@@ -199,7 +196,6 @@ export default function LeaderboardScreen() {
           </TouchableOpacity>
         ))}
       </View>
-reset note */}
       {tier === 'week' && (
         <Text style={styles.weekNote}>* Resets every Thursday (UTC)</Text>
       )}
