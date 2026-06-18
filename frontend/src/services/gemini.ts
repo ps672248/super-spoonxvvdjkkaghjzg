@@ -371,7 +371,7 @@ Context:
 - Mode: ${gameMode}
 
 Generate exactly ${count} MCQs. Each question:
-1. Matches the real ${psuName} exam difficulty for this topic
+1. Matches the real ${psuName} exam difficulty for the relevant topic
 2. Has exactly 4 options: A), B), C), D)
 3. Has exactly ONE correct answer
 4. Has a concise 1–2 sentence explanation

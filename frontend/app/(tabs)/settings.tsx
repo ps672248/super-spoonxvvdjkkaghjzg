@@ -248,64 +248,89 @@ export default function SettingsScreen() {
     <SafeAreaView style={styles.safe} edges={['top']}>
       <AppHeader />
 
-      <KeyboardAvoidingView 
+      <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
       >
-        <ScrollView 
-          style={styles.container} 
+        <ScrollView
+          style={styles.container}
           contentContainerStyle={[styles.content, isWide && styles.contentWide]}
           showsVerticalScrollIndicator={false}
         >
-          {/* ── Grid wrapper for cards ────────────────────────────────── */}
           <View style={isWide ? styles.cardGrid : styles.cardStack}>
 
-          {/* Account Card */}
+          {/* ── Account / Profile Card ──────────────────────────────────────── */}
           <View style={[styles.card, isWide && styles.cardWide]}>
-            <View style={[styles.cardAccent, { backgroundColor: Colors.primary }]} />
+            <View style={[styles.cardAccentV, { backgroundColor: Colors.primary }]} />
             <View style={styles.cardInner}>
               <View style={styles.cardTitleRow}>
-                <Ionicons name="person-circle-outline" size={24} color={Colors.primary} />
-                <Text style={styles.cardTitle}>Account</Text>
+                <Ionicons name="person-circle-outline" size={20} color={Colors.primary} />
+                <Text style={styles.cardTitle}>Profile</Text>
               </View>
 
               {user ? (
-                <View style={styles.accountLoggedIn}>
-                  {/* Avatar circle with initial */}
+                /* ── Logged-in hero ── */
+                <View style={styles.profileHero}>
                   <View style={styles.avatarCircle}>
                     <Text style={styles.avatarText}>
                       {(user.displayName || user.email || 'U')[0].toUpperCase()}
                     </Text>
                   </View>
-                  <View style={styles.accountDetails}>
+                  <View style={styles.profileInfo}>
                     <Text style={styles.accountName} numberOfLines={1}>{user.displayName || 'User'}</Text>
                     <Text style={styles.accountEmail} numberOfLines={1}>{user.email}</Text>
                     <View style={styles.syncBadge}>
-                      <Ionicons name="cloud-done-outline" size={12} color={Colors.matchGreen} />
-                      <Text style={styles.syncBadgeText}>Bookmarks synced</Text>
+                      <Ionicons name="cloud-done-outline" size={11} color={Colors.matchGreen} />
+                      <Text style={styles.syncBadgeText}>Synced</Text>
                     </View>
                   </View>
-                  <TouchableOpacity style={styles.signOutBtn} onPress={handleSignOut}>
-                    <Text style={styles.signOutBtnText}>Sign Out</Text>
-                  </TouchableOpacity>
                 </View>
               ) : (
-                <View style={styles.accountInfo}>
-                  <Text style={styles.guestText}>Browsing as guest. Sign in to sync bookmarks.</Text>
-                  <TouchableOpacity
-                    style={styles.signInBtn}
-                    onPress={() => router.push('/auth/login' as any)}
-                  >
-                    <Text style={styles.signInBtnText}>Sign In</Text>
-                  </TouchableOpacity>
+                /* ── Guest hero ── */
+                <View style={styles.guestHero}>
+                  <Ionicons name="person-circle-outline" size={52} color={Colors.outlineVariant} />
+                  <View>
+                    <Text style={styles.guestHeroTitle}>Not signed in</Text>
+                    <Text style={styles.guestHeroSub}>Sign in to sync progress across devices</Text>
+                  </View>
                 </View>
+              )}
+
+              {/* ── Menu rows ── */}
+              <View style={styles.menuDivider} />
+
+              <TouchableOpacity
+                style={styles.menuRow}
+                onPress={() => router.push('/sessions' as any)}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="time-outline" size={18} color={Colors.primary} />
+                <Text style={styles.menuRowText}>Session History</Text>
+                <Ionicons name="chevron-forward" size={16} color={Colors.outline} />
+              </TouchableOpacity>
+
+              {user ? (
+                <TouchableOpacity style={[styles.menuRow, styles.menuRowDanger]} onPress={handleSignOut} activeOpacity={0.7}>
+                  <Ionicons name="log-out-outline" size={18} color="#FF4D4F" />
+                  <Text style={styles.menuRowDangerText}>Sign Out</Text>
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity
+                  style={[styles.menuRow, styles.menuRowCta]}
+                  onPress={() => router.push('/auth/login' as any)}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="log-in-outline" size={18} color={Colors.primary} />
+                  <Text style={styles.menuRowText}>Sign In</Text>
+                  <Ionicons name="chevron-forward" size={16} color={Colors.outline} />
+                </TouchableOpacity>
               )}
             </View>
           </View>
 
-          {/* Study Category Card */}
+          {/* ── Study Category Card ─────────────────────────────────────────── */}
           <View style={[styles.card, isWide && styles.cardWide]}>
-            <View style={styles.cardAccent} />
+            <View style={styles.cardAccentV} />
             <View style={styles.cardInner}>
               <View style={styles.cardTitleRow}>
                 <Ionicons name="layers-outline" size={20} color={Colors.primary} />
@@ -356,7 +381,7 @@ export default function SettingsScreen() {
           {/* Profile Details Card — guest only (logged-in users use Auth displayName) */}
           {!user && (
             <View style={[styles.card, isWide && styles.cardWide]}>
-              <View style={styles.cardAccent} />
+              <View style={styles.cardAccentV} />
               <View style={styles.cardInner}>
                 <View style={styles.cardTitleRow}>
                   <Ionicons name="person-outline" size={20} color={Colors.primary} />
@@ -382,7 +407,7 @@ export default function SettingsScreen() {
 
           {/* Career Profile Card */}
           <View style={[styles.card, isWide && styles.cardWide]}>
-            <View style={styles.cardAccent} />
+            <View style={styles.cardAccentV} />
             <View style={styles.cardInner}>
               <TouchableOpacity
                 style={styles.cardTitleRow}
@@ -499,7 +524,7 @@ export default function SettingsScreen() {
 
           {/* API Configuration Card */}
           <View style={[styles.card, isWide && styles.cardWide]}>
-            <View style={styles.cardAccent} />
+            <View style={styles.cardAccentV} />
             <View style={styles.cardInner}>
               <View style={styles.cardTitleRow}>
                 <Ionicons name="grid-outline" size={20} color={Colors.primary} />
@@ -615,7 +640,7 @@ export default function SettingsScreen() {
           {/* Admin Tools Card — visible only to admin */}
           {isAdmin && (
             <View style={[styles.card, isWide && styles.cardWide]}>
-              <View style={[styles.cardAccent, { backgroundColor: '#7B2FBE' }]} />
+              <View style={[styles.cardAccentV, { backgroundColor: '#7B2FBE' }]} />
               <View style={styles.cardInner}>
 
                 {/* Header row */}
@@ -737,7 +762,7 @@ export default function SettingsScreen() {
 
           {/* Help & Support Card */}
           <View style={[styles.card, isWide && styles.cardWide]}>
-            <View style={[styles.cardAccent, { backgroundColor: Colors.primary }]} />
+            <View style={[styles.cardAccentV, { backgroundColor: Colors.primary }]} />
             <View style={styles.cardInner}>
               <View style={styles.cardTitleRow}>
                 <Ionicons name="help-buoy-outline" size={20} color={Colors.primary} />
@@ -828,24 +853,25 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#F9FBFF' },
   container: { flex: 1 },
-  content: { padding: Spacing.xl, gap: Spacing.xl, paddingBottom: Spacing.xxxl },
+  content: { padding: Spacing.lg, gap: Spacing.lg, paddingBottom: Spacing.xxxl },
   contentWide: {},
-  cardStack: { gap: Spacing.xl },
-  cardGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.xl, alignItems: 'flex-start' },
+  cardStack: { gap: Spacing.lg },
+  cardGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.lg, alignItems: 'flex-start' },
   cardWide: { width: '48%' },
 
-  card: { 
-    backgroundColor: '#FFF', 
-    borderRadius: Radius.md, 
+  card: {
+    flexDirection: 'row',
+    backgroundColor: '#FFF',
+    borderRadius: Radius.md,
     overflow: 'hidden',
     ...Shadows.card,
     borderWidth: 1,
     borderColor: '#F0F2F5',
   },
-  cardAccent: { height: 4, width: '40%', backgroundColor: Colors.gold },
-  cardInner: { padding: Spacing.xl },
-  cardTitleRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, marginBottom: Spacing.xl },
-  cardTitle: { ...Typography.h2, color: Colors.primary },
+  cardAccentV: { width: 4, alignSelf: 'stretch', backgroundColor: Colors.gold },
+  cardInner: { flex: 1, padding: Spacing.lg },
+  cardTitleRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginBottom: Spacing.lg },
+  cardTitle: { ...Typography.h3, color: Colors.onSurface, fontFamily: 'Inter_700Bold' },
 
   field: { marginBottom: Spacing.lg },
   fieldLabel: { 
@@ -1009,18 +1035,14 @@ const styles = StyleSheet.create({
     fontSize: 12,
     textDecorationLine: 'underline'
   },
-  accountInfo: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: Spacing.sm,
-  },
-  accountLoggedIn: {
+  // ── Profile / Account ─────────────────────────────────────────────────────
+  profileHero: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.md,
-    marginTop: Spacing.sm,
+    paddingVertical: Spacing.sm,
   },
+  profileInfo: { flex: 1, gap: 2 },
   avatarCircle: {
     width: 48,
     height: 48,
@@ -1031,13 +1053,9 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   avatarText: {
-    ...Typography.h2,
+    ...Typography.h3,
     color: '#FFF',
     lineHeight: 28,
-  },
-  accountDetails: {
-    flex: 1,
-    gap: 2,
   },
   accountName: {
     ...Typography.bodyMd,
@@ -1047,12 +1065,13 @@ const styles = StyleSheet.create({
   accountEmail: {
     ...Typography.bodySm,
     color: Colors.outline,
+    fontSize: 12,
   },
   syncBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    marginTop: 4,
+    marginTop: 2,
   },
   syncBadgeText: {
     ...Typography.bodySm,
@@ -1060,34 +1079,52 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontFamily: 'Inter_600SemiBold',
   },
-  signOutBtn: {
+  guestHero: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
     paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.lg,
-    borderRadius: Radius.sm,
-    borderWidth: 1,
-    borderColor: '#FF4D4F',
   },
-  signOutBtnText: {
-    ...Typography.button,
-    color: '#FF4D4F',
-    fontSize: 12,
-  },
-  signInBtn: {
-    backgroundColor: Colors.primary,
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.lg,
-    borderRadius: Radius.sm,
-  },
-  signInBtnText: {
-    ...Typography.button,
-    color: '#FFF',
-    fontSize: 12,
-  },
-  guestText: {
+  guestHeroTitle: {
     ...Typography.bodyMd,
-    color: Colors.outline,
-    flex: 1,
+    color: Colors.onSurface,
+    fontFamily: 'Inter_700Bold',
   },
+  guestHeroSub: {
+    ...Typography.bodySm,
+    color: Colors.outline,
+    fontSize: 12,
+    marginTop: 2,
+  },
+  menuDivider: {
+    height: 1,
+    backgroundColor: '#F0F2F5',
+    marginVertical: Spacing.sm,
+  },
+  menuRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F2F5',
+  },
+  menuRowText: {
+    ...Typography.bodyMd,
+    color: Colors.onSurface,
+    flex: 1,
+    fontFamily: 'Inter_600SemiBold',
+    fontSize: 14,
+  },
+  menuRowDanger: { borderBottomWidth: 0 },
+  menuRowDangerText: {
+    ...Typography.bodyMd,
+    color: '#FF4D4F',
+    flex: 1,
+    fontFamily: 'Inter_600SemiBold',
+    fontSize: 14,
+  },
+  menuRowCta: { borderBottomWidth: 0 },
   supportBtnDisabled: {
     backgroundColor: Colors.outline,
     opacity: 0.8,

@@ -554,6 +554,7 @@ export default function InterviewMockScreen() {
         strengths: sessionSummary.strengths,
         improvements: sessionSummary.improvements,
         summaryText: sessionSummary.summaryText,
+        topic: mode === 'gd' ? (useInterviewStore.getState().gdTopic ?? undefined) : undefined,
       });
     }
   };

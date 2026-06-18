@@ -31,6 +31,8 @@ export interface InterviewSession {
   improvements: string[];
   /** Full Gemini summary narrative (for display in insights) */
   summaryText: string;
+  /** GD discussion topic (only set for type === 'gd') */
+  topic?: string;
 }
 
 export interface StudySession {

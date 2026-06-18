@@ -157,12 +157,17 @@ export default function LeaderboardScreen() {
         <View style={{ alignItems: 'center' }}>
           <Text style={styles.headerTitle}>Leaderboard</Text>
           <Text style={styles.headerSub}>{getCategory(categoryId).name}</Text>
+
         </View>
         <View style={styles.headerRight}>
           <SyncBadge visible={loading} label="" />
+
         </View>
+        
       </View>
 
+
+      
       {/* Tier toggle */}
       <View style={styles.tierRow}>
         {(['week', 'alltime'] as BoardWindow[]).map(t => (
@@ -178,6 +183,8 @@ export default function LeaderboardScreen() {
           </TouchableOpacity>
         ))}
       </View>
+                                  {/* Weekly 
+
 
       {/* Metric chips */}
       <View style={styles.chipRow}>
@@ -192,7 +199,10 @@ export default function LeaderboardScreen() {
           </TouchableOpacity>
         ))}
       </View>
-
+reset note */}
+      {tier === 'week' && (
+        <Text style={styles.weekNote}>* Resets every Thursday (UTC)</Text>
+      )}
       {renderSelfCard()}
 
       {entries.length === 0 ? (
@@ -219,6 +229,8 @@ export default function LeaderboardScreen() {
       )}
     </SafeAreaView>
   );
+
+
 }
 
 const styles = StyleSheet.create({
@@ -285,4 +297,5 @@ const styles = StyleSheet.create({
 
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: Spacing.xl, gap: Spacing.md },
   emptyText: { ...Typography.bodyMd, color: Colors.onSurfaceVariant, textAlign: 'center', maxWidth: 260 },
+  weekNote: { ...Typography.bodySm, color: Colors.outline, fontSize: 11, paddingLeft:14, paddingBottom:10},
 });

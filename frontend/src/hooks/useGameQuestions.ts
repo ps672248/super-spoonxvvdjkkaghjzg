@@ -83,11 +83,10 @@ export const useGameQuestions = () => {
         if (secTopics.length > 0) sectionTopicPairs.push({ sec: sec as SectionRef, topic: secTopics[0] });
       }
 
-      // Pick one topic per session — narrows Gemini prompt to a single topic → single-pair banking.
-      // Fetch path (no-key) still reads from all selected topic banks.
-      const chosenPair = sectionTopicPairs[Math.floor(Math.random() * sectionTopicPairs.length)];
-      const topicTitle = chosenPair.topic.title;
-      const topicId = chosenPair.topic.id;
+      // Pass all selected topics to Gemini — generates questions spread across every topic.
+      // Each returned question is matched back to its topic via matchTopicId and banked individually.
+      const allTopicTitles = sectionTopicPairs.map(p => p.topic.title).join(', ');
+      const allTopicIds = sectionTopicPairs.map(p => p.topic.id).join('_');
 
       const seenQuestions = getSeenForPsu(selectedPSU.id);
 
@@ -104,8 +103,8 @@ export const useGameQuestions = () => {
         sectionId,
         sectionName,
         negativeMarking: selectedPSU.negativeMarking,
-        topicId,
-        topicTitle,
+        topicId: allTopicIds,
+        topicTitle: allTopicTitles,
         gameMode,
         examFraming: selectedPSU.examType === 'Boards'
           ? 'Indian school board (CBSE/NCERT) examinations'
@@ -179,12 +178,24 @@ export const useGameQuestions = () => {
       // Skip banking inside the embed demo (single-call quota, proxy-keyed).
       if (!isEmbed()) {
         setBankingPending(true);
-        const { sec: chosenSec, topic: chosenTopic } = chosenPair;
-        const meta: BankMeta = {
-          branchId: keyBranch(chosenSec), sectionId: chosenSec.id, topicId: chosenTopic.id, type,
-          sourceExamId: selectedPSU.id, difficultyRange: [diffMin, diffMax],
-        };
-        submitToBank(meta, result as any[]).finally(() => setBankingPending(false));
+        const groups = new Map<string, { pair: SectionTopicPair; qs: any[] }>();
+        for (const q of result as any[]) {
+          const tid = matchTopicId(q.topicTitle, sectionTopicPairs);
+          const pair = tid
+            ? sectionTopicPairs.find(p => p.topic.id === tid)
+            : sectionTopicPairs[0];
+          if (!pair) continue;
+          if (!groups.has(pair.topic.id)) groups.set(pair.topic.id, { pair, qs: [] });
+          groups.get(pair.topic.id)!.qs.push(q);
+        }
+        Promise.all(
+          Array.from(groups.values()).map(({ pair, qs }) =>
+            submitToBank({
+              branchId: keyBranch(pair.sec), sectionId: pair.sec.id, topicId: pair.topic.id, type,
+              sourceExamId: selectedPSU.id, difficultyRange: pair.sec.difficultyRange,
+            }, qs)
+          )
+        ).finally(() => setBankingPending(false));
       }
 
       return result;
