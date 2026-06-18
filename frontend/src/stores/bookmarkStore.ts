@@ -38,6 +38,7 @@ export type BookmarkedQuestion = {
   explanation: string;
   pairs?: { id: string; left: string; right: string }[];
   yourAnswer?: any;
+  psuId?: string;
   psuName: string;
   branchName: string;
   topicTitle: string;

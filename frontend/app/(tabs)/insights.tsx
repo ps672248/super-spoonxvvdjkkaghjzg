@@ -7,6 +7,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, Radius, Shadows } from '@/theme';
 import { useActivityStore, StudySession, InterviewSession } from '@/stores/activityStore';
+import { useSettingsStore } from '@/stores/settingsStore';
+import { useConfigStore } from '@/stores/configStore';
+import { categoryIdForExam } from '@/config/categories';
 import { AppHeader } from '@/components/AppHeader';
 import { SyncBadge } from '@/components/SyncBadge';
 
@@ -201,7 +204,7 @@ function computePSUProgress(sessions: StudySession[]) {
     n.correct += s.questionsCorrect;
     n.total += s.questionsTotal;
     n.sessions += 1;
-    n.branches.add(s.branchId);
+    if (s.branchId) n.branches.add(s.branchId);
   }
   return Array.from(map.entries())
     .map(([psuId, v]) => ({
@@ -286,38 +289,50 @@ function computeRecurringWeakAreas(sessions: InterviewSession[]): { area: string
 
 export default function InsightsScreen() {
   const { sessions, interviewSessions, isLoaded, isSyncing } = useActivityStore();
+  const { categoryId } = useSettingsStore();
+  const { categories } = useConfigStore();
   const isWide = useIsWide();
 
-  const streak = useMemo(() => computeStreak(sessions), [sessions]);
-  const weekBars = useMemo(() => computeWeeklyBars(sessions), [sessions]);
-  const weekTrend = useMemo(() => computeWeekTrend(sessions), [sessions]);
-  const sectionPerf = useMemo(() => computeSectionPerf(sessions), [sessions]);
-  const modePerf = useMemo(() => computeModePerf(sessions), [sessions]);
-  const weakTopics = useMemo(() => computeWeakTopics(sessions), [sessions]);
-  const psuProgress = useMemo(() => computePSUProgress(sessions), [sessions]);
+  const filteredSessions = useMemo(
+    () => sessions.filter(s => categoryIdForExam(s.psuId, categories) === categoryId),
+    [sessions, categoryId, categories],
+  );
+
+  const streak = useMemo(() => computeStreak(filteredSessions), [filteredSessions]);
+  const weekBars = useMemo(() => computeWeeklyBars(filteredSessions), [filteredSessions]);
+  const weekTrend = useMemo(() => computeWeekTrend(filteredSessions), [filteredSessions]);
+  const sectionPerf = useMemo(() => computeSectionPerf(filteredSessions), [filteredSessions]);
+  const modePerf = useMemo(() => computeModePerf(filteredSessions), [filteredSessions]);
+  const weakTopics = useMemo(() => computeWeakTopics(filteredSessions), [filteredSessions]);
+  const psuProgress = useMemo(() => computePSUProgress(filteredSessions), [filteredSessions]);
 
   const totalQuestions = useMemo(() =>
-    sessions.reduce((sum, s) => sum + s.questionsTotal, 0), [sessions]);
+    filteredSessions.reduce((sum, s) => sum + s.questionsTotal, 0), [filteredSessions]);
   const overallAccuracy = useMemo(() => {
-    const correct = sessions.reduce((sum, s) => sum + s.questionsCorrect, 0);
+    const correct = filteredSessions.reduce((sum, s) => sum + s.questionsCorrect, 0);
     return pct(correct, totalQuestions);
-  }, [sessions, totalQuestions]);
+  }, [filteredSessions, totalQuestions]);
 
   const barMax = Math.max(...weekBars.map(b => b.questions), 1);
 
-  const recurringWeakAreas = useMemo(() => computeRecurringWeakAreas(interviewSessions), [interviewSessions]);
+  const filteredInterviewSessions = useMemo(
+    () => interviewSessions.filter(s => categoryIdForExam(s.psuId, categories) === categoryId),
+    [interviewSessions, categoryId, categories],
+  );
+
+  const recurringWeakAreas = useMemo(() => computeRecurringWeakAreas(filteredInterviewSessions), [filteredInterviewSessions]);
   const bestInterviewRating = useMemo(() =>
-    interviewSessions.length > 0 ? Math.max(...interviewSessions.map(s => s.overallRating)) : 0,
-    [interviewSessions]);
+    filteredInterviewSessions.length > 0 ? Math.max(...filteredInterviewSessions.map(s => s.overallRating)) : 0,
+    [filteredInterviewSessions]);
   const lastInterviewDate = useMemo(() =>
-    interviewSessions.length > 0
-      ? new Date(Math.max(...interviewSessions.map(s => s.timestamp))).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
+    filteredInterviewSessions.length > 0
+      ? new Date(Math.max(...filteredInterviewSessions.map(s => s.timestamp))).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
       : null,
-    [interviewSessions]);
+    [filteredInterviewSessions]);
 
   if (!isLoaded) return null;
 
-  if (sessions.length === 0) {
+  if (filteredSessions.length === 0) {
     return (
       <SafeAreaView style={styles.safe} edges={['top']}>
         <AppHeader />
@@ -354,7 +369,7 @@ export default function InsightsScreen() {
             <Text style={styles.heroLabel}>Day Streak</Text>
           </View>
           <View style={[styles.heroCard, { backgroundColor: Colors.mcqBlue }]}>
-            <Text style={styles.heroValue}>{sessions.length}</Text>
+            <Text style={styles.heroValue}>{filteredSessions.length}</Text>
             <Text style={styles.heroLabel}>Sessions</Text>
           </View>
           <View style={[styles.heroCard, { backgroundColor: accuracyColor(overallAccuracy) }]}>
@@ -504,13 +519,13 @@ export default function InsightsScreen() {
         {/* ── PSU Progress ─────────────────────────────────────────────── */}
         {psuProgress.length > 0 && (
           <Card accent={Colors.matchGreen}>
-            <CardTitle icon="school-outline" label="PSU Progress" color={Colors.matchGreen} />
+            <CardTitle icon="school-outline" label={categoryId === 'schooling' ? 'Schooling Progress' : 'PSU Progress'} color={Colors.matchGreen} />
             <View style={styles.barsContainer}>
               {psuProgress.map(p => (
                 <AccuracyBar
                   key={p.psuId}
                   label={p.psuName}
-                  sublabel={`${p.sessions} sessions · ${p.branches} branch${p.branches > 1 ? 'es' : ''}`}
+                  sublabel={p.branches > 0 ? `${p.sessions} sessions · ${p.branches} branch${p.branches > 1 ? 'es' : ''}` : `${p.sessions} sessions`}
                   accuracy={p.accuracy}
                   color={accuracyColor(p.accuracy)}
                 />
@@ -520,14 +535,14 @@ export default function InsightsScreen() {
         )}
 
         {/* ── Interview Preparation ─────────────────────────────────── */}
-        {interviewSessions.length > 0 && (
+        {filteredInterviewSessions.length > 0 && (
           <Card accent={Colors.primary}>
             <CardTitle icon="mic-outline" label="Interview Preparation" color={Colors.primary} />
 
             {/* Summary row */}
             <View style={styles.interviewSummaryRow}>
               <View style={styles.interviewStatBox}>
-                <Text style={styles.interviewStatValue}>{interviewSessions.length}</Text>
+                <Text style={styles.interviewStatValue}>{filteredInterviewSessions.length}</Text>
                 <Text style={styles.interviewStatLabel}>Sessions</Text>
               </View>
               {lastInterviewDate && (
@@ -546,7 +561,7 @@ export default function InsightsScreen() {
 
             {/* Session history */}
             <Text style={styles.interviewSectionHeader}>RECENT SESSIONS</Text>
-            {interviewSessions.slice(0, 5).map(s => (
+            {filteredInterviewSessions.slice(0, 5).map(s => (
               <View key={s.id} style={styles.interviewSessionCard}>
                 <View style={[styles.interviewTypeBadge, { backgroundColor: (INTERVIEW_TYPE_COLORS[s.type] ?? Colors.primary) + '20' }]}>
                   <Text style={[styles.interviewTypeBadgeText, { color: INTERVIEW_TYPE_COLORS[s.type] ?? Colors.primary }]}>

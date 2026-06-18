@@ -336,6 +336,9 @@ export async function generateQuestions(params: GenerateParams): Promise<MCQQues
   } = params;
 
   const framing = examFraming || 'Indian PSU (Public Sector Undertaking) competitive exams';
+  const ncertLine = framing.toLowerCase().includes('ncert')
+    ? '\nCRITICAL: Every question must be strictly within the NCERT syllabus. Do NOT include anything outside NCERT scope — no state board content, no competitive-exam extras, no beyond-NCERT topics.\n'
+    : '';
   const diffText = `Tag each question with a "difficulty" integer from 1-10, within the band ${difficultyMin}-${difficultyMax} for this exam/topic.`;
 
   const cacheKey = buildCacheKey(psuId, branchId, sectionId, topicId, gameMode);
@@ -357,7 +360,7 @@ export async function generateQuestions(params: GenerateParams): Promise<MCQQues
 
   // Standard prompt (Gemini models)
   const prompt = `You are an expert question setter for ${framing}.
-${avoidBlock}
+${ncertLine}${avoidBlock}
 Context:
 - Exam: ${psuName}
 - Branch: ${branchName}
@@ -379,7 +382,7 @@ NO PREAMBLE. NO THINKING. NO CHATTER. OUTPUT ONLY RAW JSON ARRAY.
 Format: [{"question":"...","options":["A) ...","B) ...","C) ...","D) ..."],"correct":"A","explanation":"...","topic":"...","difficulty":5}]`;
 
   // Gemma-specific compact prompt — avoids bullet-point context that Gemma echoes back
-  const gemmaPrompt = `Generate ${count} multiple-choice questions for ${psuName} ${branchName} exam, topic: ${topicTitle}. Difficulty: ${difficultyMin}–${difficultyMax}/10. Marking: ${nmText}.${avoidBlock ? '\n' + avoidBlock : ''}
+  const gemmaPrompt = `Generate ${count} multiple-choice questions for ${psuName} ${branchName} exam, topic: ${topicTitle}. Difficulty: ${difficultyMin}–${difficultyMax}/10. Marking: ${nmText}.${ncertLine}${avoidBlock ? '\n' + avoidBlock : ''}
 Return a JSON array. Each item: {"question":"...","options":["A) ...","B) ...","C) ...","D) ..."],"correct":"A","explanation":"..."}
 Exactly 4 options, one correct answer, 1-2 sentence explanation.`;
 
@@ -463,9 +466,13 @@ export type MatchPair = { id: string; left: string; right: string };
 export type MatchChallenge = { id: string; pairs: MatchPair[]; explanation: string };
 
 export async function generateMatchChallenges(params: GenerateParams): Promise<MatchChallenge[]> {
-  const { apiKey, modelId, topicTitle, count = 3 } = params;
+  const { apiKey, modelId, topicTitle, examFraming, count = 3 } = params;
+  const matchFraming = examFraming || 'Indian PSU (Public Sector Undertaking) competitive exams';
+  const ncertLine = matchFraming.toLowerCase().includes('ncert')
+    ? '\nCRITICAL: Every pair must be strictly within the NCERT syllabus. Do NOT include anything outside NCERT scope.\n'
+    : '';
 
-  const prompt = `You are an expert PSU exam setter. Generate ${count} "Match the Following" challenges for the topic: ${topicTitle}.
+  const prompt = `You are an expert question setter for ${matchFraming}. Generate ${count} "Match the Following" challenges for the topic: ${topicTitle}.${ncertLine}
 Each challenge has exactly 4 pairs. Left items are terms/concepts, right items are definitions/formulas/examples.
 
 NO PREAMBLE. NO THINKING. NO CHATTER. OUTPUT ONLY RAW JSON ARRAY.
@@ -523,6 +530,9 @@ export async function generateTrueFalse(params: GenerateParams): Promise<TFState
   } = params;
 
   const framing = examFraming || 'Indian PSU (Public Sector Undertaking) competitive exams';
+  const ncertLine = framing.toLowerCase().includes('ncert')
+    ? '\nCRITICAL: Every statement must be strictly within the NCERT syllabus. Do NOT include anything outside NCERT scope — no state board content, no competitive-exam extras, no beyond-NCERT topics.\n'
+    : '';
   const diffText = `Tag each statement with a "difficulty" integer from 1-10, within the band ${difficultyMin}-${difficultyMax}.`;
 
   const avoidBlock = seenQuestions.length > 0
@@ -532,7 +542,7 @@ export async function generateTrueFalse(params: GenerateParams): Promise<TFState
     : '';
 
   const prompt = `You are an expert question setter for ${psuName} (${branchName}) — ${framing}.
-${avoidBlock}
+${ncertLine}${avoidBlock}
 Generate exactly ${count} TRUE/FALSE statements on: ${topicTitle} (section: ${sectionName}, difficulty: ${difficultyMin}–${difficultyMax}/10).
 Rules:
 1. Roughly half TRUE and half FALSE — shuffle them, do not group.

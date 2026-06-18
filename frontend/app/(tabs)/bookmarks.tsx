@@ -9,12 +9,17 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { Colors, Typography, Spacing, Radius, Shadows } from '@/theme';
 import { useBookmarkStore, BookmarkedQuestion } from '@/stores/bookmarkStore';
+import { useSettingsStore } from '@/stores/settingsStore';
+import { useConfigStore } from '@/stores/configStore';
+import { categoryIdForExam } from '@/config/categories';
 import { AppHeader } from '@/components/AppHeader';
 import { SyncBadge } from '@/components/SyncBadge';
 import { UnifiedQuestion } from '@/components/game/UnifiedQuestion';
 
 export default function BookmarksScreen() {
   const { questionBookmarks, removeQuestionBookmark, updateQuestionNote, isSyncing } = useBookmarkStore();
+  const { categoryId } = useSettingsStore();
+  const { categories } = useConfigStore();
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
   const isWide = useIsWide();
   const [attemptMode, setAttemptMode] = useState(false);
@@ -24,8 +29,12 @@ export default function BookmarksScreen() {
   const [editingItem, setEditingItem] = useState<BookmarkedQuestion | null>(null);
   const [tempNote, setTempNote] = useState('');
 
+  const filteredBookmarks = questionBookmarks.filter(
+    b => categoryIdForExam(b.psuId ?? '', categories) === categoryId,
+  );
+
   // Grouping questions by PSU
-  const grouped = questionBookmarks.reduce((acc, b) => {
+  const grouped = filteredBookmarks.reduce((acc, b) => {
     const groupName = b.psuName || 'General';
     if (!acc[groupName]) acc[groupName] = [];
     acc[groupName].push(b);
@@ -72,7 +81,7 @@ export default function BookmarksScreen() {
           <View style={styles.titleRow}>
             <Text style={styles.mainTitle} numberOfLines={1} adjustsFontSizeToFit>Saved Questions</Text>
             <View style={styles.countBadge}>
-               <Text style={styles.countText}>{questionBookmarks.length} ITEMS</Text>
+               <Text style={styles.countText}>{filteredBookmarks.length} ITEMS</Text>
             </View>
             <SyncBadge visible={isSyncing} />
           </View>
@@ -92,7 +101,7 @@ export default function BookmarksScreen() {
           </TouchableOpacity>
         </View>
 
-        {questionBookmarks.length === 0 ? (
+        {filteredBookmarks.length === 0 ? (
           <View style={styles.empty}>
             <View style={styles.emptyIconContainer}>
               <Ionicons name="bookmarks-outline" size={48} color={Colors.primary} />

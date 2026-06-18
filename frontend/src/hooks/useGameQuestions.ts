@@ -83,10 +83,11 @@ export const useGameQuestions = () => {
         if (secTopics.length > 0) sectionTopicPairs.push({ sec: sec as SectionRef, topic: secTopics[0] });
       }
 
-      // Combined title/id for Gemini prompt — Gemini still sees all topics at once
-      const activeTopicTitles = sectionTopicPairs.map(p => p.topic.title);
-      const topicTitle = activeTopicTitles.length === 1 ? activeTopicTitles[0] : activeTopicTitles.join(', ');
-      const topicId = sectionTopicPairs.map(p => p.topic.id).join('_');
+      // Pick one topic per session — narrows Gemini prompt to a single topic → single-pair banking.
+      // Fetch path (no-key) still reads from all selected topic banks.
+      const chosenPair = sectionTopicPairs[Math.floor(Math.random() * sectionTopicPairs.length)];
+      const topicTitle = chosenPair.topic.title;
+      const topicId = chosenPair.topic.id;
 
       const seenQuestions = getSeenForPsu(selectedPSU.id);
 
@@ -178,36 +179,12 @@ export const useGameQuestions = () => {
       // Skip banking inside the embed demo (single-call quota, proxy-keyed).
       if (!isEmbed()) {
         setBankingPending(true);
-        const submitPromises: Promise<void>[] = [];
-
-        if (sectionTopicPairs.length === 1) {
-          const { sec, topic } = sectionTopicPairs[0];
-          const meta: BankMeta = {
-            branchId: keyBranch(sec), sectionId: sec.id, topicId: topic.id, type,
-            sourceExamId: selectedPSU.id, difficultyRange: [diffMin, diffMax],
-          };
-          submitPromises.push(submitToBank(meta, result as any[]));
-        } else {
-          // Multi-(section+topic): match each question's topic field to individual key.
-          // Unmatched questions are skipped — don't pollute the bank with wrong-keyed entries.
-          const byTopic = new Map<string, any[]>();
-          for (const q of result as any[]) {
-            const tId = matchTopicId(q.topic, sectionTopicPairs);
-            if (!tId) continue;
-            if (!byTopic.has(tId)) byTopic.set(tId, []);
-            byTopic.get(tId)!.push(q);
-          }
-          for (const [tId, qs] of byTopic) {
-            const pair = sectionTopicPairs.find(p => p.topic.id === tId)!;
-            const meta: BankMeta = {
-              branchId: keyBranch(pair.sec), sectionId: pair.sec.id, topicId: tId, type,
-              sourceExamId: selectedPSU.id, difficultyRange: [diffMin, diffMax],
-            };
-            submitPromises.push(submitToBank(meta, qs));
-          }
-        }
-
-        Promise.all(submitPromises).finally(() => setBankingPending(false));
+        const { sec: chosenSec, topic: chosenTopic } = chosenPair;
+        const meta: BankMeta = {
+          branchId: keyBranch(chosenSec), sectionId: chosenSec.id, topicId: chosenTopic.id, type,
+          sourceExamId: selectedPSU.id, difficultyRange: [diffMin, diffMax],
+        };
+        submitToBank(meta, result as any[]).finally(() => setBankingPending(false));
       }
 
       return result;

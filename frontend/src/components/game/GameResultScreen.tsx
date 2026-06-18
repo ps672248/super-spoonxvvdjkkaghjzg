@@ -96,7 +96,7 @@ export const GameResultScreen = ({
   const { sessions } = useActivityStore();
 
   const buildCardVars = React.useCallback((): CardVars | null => {
-    if (!selectedPSU || !selectedBranch) return null;
+    if (!selectedPSU) return null;
     const now = Date.now();
     const weekMs = 7 * 24 * 60 * 60 * 1000;
     const sessionsThisWeek = sessions.filter((s: StudySession) => now - s.timestamp < weekMs).length;
@@ -109,7 +109,7 @@ export const GameResultScreen = ({
 
     return {
       exam: selectedPSU,
-      branchId: selectedBranch.id,
+      branchId: selectedBranch?.id ?? '',
       score: correctCount,
       totalAsked: results.length,
       sessionsThisWeek,
@@ -161,7 +161,7 @@ export const GameResultScreen = ({
 
   // Log session once when result screen mounts
   React.useEffect(() => {
-    if (!selectedPSU || !selectedBranch) return;
+    if (!selectedPSU) return;
     const mode = (selectedMode ?? 'mcq');
     // Log the session, then upsert leaderboards from the now-updated local sessions.
     // Fire-and-forget — never block the results screen. upsert no-ops for guests/embed.
@@ -344,6 +344,7 @@ export const GameResultScreen = ({
                       question: noteModalItem.question,          // MatchChallenge uses `scenario`, not `question`
                       topicTitle: noteModalItem.topic || '',
                       yourAnswer: noteModalItem.type === 'mcq' ? noteModalItem.yourAnswer : JSON.stringify(noteModalItem.matchPairs),
+                      psuId: selectedPSU?.id || '',
                       psuName: selectedPSU?.name || 'PSU',
                       branchName: selectedBranch?.name || 'General',
                       note: localNote,
