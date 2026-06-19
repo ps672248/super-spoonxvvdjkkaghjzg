@@ -1,7 +1,18 @@
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { db, auth } from '../config/firebase';
+import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
+
+/** Wait for Firebase to finish restoring auth session before we read currentUser. */
+function waitForAuthReady(): Promise<void> {
+  return new Promise(resolve => {
+    const unsub = onAuthStateChanged(auth, () => {
+      unsub();
+      resolve();
+    });
+  });
+}
 
 const GUEST_KEY = 'psuplus_wishlist_guest';
 const userKey = (uid: string) => `psuplus_wishlist_${uid}`;
@@ -25,6 +36,7 @@ export const useWishlistStore = create<WishlistState>((set, get) => ({
   isWishlisted: (id) => get().ids.has(id),
 
   load: async () => {
+    await waitForAuthReady();
     const uid = auth.currentUser?.uid;
     const key = uid ? userKey(uid) : GUEST_KEY;
 

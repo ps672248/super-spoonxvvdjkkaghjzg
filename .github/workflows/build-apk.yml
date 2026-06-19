@@ -52,9 +52,12 @@ jobs:
 
       - name: 🌐 Inject Environment Variables
         run: |
-          echo "EXPO_PUBLIC_QUESTION_BANK_URL=${{ secrets.EXPO_PUBLIC_QUESTION_BANK_URL }}" >> .env
+          echo "EXPO_PUBLIC_QUESTION_BANK_URL=${{ secrets.EXPO_PUBLIC_QUESTION_BANK_URL }}" > .env
           echo "EXPO_PUBLIC_QUESTION_BANK_SECRET=${{ secrets.EXPO_PUBLIC_QUESTION_BANK_SECRET }}" >> .env
-          echo "✅ .env written."
+          echo "EXPO_PUBLIC_QUESTION_BANK_URL=${{ secrets.EXPO_PUBLIC_QUESTION_BANK_URL }}" >> $GITHUB_ENV
+          echo "EXPO_PUBLIC_QUESTION_BANK_SECRET=${{ secrets.EXPO_PUBLIC_QUESTION_BANK_SECRET }}" >> $GITHUB_ENV
+          echo "✅ .env written. Contents:"
+          cat .env
 
       - name: 📦 Cache Native Directory
         id: cache-android

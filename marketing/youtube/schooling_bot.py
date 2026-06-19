@@ -308,6 +308,10 @@ Write ONLY the reply text, nothing else."""
 # ── YOUTUBE ACTIONS ──────────────────────────────────────
 def search_videos(query: str, pub, max_results=10) -> list:
     try:
+        published_after = (
+            datetime.now(timezone.utc) - timedelta(days=MAX_VIDEO_AGE_DAYS)
+        ).strftime('%Y-%m-%dT%H:%M:%SZ')
+
         res = pub.search().list(
             q=query,
             part='snippet',
@@ -317,6 +321,7 @@ def search_videos(query: str, pub, max_results=10) -> list:
             regionCode='IN',
             order='relevance',
             videoDuration='medium',
+            publishedAfter=published_after,
         ).execute()
 
         videos = []
@@ -344,7 +349,7 @@ def search_videos(query: str, pub, max_results=10) -> list:
                 pub_date = datetime.fromisoformat(published_at.replace('Z', '+00:00'))
                 age = datetime.now(timezone.utc) - pub_date
                 if age > timedelta(days=MAX_VIDEO_AGE_DAYS):
-                    log.info(f"    Skip (too old: {age.days} days): {item['snippet']['title'][:50]}")
+                    log.debug(f"    Skip (too old: {age.days} days): {item['snippet']['title'][:50]}")
                     continue
 
             videos.append({

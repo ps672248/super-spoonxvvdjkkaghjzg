@@ -115,14 +115,21 @@ export async function fetchFromBank(
 export async function submitToBank(meta: BankMeta, questions: any[]): Promise<void> {
   if (!questions || questions.length === 0) return;
   const bankKey = buildBankKey(meta.branchId, meta.sectionId, meta.topicId, meta.type);
+  const url = `${BANK_BASE_URL}/submitQuestions`;
+  console.log('[questionBank] submitToBank →', url, 'questions:', questions.length);
   try {
-    await fetch(`${BANK_BASE_URL}/submitQuestions`, {
+    const res = await fetch(url, {
       method: 'POST',
       headers: bankHeaders(),
       body: JSON.stringify({ bankKey, meta, questions }),
     });
+    console.log('[questionBank] submitToBank status:', res.status);
+    if (!res.ok) {
+      const body = await res.text().catch(() => '');
+      console.warn('[questionBank] submitToBank non-ok:', res.status, body);
+    }
   } catch (e) {
-    console.warn('[questionBank] submit failed (ignored):', e);
+    console.warn('[questionBank] submitToBank network error:', e);
   }
 }
 
