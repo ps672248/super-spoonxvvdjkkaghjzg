@@ -70,6 +70,21 @@ export const metadata: Metadata = {
   },
 };
 
+const faqJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    { "@type": "Question", "name": "Is Aspirant Arcade really free?", "acceptedAnswer": { "@type": "Answer", "text": "100% free. No in-app purchases, no subscriptions, no ads. Play immediately from our shared question bank — no API key or signup required." } },
+    { "@type": "Question", "name": "Do I need a Gemini API key to play?", "acceptedAnswer": { "@type": "Answer", "text": "No. You can play immediately from our shared question bank with no key or signup. Adding a free Gemini key (Google AI Studio, 2 minutes, no billing) unlocks unlimited freshly generated questions every session." } },
+    { "@type": "Question", "name": "Why APK and not Play Store?", "acceptedAnswer": { "@type": "Answer", "text": "Play Store approval takes time. The APK installs directly in 30 seconds. Enable 'Install unknown apps' in Android settings, install, done." } },
+    { "@type": "Question", "name": "Which PSUs are covered?", "acceptedAnswer": { "@type": "Answer", "text": "HPCL, Coal India, BHEL, ONGC, NTPC, SAIL, IOCL, GAIL, BPCL, POWERGRID, NALCO and more. Interview Simulator available for PSUs with GD/PI rounds." } },
+    { "@type": "Question", "name": "Which engineering branches are supported?", "acceptedAnswer": { "@type": "Answer", "text": "Mechanical, Electrical, Civil, Chemical, Electronics, Computer Science and more. Questions generated specifically for your branch." } },
+    { "@type": "Question", "name": "Is Aspirant Arcade only for PSU aspirants?", "acceptedAnswer": { "@type": "Answer", "text": "No. Class 9–12 students can practice CBSE/NCERT chapter-wise MCQs, True/False challenges, and Match the Following across Science, Maths, Physics, Chemistry, Biology, SST, and English. Select Schooling on the home screen after downloading." } },
+    { "@type": "Question", "name": "Does it work offline?", "acceptedAnswer": { "@type": "Answer", "text": "Partially. Bookmarked questions and insights are available offline. AI question generation needs internet." } },
+    { "@type": "Question", "name": "Is my Gemini API key safe?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Stored locally on your device using encrypted secure storage. Never sent to any server." } },
+  ],
+};
+
 const appJsonLd = {
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
@@ -124,6 +139,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
         />
       </head>
       <body className="min-h-screen bg-[#0A0E17] text-white antialiased font-sans">
