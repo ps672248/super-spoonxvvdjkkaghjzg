@@ -21,9 +21,10 @@ jobs:
         with:
           python-version: '3.11'
           cache: 'pip'
+          cache-dependency-path: marketing/reddit/requirements.txt
 
       - name: Install dependencies
-        run: pip install praw google-generativeai python-dotenv
+        run: pip install -r marketing/reddit/requirements.txt
 
       - name: Run bot
         working-directory: marketing/reddit
