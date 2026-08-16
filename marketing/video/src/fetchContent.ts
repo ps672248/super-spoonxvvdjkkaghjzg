@@ -128,19 +128,6 @@ export type FetchedQuestion = QuestionPayload & {
   sectionId?: string;
 };
 
-/** Payload plus the syllabus ids that sit alongside it on the doc. */
-type DrawnQuestion = QuestionPayload & { topicId?: string; sectionId?: string };
-
-function withSyllabus(data: FirebaseFirestore.DocumentData | undefined): DrawnQuestion | null {
-  const payload = validPayload(data);
-  if (!payload) return null;
-  return {
-    ...payload,
-    topicId: typeof data?.topicId === 'string' ? data.topicId : undefined,
-    sectionId: typeof data?.sectionId === 'string' ? data.sectionId : undefined,
-  };
-}
-
 // Mirrors frontend/src/config/categories.ts examIds (+ psus.ts CORE_EXAMS for the
 // psu/engineering default bucket). question_bank.sourceExamId is set from the same
 // config's exam.id by scripts/seed_questions.ts, so these ids match 1:1.
@@ -165,108 +152,15 @@ export function examDisplayName(examId: string): string {
   return examId ? examId.replace(/-/g, ' ').toUpperCase() : '';
 }
 
-function shuffled<T>(arr: T[]): T[] {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
+/** Picks one exam id at random from the vertical's list — same "varies day to
+ * day" property the old bank-draw had, just deciding what to GENERATE a
+ * question about instead of what to fetch. */
+export function pickExamIdForVertical(vertical: Vertical): string {
+  const ids = VERTICAL_TO_EXAM_IDS[vertical] ?? [];
+  return ids.length ? ids[Math.floor(Math.random() * ids.length)] : '';
 }
 
-function validPayload(data: FirebaseFirestore.DocumentData | undefined): QuestionPayload | null {
-  const payload = data?.payload as QuestionPayload | undefined;
-  if (!payload?.question || !Array.isArray(payload.options) || payload.options.length !== 4) return null;
-  return payload;
-}
-
-/** One rand-cursor draw (same trick as frontend/src/services/questionBank.ts's
- * fetchFromBank), optionally scoped to a single sourceExamId. */
-async function drawRandomQuestion(examId?: string): Promise<DrawnQuestion | null> {
-  const col = db().collection('question_bank');
-  const r = Math.random();
-  const base = () => {
-    let q: FirebaseFirestore.Query = col.where('hidden', '==', false).where('type', '==', 'mcq');
-    if (examId) q = q.where('sourceExamId', '==', examId);
-    return q;
-  };
-
-  const primary = await base().where('rand', '>=', r).orderBy('rand').limit(1).get();
-  if (!primary.empty) return withSyllabus(primary.docs[0].data());
-
-  // Wrap-around: reuses the SAME ascending index as the primary pass (Firestore
-  // only cares that orderBy direction matches the index, not the where operator)
-  // — no separate descending index needed. Overfetch a small batch and pick
-  // randomly rather than always landing on the lowest-rand doc in the bank.
-  const wrap = await base().where('rand', '<', r).orderBy('rand').limit(10).get();
-  if (wrap.empty) return null;
-  return withSyllabus(shuffled(wrap.docs)[0].data());
-}
-
-/** Index-free last resort: a single-field rand-cursor scan (needs no composite
- * index at all), filtering hidden/type/payload client-side. Slightly wasteful,
- * but it means a missing/undeployed composite index can never cost a render. */
-async function drawByScan(): Promise<DrawnQuestion | null> {
-  const col = db().collection('question_bank');
-  const r = Math.random();
-  const primary = await col.where('rand', '>=', r).orderBy('rand').limit(30).get();
-  const docs = primary.empty
-    ? (await col.where('rand', '<', r).orderBy('rand', 'desc').limit(30).get()).docs
-    : primary.docs;
-  for (const d of docs) {
-    const data = d.data();
-    if (data.hidden === false && data.type === 'mcq') {
-      const p = withSyllabus(data);
-      if (p) return p;
-    }
-  }
-  return null;
-}
-
-/**
- * Pulls one random valid MCQ for the day's vertical: tries each of the vertical's
- * exam ids in random order (so the exam varies day to day, per marketing plan),
- * then falls back to the whole bank, then to an index-free scan. The first two
- * need composite indexes (declared in frontend/firestore.indexes.json — deploy
- * with `firebase deploy --only firestore:indexes`; error messages carry a
- * create-index link too), the scan needs none.
- */
-async function fetchRandomQuestion(vertical: Vertical, onlyExamId?: string): Promise<FetchedQuestion | null> {
-  // Sunday's reel is about ONE exam — a fallback to the whole bank would put a
-  // GATE question under an "SSC CGL in 12 days" header, so the caller handles
-  // the empty case by generating a question instead (see render.ts).
-  if (onlyExamId) {
-    try {
-      const q = await drawRandomQuestion(onlyExamId);
-      return q ? { ...q, examId: onlyExamId } : null;
-    } catch (e) {
-      console.warn(`[video] Exam-scoped question query failed for '${onlyExamId}': ${(e as Error).message}`);
-      return null;
-    }
-  }
-
-  for (const examId of shuffled(VERTICAL_TO_EXAM_IDS[vertical] ?? [])) {
-    try {
-      const q = await drawRandomQuestion(examId);
-      if (q) return { ...q, examId };
-    } catch (e) {
-      console.warn(`[video] Exam-filtered question query failed for '${examId}' (missing Firestore index?): ${(e as Error).message}`);
-      break; // an index error will repeat for every exam id — go straight to fallback
-    }
-  }
-  console.warn(`[video] No ${vertical} question found by exam — falling back to the whole bank.`);
-  try {
-    const q = await drawRandomQuestion();
-    if (q) return { ...q, examId: '' };
-  } catch (e) {
-    console.warn(`[video] Unfiltered question query failed (missing Firestore index?): ${(e as Error).message}`);
-  }
-  console.warn('[video] Falling back to index-free scan.');
-  const q = await drawByScan();
-  return q ? { ...q, examId: '' } : null;
-}
-
-// ── Generated question (Sunday fallback) ─────────────────────────────────────
+// ── Generated question ────────────────────────────────────────────────────────
 
 const GENERATED_QUESTION_SCHEMA = {
   type: 'OBJECT',
@@ -362,23 +256,26 @@ Return valid JSON only.`;
   return null;
 }
 
-function letterToIndex(letter: string): number {
+export function letterToIndex(letter: string): number {
   const i = 'ABCD'.indexOf((letter || 'A').trim().toUpperCase()[0]);
   return i >= 0 ? i : 0;
 }
 
 /** Some payloads bake "A) " / "b. " prefixes into the option text — the composition
- * already renders its own letter chip, so strip them to avoid "A  A) Wheat". */
-function stripOptionPrefix(text: string): string {
+ * already renders its own letter chip, so strip them to avoid "A  A) Wheat". Gemini's
+ * prompt doesn't ask for these, but this stays as cheap defensive cleanup in case it
+ * ever does. */
+export function stripOptionPrefix(text: string): string {
   return text.replace(/^\s*[A-Da-d][).:\-]\s+/, '').trim();
 }
 
-export async function buildQuizCardProps(
+/** QuizCardProps shape for a generated question — mirrors what the old bank-draw
+ * path returned, so render.ts's downstream code (gemini hook copy, narration,
+ * QuizCard composition) didn't need to change at all. */
+export function toQuizCardProps(
   vertical: Vertical,
-  onlyExamId?: string,
-): Promise<(QuizCardProps & { examId: string; topicTitle?: string; topicId?: string; sectionId?: string }) | null> {
-  const q = await fetchRandomQuestion(vertical, onlyExamId);
-  if (!q) return null;
+  q: FetchedQuestion,
+): QuizCardProps & { examId: string; topicTitle?: string } {
   return {
     vertical,
     question: q.question,
@@ -387,8 +284,6 @@ export async function buildQuizCardProps(
     explanation: q.explanation,
     examId: q.examId,
     topicTitle: q.topicTitle,
-    topicId: q.topicId,
-    sectionId: q.sectionId,
   };
 }
 

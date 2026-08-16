@@ -4,8 +4,13 @@
  * and — only when PUBLISH=true — uploads it to YouTube Shorts and Instagram
  * Reels with platform-appropriate title/description/hashtags (see src/metadata.ts).
  *
- * Per render this now also (all best-effort, silent fallbacks):
- *   1. picks the question from the day's vertical via sourceExamId (fetchContent.ts),
+ * Per render this now also (all best-effort except question generation, which
+ * is required — see GEMINI_API_KEYS below):
+ *   1. generates a fresh question for a random exam in the day's vertical —
+ *      never draws an existing one from question_bank (fetchContent.ts's
+ *      generateQuestionForExam; still persisted back to the bank there, so
+ *      the pool grows over time, but this render never waits on it already
+ *      having one),
  *   2. asks Gemini for a hook line + upload copy grounded in that question (quizContent.ts),
  *   3. synthesizes voiceover clips with Edge TTS (tts.ts) — BEFORE bundle(), so the
  *      MP3s land in public/ and are served to the composition via staticFile().
@@ -17,9 +22,9 @@
  * and are ready to go live (see marketing/video/README.md).
  *
  * Env:
- *   FIREBASE_SERVICE_ACCOUNT   service-account JSON (or GOOGLE_APPLICATION_CREDENTIALS file path)
+ *   FIREBASE_SERVICE_ACCOUNT   service-account JSON (or GOOGLE_APPLICATION_CREDENTIALS file path) — only for persisting the generated question back to question_bank; the render still completes without it
  *   VIDEO_VERTICAL             override the day-based rotation (engineering|entrance|govt|college|schooling)
- *   GEMINI_API_KEYS            optional — comma-separated, enables Gemini hook/upload copy (same secret as blog bot)
+ *   GEMINI_API_KEYS            required — comma-separated; generates the question itself, plus the hook/upload copy (same secret as blog bot)
  *   TTS_VOICE                  optional — Edge TTS voice override (default en-IN-NeerjaNeural)
  *   SARVAM_API_KEY             optional — switches narration to Sarvam bulbul:v3 Hinglish voices
  *                              (lines Hinglish-ified via Gemini first; see src/hinglish.ts + src/tts.ts)
@@ -31,7 +36,7 @@ import 'dotenv/config';
 import path from 'node:path';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { bundle } from '@remotion/bundler';
-import { buildQuizCardProps, examDisplayName, generateQuestionForExam, resolveDayTarget, type Vertical } from './fetchContent';
+import { examDisplayName, generateQuestionForExam, pickExamIdForVertical, resolveDayTarget, toQuizCardProps, type Vertical } from './fetchContent';
 import { buildQuizMetadata, quizFallbackHook } from './metadata';
 import { generateQuizVideoContent } from './quizContent';
 import { hinglishEnabled, toHinglish } from './hinglish';
@@ -46,39 +51,29 @@ async function main() {
     return;
   }
   const { vertical, examId: targetExamId } = day;
+  // Sunday's countdown pin targets one specific exam; every other day just
+  // varies which exam within the vertical, same as the old bank-draw did.
+  const examId = targetExamId || pickExamIdForVertical(vertical);
+  const examName = day.examName || examDisplayName(examId);
   console.log(
-    `[video-bot] Vertical: ${vertical}${targetExamId ? ` (targeting ${day.examName || targetExamId}, ${day.daysLeft}d to ${day.eventType})` : ''}. PUBLISH=${process.env.PUBLISH === 'true'}`,
+    `[video-bot] Vertical: ${vertical}${targetExamId ? ` (targeting ${examName}, ${day.daysLeft}d to ${day.eventType})` : ` (${examName})`}. PUBLISH=${process.env.PUBLISH === 'true'}`,
   );
 
   mkdirSync(OUTPUT_DIR, { recursive: true });
   const today = new Date().toISOString().slice(0, 10);
 
-  let quizProps = await buildQuizCardProps(vertical, targetExamId);
-  if (!quizProps && targetExamId) {
-    // The bank has nothing for this exam. Generate one rather than quietly
-    // switching Sunday's reel to a different exam than the day's articles.
-    console.warn(`[video-bot] No banked question for ${day.examName || targetExamId} — generating one.`);
-    const generated = await generateQuestionForExam(targetExamId, day.examName || examDisplayName(targetExamId));
-    if (generated) quizProps = await buildQuizCardProps(vertical, targetExamId) || null;
-    if (!quizProps && generated) {
-      // The freshly-written doc may not be visible to the rand-cursor query
-      // yet; render straight from the in-memory copy.
-      quizProps = {
-        vertical,
-        question: generated.question,
-        options: generated.options,
-        correctIndex: 'ABCD'.indexOf((generated.correct || 'A').toUpperCase()[0]) < 0 ? 0 : 'ABCD'.indexOf((generated.correct || 'A').toUpperCase()[0]),
-        explanation: generated.explanation,
-        examId: generated.examId,
-        topicTitle: generated.topicTitle,
-      };
-    }
-  }
+  // Generates a fresh question every render rather than drawing an existing
+  // one from question_bank — see fetchContent.ts's generateQuestionForExam.
+  // Still persisted back to the bank there, so it also grows the pool over
+  // time; this render just never waits on the bank already having one.
+  console.log(`[video-bot] Generating a question for ${examName}...`);
+  const generated = examId ? await generateQuestionForExam(examId, examName) : null;
+  const quizProps = generated ? toQuizCardProps(vertical, generated) : null;
   if (!quizProps) {
-    console.warn('[video-bot] No question available — skipping QuizCard render.');
+    console.warn('[video-bot] Question generation failed — skipping QuizCard render.');
     return;
   }
-  console.log(`[video-bot] Question exam: ${quizProps.examId ? examDisplayName(quizProps.examId) : '(unfiltered fallback)'}`);
+  console.log(`[video-bot] Question exam: ${examDisplayName(quizProps.examId)}`);
 
   const gemini = await generateQuizVideoContent({ ...quizProps, vertical });
   const hookLine = gemini?.hookLine?.trim() || quizFallbackHook(vertical as Vertical);
