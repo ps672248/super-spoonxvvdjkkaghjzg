@@ -34,6 +34,11 @@ MIN_VIDEO_VIEWS     = 1000
 MAX_VIDEO_VIEWS     = 500000
 MAX_VIDEO_AGE_DAYS  = 90
 
+# History entries older than this are dropped on save — the bot never revisits
+# videos/comments beyond MAX_VIDEO_AGE_DAYS, so pruned entries can't cause a
+# re-comment/re-reply. Keeps schooling_history.json from growing forever.
+HISTORY_TRIM_DAYS   = MAX_VIDEO_AGE_DAYS + 5
+
 TEST_MODE = False
 
 SEARCH_QUERIES = [
@@ -136,7 +141,23 @@ def load_history():
             log.warning("schooling_history.json corrupt — starting fresh")
     return {'commented_videos': {}, 'replied_comments': {}}
 
+def trim_history(h, max_age_days):
+    """Drops commented_videos/replied_comments entries older than max_age_days.
+    Safe because the bot never revisits videos/comments outside its own age
+    windows, so a pruned entry could never have caused a duplicate action."""
+    cutoff = datetime.now() - timedelta(days=max_age_days)
+    for key in ('commented_videos', 'replied_comments'):
+        for entry_id in list(h.get(key, {}).keys()):
+            ts = h[key][entry_id].get('timestamp')
+            try:
+                if ts and datetime.strptime(ts, '%Y-%m-%d %H:%M:%S') < cutoff:
+                    del h[key][entry_id]
+            except ValueError:
+                pass  # unparsable timestamp — leave it rather than risk dropping live data
+    return h
+
 def save_history(h):
+    trim_history(h, HISTORY_TRIM_DAYS)
     with open(HISTORY_FILE, 'w', encoding='utf-8') as f:
         json.dump(h, f, ensure_ascii=False, indent=2)
 

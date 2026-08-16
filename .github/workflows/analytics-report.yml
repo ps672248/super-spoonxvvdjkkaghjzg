@@ -1,0 +1,72 @@
+name: Analytics Report (weekly reels performance → Discord)
+
+# Feedback loop for the video pipeline — pulls last-28-days YouTube Shorts +
+# Instagram Reels numbers (views, retention, per-vertical breakdown, best/worst
+# hooks) and posts a digest embed to Discord. Read-only everywhere; publishes
+# nothing. See marketing/video/src/analyticsReport.ts.
+
+on:
+  schedule:
+    - cron: '30 14 * * 0'   # Sunday 8:00 PM IST (14:30 UTC) weekly
+  workflow_dispatch:
+    inputs:
+      window_days:
+        description: 'Lookback window in days (default 28)'
+        required: false
+        default: ''
+
+# write: the job commits marketing/video/analytics-history.json back (last 7 runs)
+permissions:
+  contents: write
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        working-directory: marketing/video
+        run: npm install
+
+      # OAuth pair enables the retention metrics (YouTube Analytics API). The
+      # report degrades to view-counts-only if the token predates the
+      # yt-analytics.readonly scope — see analyticsReport.ts header.
+      - name: Write YouTube credentials from secrets
+        working-directory: marketing/video
+        run: |
+          echo '${{ secrets.YT_CLIENT_SECRET }}' > client_secret.json
+          echo '${{ secrets.YT_UPLOAD_TOKEN }}' > youtube_upload_token.json
+
+      - name: Build and post the report
+        working-directory: marketing/video
+        env:
+          # Turns the raw numbers into ranked change suggestions in the digest —
+          # report still posts (without that section) if unset/exhausted.
+          GEMINI_API_KEYS: ${{ secrets.GEMINI_API_KEYS }}
+          YT_API_KEY: ${{ secrets.YT_API_KEY }}
+          YT_CHANNEL_ID: ${{ secrets.YT_CHANNEL_ID }}
+          IG_BUSINESS_ACCOUNT_ID: ${{ secrets.IG_BUSINESS_ACCOUNT_ID }}
+          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+          DISCORD_WEBHOOK_NEWCONTENT: ${{ secrets.DISCORD_WEBHOOK_NEWCONTENT }}
+          ANALYTICS_WINDOW_DAYS: ${{ github.event.inputs.window_days }}
+        run: npm run analytics
+
+      # Same convention as the youtube-bot history commits — keeps the last 7
+      # runs' numbers + Gemini suggestions in git for week-over-week comparison.
+      - name: Save analytics history back to repo
+        if: always()
+        working-directory: marketing/video
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add analytics-history.json
+          git diff --staged --quiet || git commit -m "chore: update analytics history [skip ci]"
+          git push

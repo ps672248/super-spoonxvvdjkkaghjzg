@@ -1,0 +1,151 @@
+name: Meme Bot (daily reminder — manual render on dispatch)
+
+# The meme slot is MANUAL. The daily cron only posts a Discord reminder; the
+# render/publish pipeline below runs on workflow_dispatch.
+#
+# Why: memes are the one format where the joke has to be judged by a human
+# before it goes out, and the Instagram copy was always posted by hand anyway
+# (no API exposes trending audio — Meta's REELS container has no music
+# parameter, and pre-baked audio loses YouTube's claim-free status). A reminder
+# costs seconds of runner time; the old scheduled render cost 30 minutes and a
+# Gemini image call for something that still needed a human.
+#
+# 8:30 PM IST — deliberately 2h after the 6:30 PM QuizCard/blog slot so two
+# Aspirant Arcade posts never land in the same hour.
+
+on:
+  schedule:
+    - cron: '0 15 * * *'   # 8:30 PM IST (15:00 UTC) daily — reminder only
+  workflow_dispatch:
+    inputs:
+      vertical:
+        description: 'Override vertical (engineering|entrance|govt|college|schooling). Blank = day-based rotation.'
+        required: false
+        default: ''
+      template:
+        description: 'Override template id from meme_templates.json. Blank = weighted pick.'
+        required: false
+        default: ''
+      publish:
+        description: 'true = publish straight to YouTube + Instagram. false/blank = send to Discord for approval (the default). Overrides the MEME_PUBLISH repo variable for this run.'
+        required: false
+        default: ''
+
+permissions:
+  contents: write   # commits meme_history.json back — see the last step
+
+concurrency:
+  group: meme-bot
+  cancel-in-progress: false
+
+jobs:
+  # Scheduled path: a nudge, nothing else. No checkout, no npm install, no
+  # Remotion — this job finishes in seconds.
+  remind:
+    if: github.event_name == 'schedule' && vars.MEME_PAUSE != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Post meme reminder to Discord
+        env:
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+          DISCORD_MEME_CHANNEL_ID: ${{ secrets.DISCORD_MEME_CHANNEL_ID }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/workflows/meme-bot.yml
+        run: |
+          if [ -z "$DISCORD_BOT_TOKEN" ] || [ -z "$DISCORD_MEME_CHANNEL_ID" ]; then
+            echo "::warning::Discord bot token or meme channel id missing — skipping reminder."
+            exit 0
+          fi
+          curl -sS -X POST \
+            -H "Authorization: Bot $DISCORD_BOT_TOKEN" \
+            -H "Content-Type: application/json" \
+            --fail-with-body \
+            -d "{\"content\":\"🗓️ **Meme slot — 8:30 PM IST.** Post today's meme by hand.\\nRender one with the manual pipeline: $RUN_URL (Run workflow → optionally set vertical/template).\"}" \
+            "https://discord.com/api/v10/channels/$DISCORD_MEME_CHANNEL_ID/messages"
+
+  render:
+    # Manual only. MEME_PAUSE still gates it — layer 2 lives in renderMeme.ts so
+    # local runs respect it too. Flip the MEME_PAUSE repo variable on result
+    # days, exam controversies, or any national tragedy window.
+    if: github.event_name == 'workflow_dispatch' && vars.MEME_PAUSE != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        working-directory: marketing/video
+        run: npm install
+
+      # Only needed for the YouTube publish path — safe to write even when
+      # PUBLISH is off, since uploadYouTubeShort() is never called then.
+      - name: Write YouTube upload credentials from secrets
+        working-directory: marketing/video
+        run: |
+          echo '${{ secrets.YT_CLIENT_SECRET }}' > client_secret.json
+          echo '${{ secrets.YT_UPLOAD_TOKEN }}' > youtube_upload_token.json
+
+      - name: Render (and publish if enabled) today's meme
+        id: render_meme
+        working-directory: marketing/video
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          # Image generation. Default provider is puter ($0 within the account
+          # allowance, exposes gpt-image-2); set MEME_IMAGE_PROVIDER=gemini to
+          # fall back to gemini-2.5-flash-image (~$0.039/image).
+          PUTER_AUTH_TOKEN: ${{ secrets.PUTER_AUTH_TOKEN }}
+          MEME_IMAGE_PROVIDER: ${{ vars.MEME_IMAGE_PROVIDER }}
+          GEMINI_API_KEYS: ${{ secrets.GEMINI_API_KEYS }}
+          MEME_PAUSE: ${{ vars.MEME_PAUSE }}
+          # The approval card is posted by the BOT, not a webhook — plain channel
+          # webhooks can't carry interactive components, and the Approve/Reject
+          # buttons are the whole point.
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+          DISCORD_MEME_CHANNEL_ID: ${{ secrets.DISCORD_MEME_CHANNEL_ID }}
+          VIDEO_VERTICAL: ${{ github.event.inputs.vertical }}
+          MEME_TEMPLATE: ${{ github.event.inputs.template }}
+          # The ONLY publish switch for this bucket:
+          #   false/unset → Discord approval card
+          #   true        → straight to YouTube + Instagram, then a "published" card
+          # A manual dispatch input wins over the repo variable so a one-off run
+          # can publish without changing the default.
+          MEME_PUBLISH: ${{ github.event.inputs.publish || vars.MEME_PUBLISH }}
+          CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
+          CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
+          CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
+          IG_BUSINESS_ACCOUNT_ID: ${{ secrets.IG_BUSINESS_ACCOUNT_ID }}
+          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+        run: npm run meme
+
+      # Unlike the quiz reel, this uploads unconditionally: while PUBLISH is off
+      # (the supervised-run phase) the artifact IS the review copy, and once it's
+      # on it's still the Instagram copy that gets posted by hand.
+      - name: Upload rendered meme + metadata as workflow artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: meme-reel-${{ github.run_id }}
+          path: |
+            marketing/video/output/*.mp4
+            marketing/video/output/*.meta.json
+            marketing/video/output/*-cover.jpg
+          retention-days: 14
+          if-no-files-found: ignore
+
+      # meme_history.json is the approval log — it has to survive the runner.
+      # Same pattern as analytics-report.yml.
+      - name: Commit meme history back to repo
+        if: always()
+        working-directory: marketing/video
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add meme_history.json
+          git diff --staged --quiet || git commit -m "chore: log meme run [skip ci]"
+          git push

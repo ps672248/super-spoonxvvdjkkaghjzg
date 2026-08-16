@@ -1,9 +1,9 @@
-name: YouTube Comment Bot
+name: YouTube Entrance Bot
 
 on:
   schedule:
-    - cron: '45 11 * * *'   # 5:15 PM IST (11:45 UTC) daily — comment bots staggered 1h apart
-  workflow_dispatch:         # allow manual trigger from GitHub Actions tab
+    - cron: '45 12 * * *'   # 6:15 PM IST (12:45 UTC) daily — comment bots staggered 1h apart
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -31,20 +31,20 @@ jobs:
         working-directory: marketing/youtube
         run: |
           echo '${{ secrets.YT_CLIENT_SECRET }}' > client_secret.json
-          echo '${{ secrets.YT_TOKEN }}' > token.json
+          echo '${{ secrets.YT_TOKEN_ENTRANCE }}' > entrance_token.json
 
-      - name: Run bot
+      - name: Run entrance bot
         working-directory: marketing/youtube
         env:
           YT_API_KEY: ${{ secrets.YT_API_KEY }}
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY_ENTRANCE }}
         run: |
           # 40-min cap enforced in-shell: exit 124 = planned cutoff, NOT a
           # failure. History is saved incrementally by the bot, so a capped
           # run that wrote history counts as SUCCESS and the job stays green.
           # Real crashes keep their nonzero exit and still fail the job.
           set +e
-          timeout --signal=INT --kill-after=60 40m python bot.py
+          timeout --signal=INT --kill-after=60 40m python entrance_bot.py
           code=$?
           if [ $code -eq 124 ] || [ $code -eq 137 ]; then
             echo "Bot hit the 40-minute cap - planned cutoff, treating as success."
@@ -58,9 +58,6 @@ jobs:
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add psu_history.json
-          git diff --staged --quiet || git commit -m "chore: update psu bot history [skip ci]"
+          git add entrance_history.json
+          git diff --staged --quiet || git commit -m "chore: update entrance bot history [skip ci]"
           git push
-
-      # refresh_token never expires for verified apps used regularly.
-      # google-auth auto-refreshes the access token each run — no secret update needed.

@@ -2,7 +2,7 @@ name: YouTube Schooling Bot
 
 on:
   schedule:
-    - cron: '0 1,3,5,7,9,11,13,15,17,19,21,23 * * *'  # odd hours — offset from PSU bot
+    - cron: '45 13 * * *'   # 7:15 PM IST (13:45 UTC) daily — comment bots staggered 1h apart
   workflow_dispatch:
 
 permissions:
@@ -11,7 +11,7 @@ permissions:
 jobs:
   run-bot:
     runs-on: ubuntu-latest
-    timeout-minutes: 40      # 3 comments + 3 replies with delays ~30 min max
+    timeout-minutes: 50      # setup + 40-min bot cap (in-shell, see run step) + save step headroom
 
     steps:
       - name: Checkout repo
@@ -38,9 +38,22 @@ jobs:
         env:
           YT_API_KEY: ${{ secrets.YT_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY_SCHOOL }}
-        run: python schooling_bot.py
+        run: |
+          # 40-min cap enforced in-shell: exit 124 = planned cutoff, NOT a
+          # failure. History is saved incrementally by the bot, so a capped
+          # run that wrote history counts as SUCCESS and the job stays green.
+          # Real crashes keep their nonzero exit and still fail the job.
+          set +e
+          timeout --signal=INT --kill-after=60 40m python schooling_bot.py
+          code=$?
+          if [ $code -eq 124 ] || [ $code -eq 137 ]; then
+            echo "Bot hit the 40-minute cap - planned cutoff, treating as success."
+            exit 0
+          fi
+          exit $code
 
       - name: Save updated history back to repo
+        if: always()
         working-directory: marketing/youtube
         run: |
           git config user.name  "github-actions[bot]"

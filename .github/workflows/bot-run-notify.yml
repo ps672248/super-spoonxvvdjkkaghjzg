@@ -1,0 +1,71 @@
+name: Bot Run Notify (→ #bot-runs)
+
+# Posts a completion embed to Discord's #bot-runs channel whenever any bot
+# workflow in THIS repo finishes — scheduled, manual, or dispatched.
+# workflow_run can't cross repos, so this is a separate copy from the private
+# repo's own bot-run-notify.yml (trimmed there to the 3 workflows that stayed:
+# Blog Bot, Video Fallback Bot, Submit Index). Same notify logic either way.
+#
+# Needs the DISCORD_WEBHOOK_BOTRUNS secret (same value as the private repo's
+# copy — pushed here via scripts/pushGithubSecrets.ts's --repo/--file override,
+# see the migration plan). Silently does nothing if unset.
+
+on:
+  workflow_run:
+    workflows:
+      - Video Bot (daily quiz reel — Shorts/Reels render + publish)
+      - Meme Bot (daily reminder — manual render on dispatch)
+      - Meme Publish (after Discord approve/reject)
+      - Admin Video Render (blog panel → stage to Cloudinary)
+      - Admin Video Publish (after blog panel approve/reject)
+      - Render Pending NewsRecap Videos
+      - Analytics Report (weekly reels performance → Discord)
+      - Growth Report (weekly SEO + analytics → Discord)
+      - YouTube Comment Bot
+      - YouTube Entrance Bot
+      - YouTube Govt Exam Bot
+      - YouTube College Bot
+      - YouTube Schooling Bot
+      - Reddit Comment Bot
+    types: [completed]
+
+permissions: {}
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Post completion embed to #bot-runs
+        env:
+          WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_BOTRUNS }}
+          RUN_NAME: ${{ github.event.workflow_run.name }}
+          RUN_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          RUN_URL: ${{ github.event.workflow_run.html_url }}
+          RUN_EVENT: ${{ github.event.workflow_run.event }}
+          RUN_STARTED: ${{ github.event.workflow_run.run_started_at }}
+          RUN_UPDATED: ${{ github.event.workflow_run.updated_at }}
+          RUN_NUMBER: ${{ github.event.workflow_run.run_number }}
+        run: |
+          if [ -z "$WEBHOOK_URL" ]; then
+            echo "DISCORD_WEBHOOK_BOTRUNS not set — skipping."
+            exit 0
+          fi
+          start=$(date -d "$RUN_STARTED" +%s)
+          end=$(date -d "$RUN_UPDATED" +%s)
+          mins=$(( (end - start) / 60 ))
+          secs=$(( (end - start) % 60 ))
+          case "$RUN_CONCLUSION" in
+            success)   emoji="✅"; color=2278750 ;;   # green
+            failure)   emoji="❌"; color=15680580 ;;  # red
+            cancelled) emoji="🚫"; color=10197915 ;;  # grey
+            *)         emoji="⚠️"; color=16098851 ;;  # amber (timed_out, etc.)
+          esac
+          jq -n \
+            --arg title "$emoji $RUN_NAME — $RUN_CONCLUSION" \
+            --arg url "$RUN_URL" \
+            --arg desc "Run #$RUN_NUMBER · trigger: $RUN_EVENT · took ${mins}m ${secs}s" \
+            --argjson color "$color" \
+            '{embeds: [{title: $title, url: $url, description: $desc, color: $color, timestamp: (now | todate)}]}' \
+          | curl -sf -X POST -H 'Content-Type: application/json' -d @- "$WEBHOOK_URL" \
+            || echo "Discord post failed (non-fatal)."

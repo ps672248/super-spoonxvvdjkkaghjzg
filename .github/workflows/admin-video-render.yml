@@ -1,0 +1,64 @@
+name: Admin Video Render (blog panel → stage to Cloudinary)
+
+# First half of the admin-panel news-recap video pipeline. Dispatched by
+# website/app/api/admin/blog/[slug]/video/render/route.ts once an admin
+# approves a (possibly hand-edited) script for a specific article. Renders via
+# Remotion — too heavy for a Vercel function — then stages the mp4 to
+# Cloudinary so the admin panel can preview it before anything reaches
+# YouTube/Instagram. See marketing/video/src/renderAdminVideo.ts and
+# adminVideoApproval.ts for the full state machine.
+#
+# The article doc, not the workflow input, is the source of truth: the script
+# reads videoBeats/videoMeta/videoStatus back out of Firestore and aborts if
+# the article isn't actually in 'rendering' state (e.g. a stale dispatch after
+# the admin regenerated the script).
+
+on:
+  workflow_dispatch:
+    inputs:
+      article_slug:
+        description: 'articles/{slug} doc to render. Normally supplied by the admin panel.'
+        required: true
+
+concurrency:
+  group: admin-video-render-${{ github.event.inputs.article_slug }}
+  cancel-in-progress: false
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        working-directory: marketing/video
+        run: npm install
+
+      - name: Render and stage to Cloudinary
+        working-directory: marketing/video
+        env:
+          ARTICLE_SLUG: ${{ github.event.inputs.article_slug }}
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
+          CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
+          CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
+          SARVAM_API_KEY: ${{ secrets.SARVAM_API_KEY }}
+        run: npm run admin-video:render
+
+      - name: Upload rendered video as workflow artifact (recovery copy)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: admin-video-${{ github.event.inputs.article_slug }}-${{ github.run_id }}
+          path: |
+            marketing/video/output/*.mp4
+            marketing/video/output/*-cover.jpg
+          retention-days: 14
+          if-no-files-found: ignore

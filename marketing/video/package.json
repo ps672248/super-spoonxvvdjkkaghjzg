@@ -1,0 +1,44 @@
+{
+  "name": "aspirant-arcade-video",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Remotion pipeline — daily quiz-card, news-recap and meme reels for Instagram/YouTube Shorts.",
+  "scripts": {
+    "preview": "remotion studio src/index.ts",
+    "render": "tsx src/render.ts",
+    "render:news": "tsx src/renderNewsRecap.ts",
+    "render:pending": "tsx src/renderPendingRecaps.ts",
+    "render:longform": "tsx src/renderLongForm.ts",
+    "meme": "tsx src/renderMeme.ts",
+    "meme:test": "tsx scripts/testMeme.ts",
+    "meme:publish": "tsx src/publishApproved.ts",
+    "admin-video:render": "tsx src/renderAdminVideo.ts",
+    "admin-video:publish": "tsx src/publishAdminVideo.ts",
+    "templates:refresh": "tsx scripts/refreshTemplates.ts",
+    "analytics": "tsx src/analyticsReport.ts",
+    "auth:youtube-upload": "tsx scripts/generateYouTubeUploadToken.ts"
+  },
+  "dependencies": {
+    "@heyputer/puter.js": "^2.6.0",
+    "@remotion/bundler": "^4.0.0",
+    "@remotion/cli": "^4.0.0",
+    "@remotion/google-fonts": "^4.0.0",
+    "@remotion/media": "^4.0.0",
+    "@remotion/renderer": "^4.0.0",
+    "cloudinary": "^2.10.0",
+    "firebase-admin": "^12.0.0",
+    "googleapis": "^173.0.0",
+    "music-metadata": "^11.13.0",
+    "node-edge-tts": "^1.2.10",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "remotion": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.1",
+    "dotenv": "^16.4.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.4.0"
+  }
+}

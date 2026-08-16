@@ -1,0 +1,63 @@
+name: Admin Video Publish (after blog panel approve/reject)
+
+# Second half of the admin-panel news-recap video pipeline. admin-video-render.yml
+# renders and stages a video to Cloudinary for review in
+# /admin/blog/[slug]/video; that run then exits, because a GitHub Actions job
+# can't sit waiting for a human.
+#
+# The admin's Approve/Reject click hits website/app/api/admin/blog/[slug]/video/decision,
+# which writes the decision onto the article doc (videoStatus: publishing|rejected)
+# THEN dispatches this workflow with only the slug — the decision itself
+# travels in Firestore, not the inputs, so a replay of this workflow can never
+# publish something that was actually rejected.
+#
+#   publishing → download the staged mp4 → YouTube (+Instagram) → clean up Cloudinary
+#   rejected   → clean up Cloudinary only, exit 0
+#
+# See marketing/video/src/publishAdminVideo.ts.
+
+on:
+  workflow_dispatch:
+    inputs:
+      article_slug:
+        description: 'articles/{slug} doc to act on. Normally supplied by the admin panel.'
+        required: true
+
+concurrency:
+  group: admin-video-publish-${{ github.event.inputs.article_slug }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        working-directory: marketing/video
+        run: npm install
+
+      - name: Write YouTube upload credentials from secrets
+        working-directory: marketing/video
+        run: |
+          echo '${{ secrets.YT_CLIENT_SECRET }}' > client_secret.json
+          echo '${{ secrets.YT_UPLOAD_TOKEN }}' > youtube_upload_token.json
+
+      - name: Publish or discard per the recorded decision
+        working-directory: marketing/video
+        env:
+          ARTICLE_SLUG: ${{ github.event.inputs.article_slug }}
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
+          CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
+          CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
+          IG_BUSINESS_ACCOUNT_ID: ${{ secrets.IG_BUSINESS_ACCOUNT_ID }}
+          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+        run: npm run admin-video:publish

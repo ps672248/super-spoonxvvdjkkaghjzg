@@ -1,0 +1,85 @@
+name: Video Bot (daily quiz reel — Shorts/Reels render + publish)
+
+# Quiz-only. The news-recap reel is no longer rendered on a schedule at all —
+# blog-bot.yml triggers it directly, per-article, right after scripts/blog_bot.ts
+# publishes something with videoBeats (see src/renderNewsRecap.ts). This workflow
+# is independent of that one; it only ever touches the daily QuizCard.
+
+on:
+  schedule:
+    - cron: '0 13 * * *'   # 6:30 PM IST (13:00 UTC) daily
+  workflow_dispatch:
+    inputs:
+      vertical:
+        description: 'Override vertical (engineering|entrance|govt|college|schooling). Leave blank for day-based rotation.'
+        required: false
+        default: ''
+      publish:
+        description: 'Upload to YouTube/Instagram after rendering? (true/false) — requires secrets below to be set.'
+        required: false
+        default: 'false'
+
+permissions:
+  contents: read
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        working-directory: marketing/video
+        run: npm install
+
+      # Only needed for YouTube Shorts publish — safe to write even if PUBLISH
+      # is off, uploadYouTubeShort() is never called in that case.
+      - name: Write YouTube upload credentials from secrets
+        working-directory: marketing/video
+        run: |
+          echo '${{ secrets.YT_CLIENT_SECRET }}' > client_secret.json
+          echo '${{ secrets.YT_UPLOAD_TOKEN }}' > youtube_upload_token.json
+
+      - name: Render (and publish if enabled) today's quiz reel
+        id: render_video
+        working-directory: marketing/video
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          # Enables the Gemini hook line + upload copy for the quiz reel (src/quizContent.ts) —
+          # same secret the blog bot uses; render falls back to deterministic copy without it.
+          GEMINI_API_KEYS: ${{ secrets.GEMINI_API_KEYS }}
+          # Hinglish narration via Sarvam bulbul:v3 (src/tts.ts) — falls back to free Edge TTS when unset.
+          SARVAM_API_KEY: ${{ secrets.SARVAM_API_KEY }}
+          CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
+          CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
+          CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
+          VIDEO_VERTICAL: ${{ github.event.inputs.vertical }}
+          PUBLISH: ${{ github.event.inputs.publish || 'false' }}
+          # Sunday's reel is pinned to the exam the day's articles are about
+          # (coverage/_sunday_target, written by the blog bot that morning).
+          # Off by default so a bad first run needs a variable flip, not a revert.
+          SUNDAY_QUIZ: ${{ vars.SUNDAY_QUIZ }}
+          IG_BUSINESS_ACCOUNT_ID: ${{ secrets.IG_BUSINESS_ACCOUNT_ID }}
+          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+        run: npm run render
+
+      # Recovery copy only — skipped when PUBLISH was on and both uploads
+      # fully succeeded (see src/renderShared.ts's flagUploadFailureForCI).
+      # Still uploaded whenever PUBLISH is off, since then it's the only copy.
+      - name: Upload rendered video + metadata as workflow artifact
+        if: steps.render_video.outputs.upload_failed == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: quiz-reel-${{ github.run_id }}
+          path: |
+            marketing/video/output/*.mp4
+            marketing/video/output/*.meta.json
+          retention-days: 14
+          if-no-files-found: warn

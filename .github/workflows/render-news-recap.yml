@@ -1,0 +1,75 @@
+name: Render Pending NewsRecap Videos
+
+# Automatic-pipeline half of the NewsRecap video flow (separate from the
+# admin-panel one — see admin-video-render.yml/admin-video-publish.yml for
+# that). Used to be a direct spawnSync call blog_bot.ts (private repo) made
+# into this package when both lived in one repo; that only worked because
+# they were sibling folders in the same checkout. Now decoupled:
+#
+#   1. blog_bot.ts persists videoBeats/videoMeta/videoStatus:'pending' onto
+#      the article doc instead of piping content over env vars to a child
+#      process (private repo).
+#   2. A tiny same-repo workflow there (workflow_run on "Blog Bot"
+#      completing — guaranteed ordering, no cron-offset guessing) fires a
+#      payload-less dispatch here.
+#   3. This workflow doesn't get told which article — src/renderPendingRecaps.ts
+#      queries Firestore itself for today's videoStatus:'pending' articles and
+#      renders each. Self-healing: a failed render just leaves the article
+#      pending for the next trigger, same tolerance video_fallback.ts's own
+#      catch-up scan already has.
+#
+# The article doc, not the workflow input, is the source of truth — same
+# principle as admin-video-render.yml.
+
+on:
+  workflow_dispatch: {}
+
+concurrency:
+  group: render-news-recap
+  cancel-in-progress: false
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        working-directory: marketing/video
+        run: npm install
+
+      - name: Render + publish every pending article
+        working-directory: marketing/video
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          PUBLISH: 'true'
+          SARVAM_API_KEY: ${{ secrets.SARVAM_API_KEY }}
+          GEMINI_API_KEYS: ${{ secrets.GEMINI_API_KEYS }}
+          CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
+          CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
+          CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
+          IG_BUSINESS_ACCOUNT_ID: ${{ secrets.IG_BUSINESS_ACCOUNT_ID }}
+          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+          DISCORD_WEBHOOK_NEWCONTENT: ${{ secrets.DISCORD_WEBHOOK_NEWCONTENT }}
+        run: |
+          echo '${{ secrets.YT_CLIENT_SECRET }}' > client_secret.json
+          echo '${{ secrets.YT_UPLOAD_TOKEN }}' > youtube_upload_token.json
+          npm run render:pending
+
+      - name: Upload rendered videos as workflow artifact (recovery copy)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: news-recap-pending-${{ github.run_id }}
+          path: |
+            marketing/video/output/*.mp4
+            marketing/video/output/*.meta.json
+          retention-days: 14
+          if-no-files-found: ignore

@@ -1,0 +1,81 @@
+name: Meme Publish (after Discord approve/reject)
+
+# Second half of the meme approval flow. meme-bot.yml renders and stages a meme
+# to Cloudinary, then posts it to Discord with Approve/Reject buttons; that run
+# then exits, because a GitHub Actions job can't sit waiting for a human.
+#
+# The button press hits website/app/api/discord/interactions, which records the
+# decision in Firestore and dispatches THIS workflow with the meme id. The
+# decision itself travels in Firestore, not in the inputs — so a replay of this
+# workflow can never publish something that was actually rejected.
+#
+#   approved → download the staged mp4 → YouTube (+Instagram) → clean up Cloudinary
+#   rejected → clean up Cloudinary only, exit 0
+#
+# Cloudinary credentials live here rather than in the website on purpose: the
+# website only needs Firestore + workflow-dispatch to record a decision.
+
+on:
+  workflow_dispatch:
+    inputs:
+      meme_id:
+        description: 'Approval record id, e.g. 2026-07-29-college-meme. Normally supplied by the Discord button.'
+        required: true
+
+permissions:
+  contents: write   # commits meme_history.json back
+
+concurrency:
+  # Serialised per meme, so a double-click can't run two publishes for one id.
+  group: meme-publish-${{ github.event.inputs.meme_id }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        working-directory: marketing/video
+        run: npm install
+
+      - name: Write YouTube upload credentials from secrets
+        working-directory: marketing/video
+        run: |
+          echo '${{ secrets.YT_CLIENT_SECRET }}' > client_secret.json
+          echo '${{ secrets.YT_UPLOAD_TOKEN }}' > youtube_upload_token.json
+
+      - name: Publish or discard per the recorded decision
+        working-directory: marketing/video
+        env:
+          MEME_ID: ${{ github.event.inputs.meme_id }}
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
+          CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
+          CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
+          IG_BUSINESS_ACCOUNT_ID: ${{ secrets.IG_BUSINESS_ACCOUNT_ID }}
+          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+          # Posts the "published" card back to the approval channel.
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+          DISCORD_MEME_CHANNEL_ID: ${{ secrets.DISCORD_MEME_CHANNEL_ID }}
+          # No publish gate here on purpose — clicking Approve in Discord IS the
+          # decision, and a second switch would silently swallow it.
+        run: npm run meme:publish
+
+      - name: Commit meme history back to repo
+        if: always()
+        working-directory: marketing/video
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add meme_history.json
+          git diff --staged --quiet || git commit -m "chore: meme decision for ${{ github.event.inputs.meme_id }} [skip ci]"
+          git push

@@ -1,57 +1,39 @@
-# ── Dependencies ──────────────────────────────────────────
+# ── Dependencies ─────────────────────────────────────────────
 node_modules/
-.pnp
-.pnp.js
 
-# ── Environment variables ──────────────────────────────────
+# ── Environment variables — never commit real values ────────
 .env
 .env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env.*.local
 
-# ── Expo / React Native ────────────────────────────────────
-.expo/
-dist/
-web-build/
-*.orig.*
-*.jks
-*.p8
-*.p12
-*.key
-*.mobileprovision
-*.apk
-*.aab
-*.ipa
-
-# ── Next.js ────────────────────────────────────────────────
-.next/
-out/
-
-# ── Build outputs ──────────────────────────────────────────
-build/
-android/build/
-ios/build/
-
-# ── OS ────────────────────────────────────────────────────
-.DS_Store
-Thumbs.db
-
-# ── Logs ──────────────────────────────────────────────────
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# ── Misc ──────────────────────────────────────────────────
-.vercel
-
-# ── Marketing bot secrets ─────────────────────────────────
+# ── Marketing bot secrets ────────────────────────────────────
 marketing/youtube/client_secret.json
 marketing/youtube/token.json
 marketing/youtube/schooling_token.json
-marketing/youtube/bot.log
-marketing/youtube/schooling_bot.log
-marketing/youtube/.env
-marketing/reddit/.env
+marketing/youtube/entrance_token.json
+marketing/youtube/govt_token.json
+marketing/youtube/college_token.json
+marketing/youtube/*.log
+marketing/youtube/history.json
+
 marketing/reddit/token.json
+
+marketing/video/service-account.json
+marketing/video/client_secret.json
+marketing/video/youtube_upload_token.json
+marketing/video/youtube_edit_token.json
+
+# Rendered output — regenerable, large, never committed.
+marketing/video/output/
+marketing/video/long_form/
+marketing/video/public/long_form_temp.mp4
+
+# Generated memes — one per day, regenerable from meme_history.json's prompt.
+# The scraped template blanks in public/memes/ ARE committed; these aren't.
+marketing/video/public/memes/generated/
+
+growth/service-account.json
+
+# ── OS / editor ───────────────────────────────────────────────
+.DS_Store
+*.log

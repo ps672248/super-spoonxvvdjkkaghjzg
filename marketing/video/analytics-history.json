@@ -1,0 +1,249 @@
+[
+  {
+    "runAt": "2026-08-09T15:02:38.698Z",
+    "windowDays": 28,
+    "youtube": {
+      "videos": 150,
+      "totalViews": 40786,
+      "byVertical": {
+        "unknown": {
+          "videos": 143,
+          "views": 40069
+        },
+        "schooling": {
+          "videos": 2,
+          "views": 540
+        },
+        "college": {
+          "videos": 2,
+          "views": 170
+        },
+        "entrance": {
+          "videos": 1,
+          "views": 3
+        },
+        "govt": {
+          "videos": 1,
+          "views": 4
+        },
+        "engineering": {
+          "videos": 1,
+          "views": 0
+        }
+      }
+    },
+    "instagram": {
+      "reels": 50,
+      "totalViews": 3246,
+      "totalReach": 2890
+    },
+    "suggestions": [
+      {
+        "action": "Significantly reduce or pause the production and auto-publishing of daily quiz reels. Reallocate resources to increase the frequency of \"news recap reels\".",
+        "why": "Quiz reels perform poorly (e.g., \"HPCL Quiz Challenge\" 0 views YT). News reels dominate views (e.g., \"CIL MT 2026 Exam\" 9427 views YT)."
+      },
+      {
+        "action": "Refine the hook-line pool and title formulas for \"news recap reels\" to consistently use urgent, outcome-driven language and highlight numbers (e.g., \"OUT!\", \"Declared!\", \"X posts!\").",
+        "why": "Top news reels use urgent hooks (e.g., \"CIL MT 2026 Exam: August dates out!\", \"1,731 dreams fulfilled! SSC JE 2025 Final Result\")."
+      },
+      {
+        "action": "Conduct an A/B test for Hinglish vs. English voiceovers on top-performing \"news recap reels\" to determine audience preference and engagement lift.",
+        "why": "Data on Hinglish news reels is too thin for conclusive impact (e.g., \"CBSE 10th marks badhne waale hain?\" 186 views YT). Need more data."
+      },
+      {
+        "action": "Update Gemini prompts for Instagram captions to explicitly include calls-to-action for likes and comments, and experiment with interactive elements within video templates.",
+        "why": "Instagram engagement is low; top-viewed reels rarely exceed 3 likes or 0 comments (e.g., \"SSC CGL 2026\" 125 views, 3 likes)."
+      }
+    ]
+  },
+  {
+    "runAt": "2026-08-02T15:39:53.055Z",
+    "windowDays": 28,
+    "youtube": {
+      "videos": 131,
+      "totalViews": 32675,
+      "byVertical": {
+        "unknown": {
+          "videos": 122,
+          "views": 32410
+        },
+        "college": {
+          "videos": 2,
+          "views": 170
+        },
+        "entrance": {
+          "videos": 3,
+          "views": 36
+        },
+        "schooling": {
+          "videos": 2,
+          "views": 55
+        },
+        "govt": {
+          "videos": 1,
+          "views": 4
+        },
+        "engineering": {
+          "videos": 1,
+          "views": 0
+        }
+      }
+    },
+    "instagram": {
+      "reels": 50,
+      "totalViews": 4505,
+      "totalReach": 4097
+    },
+    "suggestions": [
+      {
+        "action": "Immediately pause or drastically reduce the production and daily rotation of all vertical-specific daily quiz reels for all exam categories.",
+        "why": "Quiz reels consistently show abysmal performance on YouTube, receiving 0-12 views (e.g., 'HPCL Quiz Challenge': 0 views)."
+      },
+      {
+        "action": "Allocate resources saved from quiz reels to significantly increase the volume and frequency of news recap reels, focusing on results, admit cards, and exam dates.",
+        "why": "News recaps generate the vast majority of views on YouTube (e.g., CIL MT: 6885 views, AIBE: 2939 views, JEECUP: 2562 views)."
+      },
+      {
+        "action": "Standardize YouTube title formulas for news recaps to prominently feature urgent keywords like 'OUT!', 'LIVE!', 'Declared!', 'Released!' early in the title.",
+        "why": "Top performing videos heavily feature these urgent keywords (e.g., 'CIL MT 2026 Exam: August dates out!': 6885 views)."
+      },
+      {
+        "action": "Implement A/B testing for cover/thumbnail frame choices and Hinglish vs English voiceovers specifically for news recap reels on Instagram.",
+        "why": "Instagram performance is very low (max 148 views) compared to YouTube, but data is thin for specific content-based reasons."
+      },
+      {
+        "action": "Revamp per-vertical hashtag sets, creating a primary set for urgent exam news relevant across all currently uncategorized 'unknown' news reels.",
+        "why": "Top YouTube news videos are largely uncategorized ('unknown' vertical), showing a need for relevant cross-vertical news hashtags."
+      }
+    ]
+  },
+  {
+    "runAt": "2026-07-28T12:44:03.053Z",
+    "windowDays": 28,
+    "youtube": {
+      "videos": 94,
+      "totalViews": 23789,
+      "byVertical": {
+        "unknown": {
+          "videos": 85,
+          "views": 23524
+        },
+        "college": {
+          "videos": 2,
+          "views": 170
+        },
+        "entrance": {
+          "videos": 3,
+          "views": 36
+        },
+        "schooling": {
+          "videos": 2,
+          "views": 55
+        },
+        "govt": {
+          "videos": 1,
+          "views": 4
+        },
+        "engineering": {
+          "videos": 1,
+          "views": 0
+        }
+      }
+    },
+    "instagram": {
+      "reels": 50,
+      "totalViews": 5720,
+      "totalReach": 5229
+    },
+    "suggestions": []
+  },
+  {
+    "runAt": "2026-07-28T12:40:42.632Z",
+    "windowDays": 28,
+    "youtube": {
+      "videos": 94,
+      "totalViews": 23766,
+      "byVertical": {
+        "unknown": {
+          "videos": 85,
+          "views": 23501
+        },
+        "college": {
+          "videos": 2,
+          "views": 170
+        },
+        "entrance": {
+          "videos": 3,
+          "views": 36
+        },
+        "schooling": {
+          "videos": 2,
+          "views": 55
+        },
+        "govt": {
+          "videos": 1,
+          "views": 4
+        },
+        "engineering": {
+          "videos": 1,
+          "views": 0
+        }
+      }
+    },
+    "instagram": {
+      "reels": 50,
+      "totalViews": 5720,
+      "totalReach": 5229
+    },
+    "suggestions": []
+  },
+  {
+    "runAt": "2026-07-12T15:34:57.434Z",
+    "windowDays": 28,
+    "youtube": {
+      "videos": 29,
+      "totalViews": 2507,
+      "byVertical": {
+        "unknown": {
+          "videos": 23,
+          "views": 2313
+        },
+        "entrance": {
+          "videos": 3,
+          "views": 30
+        },
+        "schooling": {
+          "videos": 1,
+          "views": 11
+        },
+        "engineering": {
+          "videos": 2,
+          "views": 153
+        }
+      }
+    },
+    "instagram": {
+      "reels": 25,
+      "totalViews": 1732,
+      "totalReach": 1542
+    },
+    "suggestions": [
+      {
+        "action": "Immediately pause daily quiz reel publication. Reallocate resources to news recap reel production, focusing on \"Result OUT\", \"Admit Card\", \"Answer Key\" updates.",
+        "why": "Quiz reels consistently show extremely low engagement across platforms (e.g., YouTube: 11 views; Instagram: 0 views)."
+      },
+      {
+        "action": "Standardize news recap hook lines, titles, and IG captions to include high-impact keywords like \"OUT\", \"LIVE\", \"Declared\", \"Admit Card\", \"Answer Key\", and direct calls-to-action like \"Download Now!\".",
+        "why": "Urgent, actionable news recaps drive high views (e.g., \"FRI Dehradun Answer Key\": 631 views, \"BPSC APO Admit Card\": 235 views)."
+      },
+      {
+        "action": "Explicitly review and refine Gemini-written Instagram captions and per-vertical hashtag sets for news recap reels, ensuring they mirror high-performing YouTube titles and tactics (e.g., emojis).",
+        "why": "Some news recaps get 0 views on Instagram despite similar videos performing on YouTube (e.g., \"Bombay High Court Clerk Result\": YT 74 views vs IG 0 views)."
+      },
+      {
+        "action": "Mandate vertical assignment for all new video publications, eliminating \"unknown\" categorization, particularly for news recap reels, to improve content analysis.",
+        "why": "Many high-performing news recaps are tagged \"unknown\". Accurate tagging will enhance future performance analysis and content strategy."
+      }
+    ]
+  }
+]
