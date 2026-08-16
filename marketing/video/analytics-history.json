@@ -1,5 +1,50 @@
 [
   {
+    "runAt": "2026-08-16T07:35:21.351Z",
+    "windowDays": 28,
+    "youtube": {
+      "videos": 164,
+      "totalViews": 45484,
+      "byVertical": {
+        "unknown": {
+          "videos": 160,
+          "views": 43803
+        },
+        "govt": {
+          "videos": 2,
+          "views": 840
+        },
+        "schooling": {
+          "videos": 2,
+          "views": 841
+        }
+      }
+    },
+    "instagram": {
+      "reels": 50,
+      "totalViews": 3099,
+      "totalReach": 2781
+    },
+    "suggestions": [
+      {
+        "action": "Prioritize news recap reels for immediate exam status updates, like 'Results', 'Admit Cards', 'Exam Dates', and 'Counselling/Allotment', over general recruitment notifications.",
+        "why": "Urgent news drives highest engagement, e.g., 'CIL MT Exam Date' (12634 views) and 'JEECUP Allotment' (2563 views)."
+      },
+      {
+        "action": "Refine YouTube titles and Instagram captions to emphasize urgency, include relevant numbers (posts, candidates), and use direct calls to action like 'OUT!', 'LIVE!', 'Check Now!', 'Download NOW!'.",
+        "why": "Top videos feature these elements; 'CIL MT' had 12634 views, 'HBSE 10/12' got 1167 views and 10 comments."
+      },
+      {
+        "action": "Reduce the frequency or reformat content-heavy 'complete prep' videos (e.g., 'Indian History for CIL Exam') in the daily reel pipeline.",
+        "why": "These videos consistently underperform, receiving very low views (e.g., 'Indian Economy for CIL Exam Prep' 3 views, 'Modern Indian History' 9 views)."
+      },
+      {
+        "action": "Adjust the weekday vertical rotation to dedicate more slots to 'schooling' results/updates and 'govt' exam news given their strong engagement.",
+        "why": "Schooling (HBSE 1167 views, CGBSE 685 views) and Govt (IBPS PO 832 views) results show high performance on YouTube."
+      }
+    ]
+  },
+  {
     "runAt": "2026-08-09T15:02:38.698Z",
     "windowDays": 28,
     "youtube": {
