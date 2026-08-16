@@ -20,9 +20,18 @@ name: Render Pending NewsRecap Videos
 #
 # The article doc, not the workflow input, is the source of truth — same
 # principle as admin-video-render.yml.
+#
+# Also scheduled directly, twice a day, as a genuine safety net — not just a
+# comment about one. The dispatch ping from the private repo can silently
+# fail to arrive (network blip, PAT rotated, workflow disabled) with nothing
+# downstream to notice; this catches anything still stuck at 'pending' a few
+# hours later regardless of whether the ping ever landed.
 
 on:
   workflow_dispatch: {}
+  schedule:
+    - cron: '30 15 * * *'  # 9:00 PM IST (15:30 UTC) — well after Blog Bot's 13:00 UTC run
+    - cron: '30 3 * * *'   # 9:00 AM IST (03:30 UTC) — catches anything the evening pass missed
 
 concurrency:
   group: render-news-recap
