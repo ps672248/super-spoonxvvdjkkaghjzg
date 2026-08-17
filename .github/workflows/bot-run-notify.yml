@@ -20,7 +20,6 @@ on:
       - Admin Video Publish (after blog panel approve/reject)
       - Render Pending NewsRecap Videos
       - Analytics Report (weekly reels performance → Discord)
-      - Growth Report (weekly SEO + analytics → Discord)
       - YouTube Comment Bot
       - YouTube Entrance Bot
       - YouTube Govt Exam Bot

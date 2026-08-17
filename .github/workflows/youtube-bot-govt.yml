@@ -23,9 +23,11 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: marketing/youtube/requirements.txt
 
       - name: Install dependencies
-        run: pip install google-api-python-client google-auth-oauthlib google-generativeai python-dotenv
+        run: pip install -r marketing/youtube/requirements.txt
 
       - name: Write credentials from secrets
         working-directory: marketing/youtube

@@ -32,8 +32,6 @@ marketing/video/public/long_form_temp.mp4
 # The scraped template blanks in public/memes/ ARE committed; these aren't.
 marketing/video/public/memes/generated/
 
-growth/service-account.json
-
 # ── OS / editor ───────────────────────────────────────────────
 .DS_Store
 *.log
