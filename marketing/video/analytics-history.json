@@ -1,5 +1,46 @@
 [
   {
+    "runAt": "2026-08-23T14:53:04.503Z",
+    "windowDays": 28,
+    "youtube": {
+      "videos": 200,
+      "totalViews": 32101,
+      "byVertical": {
+        "unknown": {
+          "videos": 194,
+          "views": 30315
+        },
+        "govt": {
+          "videos": 3,
+          "views": 887
+        },
+        "schooling": {
+          "videos": 3,
+          "views": 899
+        }
+      }
+    },
+    "instagram": {
+      "reels": 50,
+      "totalViews": 1410,
+      "totalReach": 1230
+    },
+    "suggestions": [
+      {
+        "action": "Adjust \"weekday vertical rotation\" and \"hook-line pool\" to prioritize \"Admit Card\", \"Result\", and \"Answer Key\" news immediately upon release. Use \"Gemini-written\" titles emphasizing urgency.",
+        "why": "Videos like \"ISRO SDSC SHAR 2026 Exam Date OUT\" (1387 views, 18 likes) & \"HBSE 10th, 12th Result\" (1176 views, 10 comments) drive top engagement."
+      },
+      {
+        "action": "Cease publishing \"news recap reels\" for broad \"General Awareness\" topics (e.g., History, Economy) on YouTube. Reallocate resources to high-performing news categories.",
+        "why": "\"Indian Economy for CIL Exam Prep\" (4 views), \"Modern Indian History\" (10 views) show negligible interest, wasting resources."
+      },
+      {
+        "action": "Update \"title formulas\" and \"IG captions\" to consistently include exact vacancy/post counts and application deadlines where relevant for news recap reels.",
+        "why": "\"IBPS Clerk 2026 application extended | 11,403 Banking Jobs!\" (123 views on IG, 103 reach) shows impact of numerical value."
+      }
+    ]
+  },
+  {
     "runAt": "2026-08-16T07:35:21.351Z",
     "windowDays": 28,
     "youtube": {
