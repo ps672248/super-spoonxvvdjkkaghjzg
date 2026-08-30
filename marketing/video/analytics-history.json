@@ -1,5 +1,54 @@
 [
   {
+    "runAt": "2026-08-30T18:10:24.252Z",
+    "windowDays": 28,
+    "youtube": {
+      "videos": 189,
+      "totalViews": 41388,
+      "byVertical": {
+        "unknown": {
+          "videos": 183,
+          "views": 39558
+        },
+        "govt": {
+          "videos": 3,
+          "views": 913
+        },
+        "schooling": {
+          "videos": 3,
+          "views": 917
+        }
+      }
+    },
+    "instagram": {
+      "reels": 50,
+      "totalViews": 1489,
+      "totalReach": 1248
+    },
+    "suggestions": [
+      {
+        "action": "Update YouTube title formulas for news reels: prominently feature \"OUT!\", \"Released!\", \"LIVE\", \"Admit Card\", \"Answer Key\", \"Result\" to convey immediate updates.",
+        "why": "Titles with these keywords show top YouTube views (e.g., CIL MT Answer Key 3455 views, Punjab Lecturer Admit Card 2966 views)."
+      },
+      {
+        "action": "Enhance YouTube titles and IG captions by integrating \"Expected Soon\", \"Coming Soon\", \"Anticipated Release\" for critical results/admit cards.",
+        "why": "Videos announcing imminent news perform strongly, e.g., SBI PO Prelims Result (1188 views) and Punjab Lecturer Admit Card (2966 views)."
+      },
+      {
+        "action": "For recruitment/result news, embed specific numbers (vacancies, applicants, qualified candidates) into YouTube titles and IG captions.",
+        "why": "Quantitative figures capture attention, demonstrated by \"1013 Vacancies! Punjab Lecturer\" (2966 views) and \"20,000+ candidates AVNL\" (1087 views)."
+      },
+      {
+        "action": "Reallocate resources from generic \"Complete General Awareness Prep\" reels; focus content on specific, time-sensitive updates and immediate exam triggers.",
+        "why": "Generic prep videos (e.g., \"Indian Economy for CIL Exam Prep\" at 5 views) receive significantly fewer views than urgent news."
+      },
+      {
+        "action": "Re-evaluate the weekday vertical rotation for \"daily quiz reels.\" Without specific performance data, integrate quizzes into high-performing verticals.",
+        "why": "Data lacks distinct quiz reel performance. News recap reels show clear high-performing examples (e.g., CIL MT, Punjab Lecturer)."
+      }
+    ]
+  },
+  {
     "runAt": "2026-08-23T14:53:04.503Z",
     "windowDays": 28,
     "youtube": {
@@ -282,54 +331,5 @@
       "totalReach": 5229
     },
     "suggestions": []
-  },
-  {
-    "runAt": "2026-07-12T15:34:57.434Z",
-    "windowDays": 28,
-    "youtube": {
-      "videos": 29,
-      "totalViews": 2507,
-      "byVertical": {
-        "unknown": {
-          "videos": 23,
-          "views": 2313
-        },
-        "entrance": {
-          "videos": 3,
-          "views": 30
-        },
-        "schooling": {
-          "videos": 1,
-          "views": 11
-        },
-        "engineering": {
-          "videos": 2,
-          "views": 153
-        }
-      }
-    },
-    "instagram": {
-      "reels": 25,
-      "totalViews": 1732,
-      "totalReach": 1542
-    },
-    "suggestions": [
-      {
-        "action": "Immediately pause daily quiz reel publication. Reallocate resources to news recap reel production, focusing on \"Result OUT\", \"Admit Card\", \"Answer Key\" updates.",
-        "why": "Quiz reels consistently show extremely low engagement across platforms (e.g., YouTube: 11 views; Instagram: 0 views)."
-      },
-      {
-        "action": "Standardize news recap hook lines, titles, and IG captions to include high-impact keywords like \"OUT\", \"LIVE\", \"Declared\", \"Admit Card\", \"Answer Key\", and direct calls-to-action like \"Download Now!\".",
-        "why": "Urgent, actionable news recaps drive high views (e.g., \"FRI Dehradun Answer Key\": 631 views, \"BPSC APO Admit Card\": 235 views)."
-      },
-      {
-        "action": "Explicitly review and refine Gemini-written Instagram captions and per-vertical hashtag sets for news recap reels, ensuring they mirror high-performing YouTube titles and tactics (e.g., emojis).",
-        "why": "Some news recaps get 0 views on Instagram despite similar videos performing on YouTube (e.g., \"Bombay High Court Clerk Result\": YT 74 views vs IG 0 views)."
-      },
-      {
-        "action": "Mandate vertical assignment for all new video publications, eliminating \"unknown\" categorization, particularly for news recap reels, to improve content analysis.",
-        "why": "Many high-performing news recaps are tagged \"unknown\". Accurate tagging will enhance future performance analysis and content strategy."
-      }
-    ]
   }
 ]
