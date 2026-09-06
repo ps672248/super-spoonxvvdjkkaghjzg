@@ -1,5 +1,58 @@
 [
   {
+    "runAt": "2026-09-06T17:19:24.253Z",
+    "windowDays": 28,
+    "youtube": {
+      "videos": 200,
+      "totalViews": 47188,
+      "byVertical": {
+        "unknown": {
+          "videos": 190,
+          "views": 43488
+        },
+        "govt": {
+          "videos": 4,
+          "views": 933
+        },
+        "college": {
+          "videos": 2,
+          "views": 387
+        },
+        "schooling": {
+          "videos": 4,
+          "views": 2380
+        }
+      }
+    },
+    "instagram": {
+      "reels": 50,
+      "totalViews": 817,
+      "totalReach": 649
+    },
+    "suggestions": [
+      {
+        "action": "Prioritize news recap reels covering exam results, admit cards, answer keys, cutoffs, and recruitment notifications, making up 80%+ of content.",
+        "why": "Videos on these topics consistently garnered the highest views, e.g., 'CIL MT Answer Key' (4248 views), 'CTET' (1534 views)."
+      },
+      {
+        "action": "Update YouTube title formulas and Instagram captions to explicitly use urgent language like 'OUT NOW!', 'LAST DATE!', 'DEADLINE NEARS' for time-sensitive news.",
+        "why": "Urgency drives views; 'CIL MT Answer Key' (4248 views) and 'CTET Sep Application Closing' (621 YT, 11 IG views) highlight this."
+      },
+      {
+        "action": "For news recap reels, especially those around answer keys or grievances, craft Gemini-written YouTube descriptions and IG captions with explicit calls for comments (e.g., 'Share your score!').",
+        "why": "The 'CIL MT Answer Key' video, prompting 'Raise Objections', achieved the highest comments (17), indicating strong engagement potential."
+      },
+      {
+        "action": "Increase the frequency and breadth of news recap reels specifically for the 'schooling' (CTET, CBSE) and 'govt' (IBPS, SSC) exam verticals.",
+        "why": "The 'schooling' (CTET, 1534 views) and 'govt' (IBPS PO, 837 views) verticals had top-performing videos when identified."
+      },
+      {
+        "action": "Reduce investment in generic meme-based hook lines and shift the hook-line pool towards direct, benefit-driven, or urgent language for news content.",
+        "why": "The 'Guddu Bhaiya' meme reel yielded moderate views (527 YT, 161 IG) but very low engagement (4 YT likes, 0 IG likes)."
+      }
+    ]
+  },
+  {
     "runAt": "2026-08-30T18:10:24.252Z",
     "windowDays": 28,
     "youtube": {
@@ -262,46 +315,6 @@
         "unknown": {
           "videos": 85,
           "views": 23524
-        },
-        "college": {
-          "videos": 2,
-          "views": 170
-        },
-        "entrance": {
-          "videos": 3,
-          "views": 36
-        },
-        "schooling": {
-          "videos": 2,
-          "views": 55
-        },
-        "govt": {
-          "videos": 1,
-          "views": 4
-        },
-        "engineering": {
-          "videos": 1,
-          "views": 0
-        }
-      }
-    },
-    "instagram": {
-      "reels": 50,
-      "totalViews": 5720,
-      "totalReach": 5229
-    },
-    "suggestions": []
-  },
-  {
-    "runAt": "2026-07-28T12:40:42.632Z",
-    "windowDays": 28,
-    "youtube": {
-      "videos": 94,
-      "totalViews": 23766,
-      "byVertical": {
-        "unknown": {
-          "videos": 85,
-          "views": 23501
         },
         "college": {
           "videos": 2,
