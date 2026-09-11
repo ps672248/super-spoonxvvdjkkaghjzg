@@ -1,6 +1,6 @@
 import admin from 'firebase-admin';
 import type { QuizCardProps } from './QuizCard';
-import type { NewsRecapProps } from './NewsRecap';
+import type { Beat, NewsRecapProps } from './NewsRecap';
 import { getFirebaseApp } from './firebaseAdmin';
 
 function db() {
@@ -321,7 +321,7 @@ export type ArticleVideoMeta = {
    * Gemini call when SARVAM_API_KEY is set, so renderNewsRecap.ts needs no
    * toHinglish() call of its own. Never shown on screen. */
   hinglishHeadline?: string;
-  hinglishBeats?: string[];
+  hinglishBeats?: (string | null)[];
 };
 
 type ArticleDoc = {
@@ -329,7 +329,7 @@ type ArticleDoc = {
   description: string;
   publishDate: string;
   category?: string;
-  videoBeats?: { label: string; text: string }[];
+  videoBeats?: Beat[];
   videoMeta?: ArticleVideoMeta;
 };
 
@@ -358,7 +358,7 @@ export async function fetchTodaysArticle(vertical: Vertical): Promise<ArticleDoc
 
 export function buildNewsRecapProps(vertical: Vertical, article: ArticleDoc): NewsRecapProps {
   const beats = article.videoBeats && article.videoBeats.length > 0
-    ? article.videoBeats.slice(0, 3)
+    ? article.videoBeats
     : [{ label: 'KEY POINT', text: article.description }];
   return {
     vertical,

@@ -32,7 +32,7 @@ import path from 'node:path';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { bundle } from '@remotion/bundler';
 import type { ArticleVideoMeta, Vertical } from './fetchContent';
-import { resolveBeats, type Beat, type NewsNarration } from './NewsRecap';
+import { resolveBeats, type Beat, type NewsNarration, type NewsRecapProps } from './NewsRecap';
 import type { TelegramCta } from './Brand';
 import { buildNewsMetadata, type UploadMetadata } from './metadata';
 import { hinglishEnabled, toHinglish } from './hinglish';
@@ -97,6 +97,7 @@ export type RenderOneRecapInput = {
   beats: Beat[];
   videoMeta?: ArticleVideoMeta;
   telegram?: TelegramCta;
+  format?: 'reel' | 'landscape';
   /** 'strategy' picks the Telegram CTA over the full-story one — see spokenCta below. */
   kind?: string;
 };
@@ -105,8 +106,8 @@ export type RenderOneRecapInput = {
  * on a hard failure; publish() itself swallows per-platform upload errors so
  * one platform failing doesn't block the other — see PublishResult. */
 export async function renderOneRecap(input: RenderOneRecapInput): Promise<PublishResult> {
-  const { vertical, headline, beats, videoMeta, telegram, kind } = input;
-  console.log(`[news-recap] Vertical: ${vertical}. PUBLISH=${process.env.PUBLISH === 'true'}`);
+  const { vertical, headline, beats, videoMeta, telegram, format = 'reel', kind } = input;
+  console.log(`[news-recap] Vertical: ${vertical}. Format: ${format}. PUBLISH=${process.env.PUBLISH === 'true'}`);
 
   mkdirSync(OUTPUT_DIR, { recursive: true });
   const today = new Date().toISOString().slice(0, 10);
@@ -130,19 +131,22 @@ export async function renderOneRecap(input: RenderOneRecapInput): Promise<Publis
   // piggybacked on the caller's video-content Gemini call (zero extra requests),
   // else one toHinglish() fallback call (per-line fallback to English).
   const resolved = resolveBeats(beats);
-  let spokenLines = [`${hookLine ? `${hookLine}. ` : ''}${headline}`, ...resolved.map((b) => b.text)];
-  if (hinglishEnabled()) {
-    if (videoMeta?.hinglishHeadline && videoMeta.hinglishBeats?.length === resolved.length) {
-      spokenLines = [videoMeta.hinglishHeadline, ...videoMeta.hinglishBeats];
-      console.log('[news-recap] Hinglish narration piggybacked from NEWS_RECAP_META_JSON.');
-    } else {
-      const h = await toHinglish(spokenLines);
-      spokenLines = spokenLines.map((line, i) => h[i] ?? line);
-      console.log(`[news-recap] Hinglish narration (fallback call): ${h.map((x) => !!x).join(',')}`);
-    }
-  }
-  const [nHeadline, ...nBeats] = await Promise.all(
-    spokenLines.map((line, i) => synthesizeNarration(line, i === 0 ? 'news-headline' : `news-beat-${i - 1}`)),
+  const nHeadline = await synthesizeNarration(`${hookLine ? `${hookLine}. ` : ''}${headline}`, 'news-headline');
+
+  const nBeats = await Promise.all(
+    resolved.map(async (beat, i) => {
+      if (beat.noAudio || !beat.text?.trim()) return null;
+      let line = beat.text;
+      if (hinglishEnabled()) {
+        if (videoMeta?.hinglishBeats?.[i]) {
+          line = videoMeta.hinglishBeats[i]!;
+        } else {
+          const h = await toHinglish([line]);
+          line = h[0] ?? line;
+        }
+      }
+      return synthesizeNarration(line, `news-beat-${i}`);
+    }),
   );
   const narration: NewsNarration = { headline: nHeadline, beats: nBeats };
   console.log(`[news-recap] Narration — headline:${!!nHeadline} beats:${nBeats.map((n) => !!n).join(',')}`);
@@ -153,35 +157,42 @@ export async function renderOneRecap(input: RenderOneRecapInput): Promise<Publis
   narration.cta = nCta;
   console.log(`[news-recap] Spoken CTA (${telegram && isStrategy ? 'telegram' : 'full-story'}): ${!!nCta}`);
 
-  console.log('[news-recap] Bundling Remotion project...');
+  const compositionId = format === 'landscape' ? 'NewsRecapLandscape' : 'NewsRecap';
+  console.log(`[news-recap] Bundling Remotion project for ${compositionId} (${format})...`);
   const bundleLocation = await bundle({ entryPoint: path.join(process.cwd(), 'src', 'index.ts') });
 
   const { hasNewsBgm, hasOutro } = audioFlags();
   console.log(`[news-recap] Audio available — newsBgm:${hasNewsBgm} outro:${hasOutro}`);
 
-  const newsProps = {
-    vertical, headline, beats, hookLine, narration,
-    hasBgm: hasNewsBgm, hasOutro,
+  const newsProps: NewsRecapProps = {
+    vertical,
+    headline,
+    beats: resolved,
+    hookLine,
+    narration,
+    format,
+    hasBgm: hasNewsBgm,
+    hasOutro,
     fullStoryLabel,
-    ...(telegram ? { telegram } : {}),
-    duckOutroSting: !!narration.cta,
+    telegram,
+    duckOutroSting: !!nCta,
   };
   const outFile = await renderComposition(
     bundleLocation,
-    'NewsRecap',
+    compositionId,
     newsProps,
-    path.join(OUTPUT_DIR, `${today}-${vertical}-news.mp4`),
+    path.join(OUTPUT_DIR, `${today}-${vertical}-${slugify(headline)}.mp4`),
   );
 
   // Cover/thumbnail: the headline card at 1.5s — entrance animation settled,
   // still inside the 2.5s headline section. Best-effort (undefined on failure).
   const coverPath = await renderCoverStill(
-    bundleLocation, 'NewsRecap', newsProps, 45, outFile.replace(/\.mp4$/, '-cover.jpg'),
+    bundleLocation, compositionId, newsProps, 45, outFile.replace(/\.mp4$/, '-cover.jpg'),
   );
 
-  const meta = buildNewsMetadata(vertical, headline, beats, videoMeta, articleUrl);
+  const meta = buildNewsMetadata(vertical, headline, resolved, videoMeta, articleUrl, format);
   writeFileSync(outFile.replace(/\.mp4$/, '.meta.json'), JSON.stringify(meta, null, 2));
-  const links = await publish(outFile, meta, coverPath);
+  const links = await publish(outFile, meta, coverPath, undefined, format === 'landscape' ? 'landscape' : 'reel');
   flagUploadFailureForCI(links);
 
   await notifyDiscord(vertical, meta, links, articleUrl);

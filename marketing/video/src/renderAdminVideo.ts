@@ -58,34 +58,40 @@ async function main() {
   const vertical = (article!.relatedVertical || 'engineering') as Vertical;
   const headline = article!.title;
   const hookLine = videoMeta.hookLine?.trim() || undefined;
+  const format = article!.videoFormat || 'reel';
+  const compositionId = format === 'landscape' ? 'NewsRecapLandscape' : 'NewsRecap';
 
   try {
     mkdirSync(OUTPUT_DIR, { recursive: true });
     const today = new Date().toISOString().slice(0, 10);
 
     const resolved = resolveBeats(beats);
-    let spokenLines = [`${hookLine ? `${hookLine}. ` : ''}${headline}`, ...resolved.map((b) => b.text)];
-    if (hinglishEnabled()) {
-      const h = await toHinglish(spokenLines);
-      spokenLines = spokenLines.map((line, i) => h[i] ?? line);
-      console.log(`[admin-video-render] Hinglish narration: ${h.map((x) => !!x).join(',')}`);
-    }
-    const [nHeadline, ...nBeats] = await Promise.all(
-      spokenLines.map((line, i) => synthesizeNarration(line, i === 0 ? 'admin-headline' : `admin-beat-${i - 1}`)),
+    const nHeadline = await synthesizeNarration(`${hookLine ? `${hookLine}. ` : ''}${headline}`, 'admin-headline');
+
+    const nBeats = await Promise.all(
+      resolved.map(async (beat, i) => {
+        if (beat.noAudio || !beat.text?.trim()) return null;
+        let line = beat.text;
+        if (hinglishEnabled()) {
+          const h = await toHinglish([line]);
+          line = h[0] ?? line;
+        }
+        return synthesizeNarration(line, `admin-beat-${i}`);
+      }),
     );
     const narration: NewsNarration = { headline: nHeadline, beats: nBeats };
 
-    console.log('[admin-video-render] Bundling Remotion project...');
+    console.log(`[admin-video-render] Bundling Remotion project for ${compositionId} (${format})...`);
     const bundleLocation = await bundle({ entryPoint: path.join(process.cwd(), 'src', 'index.ts') });
 
     const { hasNewsBgm, hasOutro } = audioFlags();
-    const newsProps = { vertical, headline, beats, hookLine, narration, hasBgm: hasNewsBgm, hasOutro };
+    const newsProps = { vertical, headline, beats: resolved, hookLine, narration, format, hasBgm: hasNewsBgm, hasOutro };
     const outFile = await renderComposition(
-      bundleLocation, 'NewsRecap', newsProps,
+      bundleLocation, compositionId, newsProps,
       path.join(OUTPUT_DIR, `${today}-${slug}-admin.mp4`),
     );
     const coverPath = await renderCoverStill(
-      bundleLocation, 'NewsRecap', newsProps, 45, outFile.replace(/\.mp4$/, '-cover.jpg'),
+      bundleLocation, compositionId, newsProps, 45, outFile.replace(/\.mp4$/, '-cover.jpg'),
     );
 
     const staged = await stageAdminVideo(slug, outFile, coverPath);

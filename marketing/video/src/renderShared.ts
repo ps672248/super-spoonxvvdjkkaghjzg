@@ -28,6 +28,7 @@ export async function renderComposition(bundleLocation: string, compositionId: s
     composition,
     serveUrl: bundleLocation,
     codec: 'h264',
+    colorSpace: 'bt709',
     outputLocation: outFile,
     inputProps,
     onProgress: ({ progress }) => {
@@ -55,7 +56,20 @@ export async function renderCoverStill(
   bundleLocation: string, compositionId: string, inputProps: Record<string, unknown>, frame: number, outFile: string,
 ): Promise<string | undefined> {
   try {
-    const composition = await selectComposition({ serveUrl: bundleLocation, id: compositionId, inputProps });
+    const thumbCompId =
+      compositionId === 'NewsRecapLandscape'
+        ? 'NewsThumbnailLandscape'
+        : compositionId === 'NewsRecap'
+        ? 'NewsThumbnailReel'
+        : compositionId;
+
+    let composition;
+    try {
+      composition = await selectComposition({ serveUrl: bundleLocation, id: thumbCompId, inputProps });
+    } catch {
+      composition = await selectComposition({ serveUrl: bundleLocation, id: compositionId, inputProps });
+    }
+
     await renderStill({
       composition,
       serveUrl: bundleLocation,
@@ -63,9 +77,9 @@ export async function renderCoverStill(
       frame: Math.min(frame, composition.durationInFrames - 1),
       inputProps,
       imageFormat: 'jpeg',
-      jpegQuality: 90, // YouTube caps thumbnails at 2MB — 1080×1920 @ q90 lands well under
+      jpegQuality: 92, // High clarity, well under YouTube 2MB cap
     });
-    console.log(`[video] Cover still rendered: ${outFile}`);
+    console.log(`[video] High-CTR Cover still rendered: ${outFile}`);
     return outFile;
   } catch (e) {
     console.warn('[video] Cover still render failed (continuing without a custom cover):', e);
@@ -73,7 +87,12 @@ export async function renderCoverStill(
   }
 }
 
-export type PublishResult = { youtubeUrl?: string; instagramUrl?: string };
+export type PublishResult = {
+  youtubeUrl?: string;
+  youtubeShortUrl?: string;
+  youtubeLongFormUrl?: string;
+  instagramUrl?: string;
+};
 
 /** Uploads to both platforms independently — one failing doesn't block the other,
  * and never throws (a bad upload shouldn't fail the whole render run). Returns
@@ -88,6 +107,7 @@ export async function publish(
    * (MEME_PUBLISH) and must not depend on the quiz/news reels' PUBLISH being on
    * — or off. Omit to keep the default behaviour. */
   gate: boolean = PUBLISH,
+  format: 'reel' | 'landscape' = 'reel',
 ): Promise<PublishResult> {
   if (!gate) {
     console.log(`[video] PUBLISH not set — leaving ${path.basename(filePath)} as a local/artifact file only.`);
@@ -98,8 +118,15 @@ export async function publish(
 
   try {
     const id = await uploadYouTubeShort(filePath, meta.youtube);
-    links.youtubeUrl = `https://youtube.com/shorts/${id}`;
-    console.log(`[video] ✓ YouTube Shorts: ${links.youtubeUrl}`);
+    if (format === 'landscape') {
+      links.youtubeUrl = `https://youtube.com/watch?v=${id}`;
+      links.youtubeLongFormUrl = links.youtubeUrl;
+      console.log(`[video] ✓ YouTube Long-Form Video: ${links.youtubeUrl}`);
+    } else {
+      links.youtubeUrl = `https://youtube.com/shorts/${id}`;
+      links.youtubeShortUrl = links.youtubeUrl;
+      console.log(`[video] ✓ YouTube Shorts: ${links.youtubeUrl}`);
+    }
     if (coverPath) {
       // Separate try/catch inside setYouTubeThumbnail — a thumbnail rejection
       // (e.g. channel not phone-verified for custom thumbnails) must not mark
@@ -110,12 +137,17 @@ export async function publish(
     console.error(`[video] ✗ YouTube upload failed for ${path.basename(filePath)}:`, e);
   }
 
-  try {
-    const url = await uploadInstagramReel(filePath, meta.instagram.caption, coverPath);
-    links.instagramUrl = url;
-    console.log(`[video] ✓ Instagram Reel published: ${url}`);
-  } catch (e) {
-    console.error(`[video] ✗ Instagram upload failed for ${path.basename(filePath)}:`, e);
+  // Instagram Reels algorithm is strictly 9:16 vertical
+  if (format === 'reel') {
+    try {
+      const url = await uploadInstagramReel(filePath, meta.instagram.caption, coverPath);
+      links.instagramUrl = url;
+      console.log(`[video] ✓ Instagram Reel published: ${url}`);
+    } catch (e) {
+      console.error(`[video] ✗ Instagram upload failed for ${path.basename(filePath)}:`, e);
+    }
+  } else {
+    console.log(`[video] Skipping Instagram upload for landscape (16:9) format.`);
   }
 
   return links;

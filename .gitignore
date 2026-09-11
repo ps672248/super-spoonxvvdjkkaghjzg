@@ -27,6 +27,7 @@ marketing/video/youtube_edit_token.json
 marketing/video/output/
 marketing/video/long_form/
 marketing/video/public/long_form_temp.mp4
+marketing/video/public/audio/narration/
 
 # Generated memes — one per day, regenerable from meme_history.json's prompt.
 # The scraped template blanks in public/memes/ ARE committed; these aren't.

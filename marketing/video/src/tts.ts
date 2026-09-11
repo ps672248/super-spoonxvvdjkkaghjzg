@@ -14,7 +14,8 @@
  * so Remotion's staticFile() can serve them during the render.
  */
 import path from 'node:path';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import crypto from 'node:crypto';
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { EdgeTTS } from 'node-edge-tts';
 import { parseFile } from 'music-metadata';
 
@@ -104,15 +105,33 @@ export async function synthesizeNarration(text: string, name: string): Promise<N
   mkdirSync(NARRATION_DIR, { recursive: true });
 
   const sarvamKey = process.env.SARVAM_API_KEY;
+  const voiceKey = sarvamKey ? `sarvam_${process.env.SARVAM_VOICE || 'default'}` : DEFAULT_VOICE;
+  const textHash = crypto.createHash('sha256').update(`${voiceKey}_${cleaned}`).digest('hex').slice(0, 16);
+  const cachedName = `${name}_${textHash}`;
+
+  // Check if already synthesized in previous run
+  const ext = sarvamKey ? 'wav' : 'mp3';
+  const cachedFile = path.join(NARRATION_DIR, `${cachedName}.${ext}`);
+  if (existsSync(cachedFile)) {
+    try {
+      const durationSec = (await parseFile(cachedFile)).format.duration ?? 0;
+      if (durationSec > 0) {
+        return { src: `${NARRATION_SUBDIR}/${cachedName}.${ext}`, durationSec };
+      }
+    } catch {
+      // Re-synthesize if corrupt
+    }
+  }
+
   if (sarvamKey) {
     try {
-      return await synthesizeWithSarvam(cleaned, name, sarvamKey);
+      return await synthesizeWithSarvam(cleaned, cachedName, sarvamKey);
     } catch (e) {
       console.warn(`[tts] Sarvam narration "${name}" failed — falling back to Edge TTS: ${(e as Error).message}`);
     }
   }
   try {
-    return await synthesizeWithEdge(cleaned, name);
+    return await synthesizeWithEdge(cleaned, cachedName);
   } catch (e) {
     console.warn(`[tts] Narration "${name}" failed — continuing silent: ${(e as Error).message}`);
     return null;

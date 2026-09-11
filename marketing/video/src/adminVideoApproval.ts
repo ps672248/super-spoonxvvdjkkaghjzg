@@ -21,9 +21,12 @@ import { getFirebaseApp } from './firebaseAdmin';
 const CLOUDINARY_FOLDER = 'aspirant-arcade/blog-video-approvals';
 const ARTICLES_COLLECTION = 'articles';
 
-export type VideoStatus = 'script_ready' | 'rendering' | 'render_failed' | 'video_ready' | 'publishing' | 'publish_failed' | 'published' | 'rejected';
+import type { Beat } from './NewsRecap';
 
-export type VideoBeat = { label: string; text: string };
+export type VideoStatus = 'script_ready' | 'rendering' | 'render_failed' | 'video_ready' | 'publishing' | 'publish_failed' | 'published' | 'rejected';
+export type VideoFormat = 'reel' | 'landscape';
+
+export type VideoBeat = Beat;
 export type VideoMeta = {
   hookLine?: string;
   youtubeTitle: string;
@@ -31,6 +34,8 @@ export type VideoMeta = {
   youtubeTags: string[];
   instagramCaption: string;
   instagramHashtags: string[];
+  hinglishHeadline?: string;
+  hinglishBeats?: (string | null)[];
 };
 export type VideoStaged = { videoUrl: string; videoPublicId: string; coverUrl?: string; coverPublicId?: string };
 
@@ -38,6 +43,7 @@ export type ArticleDoc = {
   title: string;
   relatedVertical?: 'engineering' | 'entrance' | 'govt' | 'college' | 'schooling';
   videoStatus?: VideoStatus;
+  videoFormat?: VideoFormat;
   videoBeats?: VideoBeat[];
   videoMeta?: VideoMeta;
   videoStaged?: VideoStaged;

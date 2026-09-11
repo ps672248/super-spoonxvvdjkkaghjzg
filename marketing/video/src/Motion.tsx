@@ -10,9 +10,10 @@ import { GOLD } from './theme';
  */
 
 /** Two slow-drifting radial gradient blobs + a faint parallax grid behind the content. */
-export const AnimatedBackground: React.FC = () => {
+export const AnimatedBackground: React.FC<{ format?: 'reel' | 'landscape' }> = ({ format }) => {
   const frame = useCurrentFrame();
-  const { durationInFrames } = useVideoConfig();
+  const { durationInFrames, width, height } = useVideoConfig();
+  const isLandscape = format === 'landscape' || width > height;
   const t = frame / Math.max(1, durationInFrames);
 
   const x1 = interpolate(t, [0, 1], [-140, 60]);
@@ -22,36 +23,44 @@ export const AnimatedBackground: React.FC = () => {
   const gridShift = interpolate(t, [0, 1], [0, 90]);
 
   return (
-    <AbsoluteFill style={{ overflow: 'hidden' }}>
+    <AbsoluteFill
+      style={{
+        overflow: 'hidden',
+        background: '#0A0E17',
+      }}
+    >
+      {/* Top Left Gold / Amber Ambient Radial Glow */}
       <div
         style={{
           position: 'absolute',
-          width: 1100,
-          height: 1100,
-          left: -300 + x1,
-          top: -250 + y1,
+          width: isLandscape ? 1400 : 1100,
+          height: isLandscape ? 1400 : 1100,
+          left: isLandscape ? -350 + x1 : -300 + x1,
+          top: isLandscape ? -300 + y1 : -250 + y1,
           borderRadius: '50%',
           background: 'radial-gradient(circle, rgba(253,192,3,0.10) 0%, rgba(253,192,3,0) 62%)',
         }}
       />
+      {/* Bottom Right Indigo / Cyber Glow */}
       <div
         style={{
           position: 'absolute',
-          width: 1300,
-          height: 1300,
-          right: -450 + x2,
-          bottom: -400 + y2,
+          width: isLandscape ? 1500 : 1300,
+          height: isLandscape ? 1500 : 1300,
+          right: isLandscape ? -450 + x2 : -450 + x2,
+          bottom: isLandscape ? -400 + y2 : -400 + y2,
           borderRadius: '50%',
           background: 'radial-gradient(circle, rgba(99,102,241,0.12) 0%, rgba(99,102,241,0) 60%)',
         }}
       />
+      {/* Parallax Grid */}
       <div
         style={{
           position: 'absolute',
           inset: -120,
           backgroundImage:
             'linear-gradient(rgba(255,255,255,0.028) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.028) 1px, transparent 1px)',
-          backgroundSize: '90px 90px',
+          backgroundSize: isLandscape ? '100px 100px' : '90px 90px',
           transform: `translate(${gridShift * 0.4}px, ${gridShift}px)`,
         }}
       />

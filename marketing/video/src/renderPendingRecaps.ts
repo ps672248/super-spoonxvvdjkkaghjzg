@@ -53,8 +53,13 @@ const CATEGORY_TO_VERTICAL: Record<string, Vertical> = {
 interface PendingArticleDoc {
   title: string;
   category?: string;
+  videoFormat?: 'reel' | 'landscape' | 'both';
   videoBeats?: Beat[];
   videoMeta?: ArticleVideoMeta;
+  reelBeats?: Beat[];
+  reelMeta?: ArticleVideoMeta;
+  landscapeBeats?: Beat[];
+  landscapeMeta?: ArticleVideoMeta;
   videoTelegram?: TelegramCta;
   videoKind?: string;
 }
@@ -70,7 +75,7 @@ async function main() {
 
   const candidates = snap.docs
     .map((d) => ({ id: d.id, ...(d.data() as PendingArticleDoc) }))
-    .filter((a) => CATEGORY_TO_VERTICAL[a.category || ''] && a.videoBeats && a.videoBeats.length > 0);
+    .filter((a) => CATEGORY_TO_VERTICAL[a.category || ''] && ((a.videoBeats && a.videoBeats.length > 0) || (a.reelBeats && a.reelBeats.length > 0) || (a.landscapeBeats && a.landscapeBeats.length > 0)));
 
   console.log(`[render-pending] ${snap.size} pending doc(s), ${candidates.length} renderable.`);
   if (candidates.length === 0) {
@@ -81,21 +86,71 @@ async function main() {
   let rendered = 0;
   for (const article of candidates) {
     const vertical = CATEGORY_TO_VERTICAL[article.category || ''];
-    console.log(`[render-pending] Rendering: articles/${article.id} ("${article.title.slice(0, 60)}")`);
+    const format = article.videoFormat || 'both';
+    console.log(`[render-pending] Rendering: articles/${article.id} ("${article.title.slice(0, 60)}") [format: ${format}]`);
 
     try {
-      const links = await renderOneRecap({
-        vertical,
-        headline: article.title,
-        beats: article.videoBeats!,
-        videoMeta: article.videoMeta,
-        telegram: article.videoTelegram,
-        kind: article.videoKind,
-      });
-
       const videoLinks: Record<string, string> = {};
-      if (links.youtubeUrl) videoLinks.youtube = links.youtubeUrl;
-      if (links.instagramUrl) videoLinks.instagram = links.instagramUrl;
+
+      if (format === 'both') {
+        const reelBeats = article.reelBeats || article.videoBeats!;
+        const reelMeta = article.reelMeta || article.videoMeta;
+        const landscapeBeats = article.landscapeBeats || article.videoBeats!;
+        const landscapeMeta = article.landscapeMeta || article.videoMeta;
+
+        // 1. Render 9:16 Reel (Fast-Paced, 30-45s) for YouTube Shorts + Instagram Reels
+        console.log(`  [render-pending] (1/2) Rendering 9:16 Reel (${reelBeats.length} beats)...`);
+        const reelLinks = await renderOneRecap({
+          vertical,
+          headline: article.title,
+          beats: reelBeats,
+          videoMeta: reelMeta,
+          telegram: article.videoTelegram,
+          format: 'reel',
+          kind: article.videoKind,
+        });
+        if (reelLinks.youtubeUrl) {
+          videoLinks.youtube = reelLinks.youtubeUrl;
+          videoLinks.youtubeShort = reelLinks.youtubeUrl;
+        }
+        if (reelLinks.instagramUrl) videoLinks.instagram = reelLinks.instagramUrl;
+
+        // 2. Render 16:9 Landscape (Detailed Long-Form) for YouTube Main Channel
+        console.log(`  [render-pending] (2/2) Rendering 16:9 Landscape (${landscapeBeats.length} beats)...`);
+        const landscapeLinks = await renderOneRecap({
+          vertical,
+          headline: article.title,
+          beats: landscapeBeats,
+          videoMeta: landscapeMeta,
+          telegram: article.videoTelegram,
+          format: 'landscape',
+          kind: article.videoKind,
+        });
+        if (landscapeLinks.youtubeUrl) {
+          videoLinks.youtubeLongForm = landscapeLinks.youtubeUrl;
+          if (!videoLinks.youtube) videoLinks.youtube = landscapeLinks.youtubeUrl;
+        }
+      } else {
+        // Render single requested format
+        const targetBeats = (format === 'landscape' ? article.landscapeBeats : article.reelBeats) || article.videoBeats!;
+        const targetMeta = (format === 'landscape' ? article.landscapeMeta : article.reelMeta) || article.videoMeta;
+
+        const links = await renderOneRecap({
+          vertical,
+          headline: article.title,
+          beats: targetBeats,
+          videoMeta: targetMeta,
+          telegram: article.videoTelegram,
+          format,
+          kind: article.videoKind,
+        });
+        if (links.youtubeUrl) {
+          videoLinks.youtube = links.youtubeUrl;
+          if (format === 'landscape') videoLinks.youtubeLongForm = links.youtubeUrl;
+          else videoLinks.youtubeShort = links.youtubeUrl;
+        }
+        if (links.instagramUrl) videoLinks.instagram = links.instagramUrl;
+      }
 
       await db.collection(ARTICLES_COLLECTION).doc(article.id).update({
         videoStatus: 'video_ready',

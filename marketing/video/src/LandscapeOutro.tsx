@@ -4,6 +4,7 @@ import { Audio } from '@remotion/media';
 import { loadFont } from '@remotion/google-fonts/Inter';
 import { INK, GOLD, WHITE, MUTED } from './theme';
 import { OUTRO_FILE } from './audio';
+import { AnimatedBackground } from './Motion';
 
 const { fontFamily } = loadFont('normal', { weights: ['400', '700', '800'], subsets: ['latin'] });
 
@@ -23,6 +24,7 @@ export const LandscapeOutro: React.FC<{ hasOutro?: boolean }> = ({ hasOutro = tr
 
   return (
     <AbsoluteFill style={{ background: INK, alignItems: 'center', justifyContent: 'center', fontFamily }}>
+      <AnimatedBackground format="landscape" />
       {hasOutro && <Audio src={staticFile(OUTRO_FILE)} volume={0.8} />}
 
       <div style={{

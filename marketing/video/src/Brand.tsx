@@ -11,27 +11,29 @@ export { fontFamily };
 /** Top-left wordmark + top-right vertical tag pill. Stays on screen the whole video. */
 export const Header: React.FC<{ tag: string }> = ({ tag }) => {
   const frame = useCurrentFrame();
+  const { width, height } = useVideoConfig();
+  const isLandscape = width > height;
   const opacity = interpolate(frame, [0, 15], [0, 1], { extrapolateRight: 'clamp' });
 
   return (
-    <AbsoluteFill style={{ padding: '64px 56px', opacity }}>
+    <AbsoluteFill style={{ padding: isLandscape ? '44px 80px' : '64px 56px', opacity, pointerEvents: 'none' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <div style={{ width: 20, height: 20, borderRadius: 10, background: GOLD }} />
-          <div style={{ fontFamily, fontSize: 34, fontWeight: 800, color: WHITE, letterSpacing: 0.5 }}>
+          <div style={{ width: isLandscape ? 16 : 20, height: isLandscape ? 16 : 20, borderRadius: 10, background: GOLD }} />
+          <div style={{ fontFamily, fontSize: isLandscape ? 28 : 34, fontWeight: 800, color: WHITE, letterSpacing: 0.5 }}>
             Aspirant Arcade
           </div>
         </div>
         <div
           style={{
             fontFamily,
-            fontSize: 22,
+            fontSize: isLandscape ? 18 : 22,
             fontWeight: 700,
             color: GOLD,
             letterSpacing: 2,
             border: `2px solid ${BORDER}`,
             borderRadius: 999,
-            padding: '10px 22px',
+            padding: isLandscape ? '8px 18px' : '10px 22px',
           }}
         >
           {tag.toUpperCase()}

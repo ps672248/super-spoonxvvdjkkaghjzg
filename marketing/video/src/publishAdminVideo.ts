@@ -73,7 +73,7 @@ async function main() {
 
     const vertical = (article.relatedVertical || 'engineering') as Vertical;
     const articleUrl = `https://www.aspirant-arcade.xyz/blog/${slug}`;
-    const meta = buildNewsMetadata(vertical, article.title, article.videoBeats ?? [], article.videoMeta, articleUrl);
+    const meta = buildNewsMetadata(vertical, article.title, article.videoBeats ?? [], article.videoMeta, articleUrl, article.videoFormat || 'reel');
     writeFileSync(path.join(OUTPUT_DIR, `${slug}-admin.meta.json`), JSON.stringify(meta, null, 2));
 
     // `true` forces the gate: the admin already approved in the panel, so the

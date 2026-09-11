@@ -161,13 +161,31 @@ export function buildNewsMetadata(
   beats: Beat[],
   geminiMeta?: ArticleVideoMeta,
   blogUrl?: string,
+  format: 'reel' | 'landscape' = 'reel',
 ): UploadMetadata {
+  const isLandscape = format === 'landscape';
+
+  // Compute chapter timestamps for landscape long-form
+  let chaptersText = '';
+  if (isLandscape && beats.length > 0) {
+    let currentSec = 3; // headline duration
+    const lines = ['📌 Chapters:', '0:00 Introduction & Headline'];
+    beats.forEach((b) => {
+      const min = Math.floor(currentSec / 60);
+      const sec = Math.floor(currentSec % 60).toString().padStart(2, '0');
+      lines.push(`${min}:${sec} ${b.label}: ${b.text.slice(0, 30)}`);
+      currentSec += 4; // average beat duration
+    });
+    chaptersText = `\n\n${lines.join('\n')}`;
+  }
+
   if (geminiMeta?.youtubeTitle && geminiMeta?.instagramCaption) {
     const igHashtags = (geminiMeta.instagramHashtags?.length ? geminiMeta.instagramHashtags : hashtags(vertical)).slice(0, 5);
+    const ytDesc = `${geminiMeta.youtubeDescription || headline}${chaptersText}\n\n${linkBlock(blogUrl)}\n\n${FORMAT_MARKER.news}${isLandscape ? '' : '\n#Shorts'}`;
     return {
       youtube: {
         title: truncate(geminiMeta.youtubeTitle, 95),
-        description: `${geminiMeta.youtubeDescription || headline}\n\n${linkBlock(blogUrl)}\n\n${FORMAT_MARKER.news}\n#Shorts`,
+        description: ytDesc,
         tags: geminiMeta.youtubeTags?.length ? geminiMeta.youtubeTags : [...VERTICAL_KEYWORDS[vertical], ...BRAND_KEYWORDS],
       },
       instagram: { caption: `${geminiMeta.instagramCaption}\n\n${linkBlock(blogUrl, 'instagram')}\n\n${igHashtags.join(' ')} ${FORMAT_MARKER.news}` },
@@ -181,16 +199,17 @@ export function buildNewsMetadata(
     headline,
     '',
     beatLines,
+    chaptersText,
     '',
     linkBlock(blogUrl),
     '',
     `${tags.join(' ')} ${FORMAT_MARKER.news}`,
-  ].join('\n');
+  ].filter(Boolean).join('\n');
 
   return {
     youtube: {
       title,
-      description: `${description}\n#Shorts`,
+      description: `${description}${isLandscape ? '' : '\n#Shorts'}`,
       tags: [...VERTICAL_KEYWORDS[vertical], ...BRAND_KEYWORDS, 'exam news', 'recruitment notification'],
     },
     instagram: { caption: `${title}\n\n${beatLines}\n\n${linkBlock(blogUrl, 'instagram')}\n\n${tags.join(' ')} ${FORMAT_MARKER.news}` },

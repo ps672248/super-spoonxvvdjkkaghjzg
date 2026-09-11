@@ -41,10 +41,9 @@ export const LongFormEdit: React.FC<LongFormEditProps> = ({
     <AbsoluteFill style={{ backgroundColor: '#000000' }}>
       {/* 1. Main Video Sequence (Trimmed) */}
       <Sequence from={0} durationInFrames={trimmedFrames}>
-        <Video 
-          src={staticFile(videoFilename)} 
-          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-        />
+        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#0A0E17', color: '#FDC003', fontFamily, fontSize: 28, fontWeight: 700 }}>
+          📺 Long Form Video Placeholder ({videoFilename})
+        </div>
         
         {/* 2. Watermark masking layer */}
         <div style={{
