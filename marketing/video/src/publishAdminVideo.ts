@@ -48,8 +48,12 @@ async function main() {
 
   if (article.videoStatus === 'rejected') {
     console.log(`[admin-video-publish] "${slug}" was rejected. Cleaning up, publishing nothing.`);
-    await cleanupStagedVideo(article.videoStaged);
-    await updateArticleVideo(slug, { videoStaged: { videoUrl: '', videoPublicId: '' } });
+    if (article.videoStaged) await cleanupStagedVideo(article.videoStaged);
+    if (article.videoStagedLandscape) await cleanupStagedVideo(article.videoStagedLandscape);
+    await updateArticleVideo(slug, {
+      videoStaged: { videoUrl: '', videoPublicId: '' },
+      videoStagedLandscape: { videoUrl: '', videoPublicId: '' },
+    });
     return; // exit 0 — a rejection is the system working, not a failure
   }
 
@@ -57,57 +61,81 @@ async function main() {
     console.warn(`[admin-video-publish] "${slug}" is not in 'publishing' state (actual: ${article.videoStatus ?? 'none'}) — nothing to do.`);
     return;
   }
-  if (!article.videoStaged?.videoUrl) {
+  if (!article.videoStaged?.videoUrl && !article.videoStagedLandscape?.videoUrl) {
     console.error(`[admin-video-publish] "${slug}" is 'publishing' but has no staged video — cannot proceed.`);
     await updateArticleVideo(slug, { videoStatus: 'publish_failed', videoError: 'No staged video found.' });
     process.exit(1);
   }
 
-  console.log(`[admin-video-publish] "${slug}" approved — pulling the staged copy back down.`);
+  console.log(`[admin-video-publish] "${slug}" approved — pulling staged copies back down.`);
   mkdirSync(OUTPUT_DIR, { recursive: true });
   try {
-    const videoPath = await download(article.videoStaged.videoUrl, path.join(OUTPUT_DIR, `${slug}-admin.mp4`));
-    const coverPath = article.videoStaged.coverUrl
-      ? await download(article.videoStaged.coverUrl, path.join(OUTPUT_DIR, `${slug}-admin-cover.jpg`)).catch(() => undefined)
-      : undefined;
-
     const vertical = (article.relatedVertical || 'engineering') as Vertical;
     const articleUrl = `https://www.aspirant-arcade.xyz/blog/${slug}`;
-    const meta = buildNewsMetadata(vertical, article.title, article.videoBeats ?? [], article.videoMeta, articleUrl, article.videoFormat || 'reel');
-    writeFileSync(path.join(OUTPUT_DIR, `${slug}-admin.meta.json`), JSON.stringify(meta, null, 2));
+    const videoLinks: Record<string, string> = { ...(article.videoLinks || {}) };
 
-    // `true` forces the gate: the admin already approved in the panel, so the
-    // shared PUBLISH env (used by the daily cron paths) has no say here.
-    const links = await publish(videoPath, meta, coverPath, true);
+    // 1. Publish 9:16 Reel (Shorts + Instagram) if staged
+    if (article.videoStaged?.videoUrl) {
+      console.log(`[admin-video-publish] Publishing 9:16 Reel...`);
+      const reelPath = await download(article.videoStaged.videoUrl, path.join(OUTPUT_DIR, `${slug}-reel-admin.mp4`));
+      const reelCoverPath = article.videoStaged.coverUrl
+        ? await download(article.videoStaged.coverUrl, path.join(OUTPUT_DIR, `${slug}-reel-admin-cover.jpg`)).catch(() => undefined)
+        : undefined;
 
-    // Cleanup runs regardless — if the upload failed, the local file is the
-    // recovery copy, and leaving the staged asset up doesn't help anyone.
-    await cleanupStagedVideo(article.videoStaged);
+      const reelBeats = article.reelBeats || article.videoBeats || [];
+      const reelMeta = article.reelMeta || article.videoMeta;
+      const meta = buildNewsMetadata(vertical, article.title, reelBeats, reelMeta, articleUrl, 'reel');
+      writeFileSync(path.join(OUTPUT_DIR, `${slug}-reel-admin.meta.json`), JSON.stringify(meta, null, 2));
 
-    if (!links.youtubeUrl && !links.instagramUrl) {
+      const links = await publish(reelPath, meta, reelCoverPath, true);
+      if (links.youtubeUrl) {
+        videoLinks.youtube = links.youtubeUrl;
+        videoLinks.youtubeShort = links.youtubeUrl;
+      }
+      if (links.instagramUrl) videoLinks.instagram = links.instagramUrl;
+      await cleanupStagedVideo(article.videoStaged);
+    }
+
+    // 2. Publish 16:9 Long-Form (YouTube Main) if staged
+    if (article.videoStagedLandscape?.videoUrl) {
+      console.log(`[admin-video-publish] Publishing 16:9 Long-Form...`);
+      const landscapePath = await download(article.videoStagedLandscape.videoUrl, path.join(OUTPUT_DIR, `${slug}-landscape-admin.mp4`));
+      const landscapeCoverPath = article.videoStagedLandscape.coverUrl
+        ? await download(article.videoStagedLandscape.coverUrl, path.join(OUTPUT_DIR, `${slug}-landscape-admin-cover.jpg`)).catch(() => undefined)
+        : undefined;
+
+      const landscapeBeats = article.landscapeBeats || article.videoBeats || [];
+      const landscapeMeta = article.landscapeMeta || article.videoMeta;
+      const meta = buildNewsMetadata(vertical, article.title, landscapeBeats, landscapeMeta, articleUrl, 'landscape');
+      writeFileSync(path.join(OUTPUT_DIR, `${slug}-landscape-admin.meta.json`), JSON.stringify(meta, null, 2));
+
+      const links = await publish(landscapePath, meta, landscapeCoverPath, true);
+      if (links.youtubeUrl) {
+        videoLinks.youtubeLongForm = links.youtubeUrl;
+        if (!videoLinks.youtube) videoLinks.youtube = links.youtubeUrl;
+      }
+      await cleanupStagedVideo(article.videoStagedLandscape);
+    }
+
+    if (Object.keys(videoLinks).length === 0) {
       await updateArticleVideo(slug, {
         videoStatus: 'publish_failed',
         videoError: 'Both YouTube and Instagram upload failed — see workflow logs.',
         videoStaged: { videoUrl: '', videoPublicId: '' },
+        videoStagedLandscape: { videoUrl: '', videoPublicId: '' },
       });
       console.error('[admin-video-publish] Approved but nothing published — check the upload errors above.');
       process.exit(1);
     }
 
-    // publish()'s PublishResult uses youtubeUrl/instagramUrl; the Article
-    // schema's videoLinks field (also read/edited in the admin ArticleForm)
-    // uses youtube/instagram — remap, don't pass links through as-is.
-    const videoLinks: Record<string, string> = {};
-    if (links.youtubeUrl) videoLinks.youtube = links.youtubeUrl;
-    if (links.instagramUrl) videoLinks.instagram = links.instagramUrl;
-
     await updateArticleVideo(slug, {
       videoStatus: 'published',
       videoLinks,
       videoStaged: { videoUrl: '', videoPublicId: '' },
+      videoStagedLandscape: { videoUrl: '', videoPublicId: '' },
       videoError: '',
     });
-    console.log(`[admin-video-publish] Done. ${links.youtubeUrl ? `YouTube: ${links.youtubeUrl} ` : ''}${links.instagramUrl ? `Instagram: ${links.instagramUrl}` : ''}`);
+    console.log(`[admin-video-publish] Done. Links:`, videoLinks);
   } catch (e) {
     await updateArticleVideo(slug, { videoStatus: 'publish_failed', videoError: (e as Error).message.slice(0, 500) });
     // Staged copy deliberately left in place on an unexpected failure (as

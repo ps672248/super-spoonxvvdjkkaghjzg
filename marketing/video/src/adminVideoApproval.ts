@@ -24,7 +24,7 @@ const ARTICLES_COLLECTION = 'articles';
 import type { Beat } from './NewsRecap';
 
 export type VideoStatus = 'script_ready' | 'rendering' | 'render_failed' | 'video_ready' | 'publishing' | 'publish_failed' | 'published' | 'rejected';
-export type VideoFormat = 'reel' | 'landscape';
+export type VideoFormat = 'reel' | 'landscape' | 'both';
 
 export type VideoBeat = Beat;
 export type VideoMeta = {
@@ -46,7 +46,13 @@ export type ArticleDoc = {
   videoFormat?: VideoFormat;
   videoBeats?: VideoBeat[];
   videoMeta?: VideoMeta;
+  reelBeats?: VideoBeat[];
+  reelMeta?: VideoMeta;
+  landscapeBeats?: VideoBeat[];
+  landscapeMeta?: VideoMeta;
   videoStaged?: VideoStaged;
+  videoStagedLandscape?: VideoStaged;
+  videoLinks?: Record<string, string>;
 };
 
 function requireEnv(name: string): string {
@@ -119,4 +125,48 @@ export async function stageAdminVideo(slug: string, videoPath: string, coverPath
   };
   await updateArticleVideo(slug, { videoStatus: 'video_ready', videoStaged: staged, videoError: '' });
   return staged;
+}
+
+export async function stageAdminDualVideos(
+  slug: string,
+  opts: {
+    reel?: { videoPath: string; coverPath?: string };
+    landscape?: { videoPath: string; coverPath?: string };
+  },
+): Promise<{ videoStaged?: VideoStaged; videoStagedLandscape?: VideoStaged }> {
+  configureCloudinary();
+  console.log('[admin-video] Staging video(s) to Cloudinary...');
+
+  let videoStaged: VideoStaged | undefined;
+  let videoStagedLandscape: VideoStaged | undefined;
+
+  if (opts.reel?.videoPath) {
+    const video = await upload(opts.reel.videoPath, 'video');
+    const cover = opts.reel.coverPath ? await upload(opts.reel.coverPath, 'image').catch(() => undefined) : undefined;
+    videoStaged = {
+      videoUrl: video.url,
+      videoPublicId: video.publicId,
+      ...(cover ? { coverUrl: cover.url, coverPublicId: cover.publicId } : {}),
+    };
+  }
+
+  if (opts.landscape?.videoPath) {
+    const video = await upload(opts.landscape.videoPath, 'video');
+    const cover = opts.landscape.coverPath ? await upload(opts.landscape.coverPath, 'image').catch(() => undefined) : undefined;
+    videoStagedLandscape = {
+      videoUrl: video.url,
+      videoPublicId: video.publicId,
+      ...(cover ? { coverUrl: cover.url, coverPublicId: cover.publicId } : {}),
+    };
+  }
+
+  const patch: Record<string, unknown> = {
+    videoStatus: 'video_ready',
+    videoError: '',
+  };
+  if (videoStaged) patch.videoStaged = videoStaged;
+  if (videoStagedLandscape) patch.videoStagedLandscape = videoStagedLandscape;
+
+  await updateArticleVideo(slug, patch);
+  return { videoStaged, videoStagedLandscape };
 }
