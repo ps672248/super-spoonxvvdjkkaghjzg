@@ -126,12 +126,14 @@ async function main() {
     const hasReelScript = !!(article!.reelBeats?.length || article!.videoBeats?.length);
     const hasLandscapeScript = !!(article!.landscapeBeats?.length || article!.videoBeats?.length);
 
-    const shouldRenderReel = (format === 'both' || format === 'reel') && hasReelScript;
-    const shouldRenderLandscape = (format === 'both' || format === 'landscape') && hasLandscapeScript;
+    const shouldRenderReel = hasReelScript && (format !== 'landscape' || !hasLandscapeScript);
+    const shouldRenderLandscape = hasLandscapeScript && (format === 'both' || format === 'landscape' || !!article!.landscapeBeats?.length || !hasReelScript);
 
     if (!shouldRenderReel && !shouldRenderLandscape) {
       await fail(slug, 'No renderable video script found on article — please generate scripts first.');
     }
+
+    const totalRenders = (shouldRenderReel ? 1 : 0) + (shouldRenderLandscape ? 1 : 0);
 
     // 1. Synthesize all narration BEFORE bundling so Webpack copies all audio into the bundle
     let reelData: { resolved: Beat[]; narration: NewsNarration; hookLine?: string } | undefined;
@@ -160,12 +162,12 @@ async function main() {
     let landscapeOut: { videoPath: string; coverPath?: string } | undefined;
 
     if (shouldRenderReel && reelData) {
-      console.log(`[admin-video-render] (1/${shouldRenderLandscape ? 2 : 1}) Rendering 9:16 Reel...`);
+      console.log(`[admin-video-render] (1/${totalRenders}) Rendering 9:16 Reel...`);
       reelOut = await renderPreparedFormat(bundleLocation, slug, today, vertical, headline, 'reel', reelData.resolved, reelData.narration, reelData.hookLine);
     }
 
     if (shouldRenderLandscape && landscapeData) {
-      console.log(`[admin-video-render] (${shouldRenderReel ? 2 : 1}/${shouldRenderReel ? 2 : 1}) Rendering 16:9 Landscape...`);
+      console.log(`[admin-video-render] (${shouldRenderReel ? 2 : 1}/${totalRenders}) Rendering 16:9 Landscape...`);
       landscapeOut = await renderPreparedFormat(bundleLocation, slug, today, vertical, headline, 'landscape', landscapeData.resolved, landscapeData.narration, landscapeData.hookLine);
     }
 
