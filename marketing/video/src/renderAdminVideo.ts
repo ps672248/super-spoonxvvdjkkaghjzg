@@ -23,7 +23,7 @@ import path from 'node:path';
 import { mkdirSync } from 'node:fs';
 import { bundle } from '@remotion/bundler';
 import type { Vertical } from './fetchContent';
-import { resolveBeats, type NewsNarration } from './NewsRecap';
+import { resolveBeats, type Beat, type NewsNarration } from './NewsRecap';
 import { hinglishEnabled, toHinglish } from './hinglish';
 import { synthesizeNarration } from './tts';
 import { audioFlags, OUTPUT_DIR, renderComposition, renderCoverStill } from './renderShared';
@@ -52,17 +52,12 @@ function normalizeBeatRows(beats?: VideoBeat[]): VideoBeat[] | undefined {
   });
 }
 
-async function renderSingleFormat(
-  bundleLocation: string,
-  slug: string,
-  today: string,
-  vertical: Vertical,
+async function prepareNarration(
   headline: string,
   format: 'reel' | 'landscape',
   beats: VideoBeat[],
   videoMeta?: VideoMeta,
-): Promise<{ videoPath: string; coverPath?: string }> {
-  const compositionId = format === 'landscape' ? 'NewsRecapLandscape' : 'NewsRecap';
+): Promise<{ resolved: Beat[]; narration: NewsNarration; hookLine?: string }> {
   const hookLine = videoMeta?.hookLine?.trim() || undefined;
   const resolved = resolveBeats(normalizeBeatRows(beats) || []);
 
@@ -80,9 +75,24 @@ async function renderSingleFormat(
     }),
   );
   const narration: NewsNarration = { headline: nHeadline, beats: nBeats };
+  return { resolved, narration, hookLine };
+}
 
+async function renderPreparedFormat(
+  bundleLocation: string,
+  slug: string,
+  today: string,
+  vertical: Vertical,
+  headline: string,
+  format: 'reel' | 'landscape',
+  resolved: Beat[],
+  narration: NewsNarration,
+  hookLine?: string,
+): Promise<{ videoPath: string; coverPath?: string }> {
+  const compositionId = format === 'landscape' ? 'NewsRecapLandscape' : 'NewsRecap';
   const { hasNewsBgm, hasOutro } = audioFlags();
   const newsProps = { vertical, headline, beats: resolved, hookLine, narration, format, hasBgm: hasNewsBgm, hasOutro };
+
   const outFile = await renderComposition(
     bundleLocation, compositionId, newsProps,
     path.join(OUTPUT_DIR, `${today}-${slug}-${format}-admin.mp4`),
@@ -113,44 +123,59 @@ async function main() {
     mkdirSync(OUTPUT_DIR, { recursive: true });
     const today = new Date().toISOString().slice(0, 10);
 
+    // 1. Synthesize all narration BEFORE bundling so Webpack copies all audio into the bundle
+    let reelData: { resolved: Beat[]; narration: NewsNarration; hookLine?: string } | undefined;
+    let landscapeData: { resolved: Beat[]; narration: NewsNarration; hookLine?: string } | undefined;
+
+    if (format === 'both' || format === 'reel') {
+      const reelBeats = article!.reelBeats || article!.videoBeats || [];
+      const reelMeta = article!.reelMeta || article!.videoMeta;
+      if (reelBeats.length) {
+        console.log(`[admin-video-render] Synthesizing narration for 9:16 Reel (${reelBeats.length} beats)...`);
+        reelData = await prepareNarration(headline, 'reel', reelBeats, reelMeta);
+      }
+    }
+
+    if (format === 'both' || format === 'landscape') {
+      const landscapeBeats = article!.landscapeBeats || article!.videoBeats || [];
+      const landscapeMeta = article!.landscapeMeta || article!.videoMeta;
+      if (landscapeBeats.length) {
+        console.log(`[admin-video-render] Synthesizing narration for 16:9 Landscape (${landscapeBeats.length} beats)...`);
+        landscapeData = await prepareNarration(headline, 'landscape', landscapeBeats, landscapeMeta);
+      }
+    }
+
+    // 2. Bundle Remotion project with all generated audio present in public/
     console.log(`[admin-video-render] Bundling Remotion project...`);
     const bundleLocation = await bundle({ entryPoint: path.join(process.cwd(), 'src', 'index.ts') });
 
+    // 3. Render compositions and stage
     if (format === 'both') {
-      const reelBeats = article!.reelBeats || article!.videoBeats || [];
-      const reelMeta = article!.reelMeta || article!.videoMeta;
-      const landscapeBeats = article!.landscapeBeats || article!.videoBeats || [];
-      const landscapeMeta = article!.landscapeMeta || article!.videoMeta;
-
-      if (!reelBeats.length && !landscapeBeats.length) {
-        await fail(slug, 'Missing both reel and landscape beats — cannot render.');
+      if (!reelData || !landscapeData) {
+        await fail(slug, 'Missing reel or landscape script data — cannot render both.');
       }
 
-      console.log(`[admin-video-render] (1/2) Rendering 9:16 Reel (${reelBeats.length} beats)...`);
-      const reel = await renderSingleFormat(bundleLocation, slug, today, vertical, headline, 'reel', reelBeats, reelMeta);
+      console.log(`[admin-video-render] (1/2) Rendering 9:16 Reel...`);
+      const reel = await renderPreparedFormat(bundleLocation, slug, today, vertical, headline, 'reel', reelData!.resolved, reelData!.narration, reelData!.hookLine);
 
-      console.log(`[admin-video-render] (2/2) Rendering 16:9 Landscape (${landscapeBeats.length} beats)...`);
-      const landscape = await renderSingleFormat(bundleLocation, slug, today, vertical, headline, 'landscape', landscapeBeats, landscapeMeta);
+      console.log(`[admin-video-render] (2/2) Rendering 16:9 Landscape...`);
+      const landscape = await renderPreparedFormat(bundleLocation, slug, today, vertical, headline, 'landscape', landscapeData!.resolved, landscapeData!.narration, landscapeData!.hookLine);
 
       const staged = await stageAdminDualVideos(slug, { reel, landscape });
       console.log(`[admin-video-render] Staged Reel: ${staged.videoStaged?.videoUrl}`);
       console.log(`[admin-video-render] Staged Landscape: ${staged.videoStagedLandscape?.videoUrl}`);
     } else if (format === 'landscape') {
-      const beats = article!.landscapeBeats || article!.videoBeats || [];
-      const meta = article!.landscapeMeta || article!.videoMeta;
-      if (!beats.length) await fail(slug, 'Missing landscape beats — cannot render.');
+      if (!landscapeData) await fail(slug, 'Missing landscape script data — cannot render.');
 
-      console.log(`[admin-video-render] Rendering 16:9 Landscape (${beats.length} beats)...`);
-      const landscape = await renderSingleFormat(bundleLocation, slug, today, vertical, headline, 'landscape', beats, meta);
+      console.log(`[admin-video-render] Rendering 16:9 Landscape...`);
+      const landscape = await renderPreparedFormat(bundleLocation, slug, today, vertical, headline, 'landscape', landscapeData!.resolved, landscapeData!.narration, landscapeData!.hookLine);
       const staged = await stageAdminDualVideos(slug, { landscape, reel: landscape });
       console.log(`[admin-video-render] Staged: ${staged.videoStagedLandscape?.videoUrl}`);
     } else {
-      const beats = article!.reelBeats || article!.videoBeats || [];
-      const meta = article!.reelMeta || article!.videoMeta;
-      if (!beats.length) await fail(slug, 'Missing reel beats — cannot render.');
+      if (!reelData) await fail(slug, 'Missing reel script data — cannot render.');
 
-      console.log(`[admin-video-render] Rendering 9:16 Reel (${beats.length} beats)...`);
-      const reel = await renderSingleFormat(bundleLocation, slug, today, vertical, headline, 'reel', beats, meta);
+      console.log(`[admin-video-render] Rendering 9:16 Reel...`);
+      const reel = await renderPreparedFormat(bundleLocation, slug, today, vertical, headline, 'reel', reelData!.resolved, reelData!.narration, reelData!.hookLine);
       const staged = await stageAdminDualVideos(slug, { reel });
       console.log(`[admin-video-render] Staged: ${staged.videoStaged?.videoUrl}`);
     }
