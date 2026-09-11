@@ -111,8 +111,7 @@ async function main() {
   const article = await readArticle(slug);
   if (!article) await fail(slug, `No article found at articles/${slug}.`);
   if (article!.videoStatus !== 'rendering') {
-    console.warn(`[admin-video-render] articles/${slug} is not in 'rendering' state (actual: ${article!.videoStatus ?? 'none'}) — nothing to do.`);
-    return;
+    console.log(`[admin-video-render] Note: articles/${slug} status is '${article!.videoStatus ?? 'none'}' — proceeding with render.`);
   }
 
   const vertical = (article!.relatedVertical || 'engineering') as Vertical;
@@ -126,8 +125,9 @@ async function main() {
     const hasReelScript = !!(article!.reelBeats?.length || article!.videoBeats?.length);
     const hasLandscapeScript = !!(article!.landscapeBeats?.length || article!.videoBeats?.length);
 
-    const shouldRenderReel = hasReelScript && (format !== 'landscape' || !hasLandscapeScript);
-    const shouldRenderLandscape = hasLandscapeScript && (format === 'both' || format === 'landscape' || !!article!.landscapeBeats?.length || !hasReelScript);
+    // If both reel and landscape scripts exist, ALWAYS render both unless strictly single
+    const shouldRenderReel = hasReelScript && (format === 'both' || format === 'reel' || !hasLandscapeScript || !!article!.reelBeats?.length);
+    const shouldRenderLandscape = hasLandscapeScript && (format === 'both' || format === 'landscape' || !hasReelScript || !!article!.landscapeBeats?.length);
 
     if (!shouldRenderReel && !shouldRenderLandscape) {
       await fail(slug, 'No renderable video script found on article — please generate scripts first.');
