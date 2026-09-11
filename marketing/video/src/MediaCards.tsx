@@ -66,7 +66,10 @@ export const TableCard: React.FC<{
   const isLandscape = format === 'landscape';
 
   const headers = table.headers || [];
-  const rows = table.rows || [];
+  const rawRows = (table.rows || []) as unknown[];
+  const rows: string[][] = rawRows.map((r) =>
+    Array.isArray(r) ? (r as string[]) : ((r as { cells?: string[] })?.cells ?? Object.values((r as object) || {}))
+  );
 
   return (
     <div

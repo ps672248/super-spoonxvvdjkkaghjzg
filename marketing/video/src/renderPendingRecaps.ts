@@ -64,6 +64,23 @@ interface PendingArticleDoc {
   videoKind?: string;
 }
 
+function normalizeBeatRows(beats?: Beat[]): Beat[] | undefined {
+  if (!Array.isArray(beats)) return beats;
+  return beats.map((b) => {
+    if (!b || !b.table || !Array.isArray(b.table.rows)) return b;
+    const rawRows = b.table.rows as unknown[];
+    return {
+      ...b,
+      table: {
+        ...b.table,
+        rows: rawRows.map((r) =>
+          Array.isArray(r) ? (r as string[]) : (((r as { cells?: string[] })?.cells) ?? Object.values((r as object) || {}))
+        ),
+      },
+    };
+  });
+}
+
 async function main() {
   const db = getFirebaseApp().firestore();
   console.log(`[render-pending] Scanning articles/publishDate=${TARGET_DATE} videoStatus=pending...`);
@@ -93,9 +110,9 @@ async function main() {
       const videoLinks: Record<string, string> = {};
 
       if (format === 'both') {
-        const reelBeats = article.reelBeats || article.videoBeats!;
+        const reelBeats = normalizeBeatRows(article.reelBeats || article.videoBeats!)!;
         const reelMeta = article.reelMeta || article.videoMeta;
-        const landscapeBeats = article.landscapeBeats || article.videoBeats!;
+        const landscapeBeats = normalizeBeatRows(article.landscapeBeats || article.videoBeats!)!;
         const landscapeMeta = article.landscapeMeta || article.videoMeta;
 
         // 1. Render 9:16 Reel (Fast-Paced, 30-45s) for YouTube Shorts + Instagram Reels
@@ -132,7 +149,8 @@ async function main() {
         }
       } else {
         // Render single requested format
-        const targetBeats = (format === 'landscape' ? article.landscapeBeats : article.reelBeats) || article.videoBeats!;
+        const rawTargetBeats = (format === 'landscape' ? article.landscapeBeats : article.reelBeats) || article.videoBeats!;
+        const targetBeats = normalizeBeatRows(rawTargetBeats)!;
         const targetMeta = (format === 'landscape' ? article.landscapeMeta : article.reelMeta) || article.videoMeta;
 
         const links = await renderOneRecap({
