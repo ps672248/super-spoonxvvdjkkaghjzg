@@ -123,26 +123,32 @@ async function main() {
     mkdirSync(OUTPUT_DIR, { recursive: true });
     const today = new Date().toISOString().slice(0, 10);
 
+    const hasReelScript = !!(article!.reelBeats?.length || article!.videoBeats?.length);
+    const hasLandscapeScript = !!(article!.landscapeBeats?.length || article!.videoBeats?.length);
+
+    const shouldRenderReel = (format === 'both' || format === 'reel') && hasReelScript;
+    const shouldRenderLandscape = (format === 'both' || format === 'landscape') && hasLandscapeScript;
+
+    if (!shouldRenderReel && !shouldRenderLandscape) {
+      await fail(slug, 'No renderable video script found on article — please generate scripts first.');
+    }
+
     // 1. Synthesize all narration BEFORE bundling so Webpack copies all audio into the bundle
     let reelData: { resolved: Beat[]; narration: NewsNarration; hookLine?: string } | undefined;
     let landscapeData: { resolved: Beat[]; narration: NewsNarration; hookLine?: string } | undefined;
 
-    if (format === 'both' || format === 'reel') {
-      const reelBeats = article!.reelBeats || article!.videoBeats || [];
-      const reelMeta = article!.reelMeta || article!.videoMeta;
-      if (reelBeats.length) {
-        console.log(`[admin-video-render] Synthesizing narration for 9:16 Reel (${reelBeats.length} beats)...`);
-        reelData = await prepareNarration(headline, 'reel', reelBeats, reelMeta);
-      }
+    if (shouldRenderReel) {
+      const reelBeats = (article!.reelBeats?.length ? article!.reelBeats : article!.videoBeats) || [];
+      const reelMeta = article!.reelMeta?.youtubeTitle ? article!.reelMeta : article!.videoMeta;
+      console.log(`[admin-video-render] Synthesizing narration for 9:16 Reel (${reelBeats.length} beats)...`);
+      reelData = await prepareNarration(headline, 'reel', reelBeats, reelMeta);
     }
 
-    if (format === 'both' || format === 'landscape') {
-      const landscapeBeats = article!.landscapeBeats || article!.videoBeats || [];
-      const landscapeMeta = article!.landscapeMeta || article!.videoMeta;
-      if (landscapeBeats.length) {
-        console.log(`[admin-video-render] Synthesizing narration for 16:9 Landscape (${landscapeBeats.length} beats)...`);
-        landscapeData = await prepareNarration(headline, 'landscape', landscapeBeats, landscapeMeta);
-      }
+    if (shouldRenderLandscape) {
+      const landscapeBeats = (article!.landscapeBeats?.length ? article!.landscapeBeats : article!.videoBeats) || [];
+      const landscapeMeta = article!.landscapeMeta?.youtubeTitle ? article!.landscapeMeta : article!.videoMeta;
+      console.log(`[admin-video-render] Synthesizing narration for 16:9 Landscape (${landscapeBeats.length} beats)...`);
+      landscapeData = await prepareNarration(headline, 'landscape', landscapeBeats, landscapeMeta);
     }
 
     // 2. Bundle Remotion project with all generated audio present in public/
@@ -150,35 +156,22 @@ async function main() {
     const bundleLocation = await bundle({ entryPoint: path.join(process.cwd(), 'src', 'index.ts') });
 
     // 3. Render compositions and stage
-    if (format === 'both') {
-      if (!reelData || !landscapeData) {
-        await fail(slug, 'Missing reel or landscape script data — cannot render both.');
-      }
+    let reelOut: { videoPath: string; coverPath?: string } | undefined;
+    let landscapeOut: { videoPath: string; coverPath?: string } | undefined;
 
-      console.log(`[admin-video-render] (1/2) Rendering 9:16 Reel...`);
-      const reel = await renderPreparedFormat(bundleLocation, slug, today, vertical, headline, 'reel', reelData!.resolved, reelData!.narration, reelData!.hookLine);
-
-      console.log(`[admin-video-render] (2/2) Rendering 16:9 Landscape...`);
-      const landscape = await renderPreparedFormat(bundleLocation, slug, today, vertical, headline, 'landscape', landscapeData!.resolved, landscapeData!.narration, landscapeData!.hookLine);
-
-      const staged = await stageAdminDualVideos(slug, { reel, landscape });
-      console.log(`[admin-video-render] Staged Reel: ${staged.videoStaged?.videoUrl}`);
-      console.log(`[admin-video-render] Staged Landscape: ${staged.videoStagedLandscape?.videoUrl}`);
-    } else if (format === 'landscape') {
-      if (!landscapeData) await fail(slug, 'Missing landscape script data — cannot render.');
-
-      console.log(`[admin-video-render] Rendering 16:9 Landscape...`);
-      const landscape = await renderPreparedFormat(bundleLocation, slug, today, vertical, headline, 'landscape', landscapeData!.resolved, landscapeData!.narration, landscapeData!.hookLine);
-      const staged = await stageAdminDualVideos(slug, { landscape, reel: landscape });
-      console.log(`[admin-video-render] Staged: ${staged.videoStagedLandscape?.videoUrl}`);
-    } else {
-      if (!reelData) await fail(slug, 'Missing reel script data — cannot render.');
-
-      console.log(`[admin-video-render] Rendering 9:16 Reel...`);
-      const reel = await renderPreparedFormat(bundleLocation, slug, today, vertical, headline, 'reel', reelData!.resolved, reelData!.narration, reelData!.hookLine);
-      const staged = await stageAdminDualVideos(slug, { reel });
-      console.log(`[admin-video-render] Staged: ${staged.videoStaged?.videoUrl}`);
+    if (shouldRenderReel && reelData) {
+      console.log(`[admin-video-render] (1/${shouldRenderLandscape ? 2 : 1}) Rendering 9:16 Reel...`);
+      reelOut = await renderPreparedFormat(bundleLocation, slug, today, vertical, headline, 'reel', reelData.resolved, reelData.narration, reelData.hookLine);
     }
+
+    if (shouldRenderLandscape && landscapeData) {
+      console.log(`[admin-video-render] (${shouldRenderReel ? 2 : 1}/${shouldRenderReel ? 2 : 1}) Rendering 16:9 Landscape...`);
+      landscapeOut = await renderPreparedFormat(bundleLocation, slug, today, vertical, headline, 'landscape', landscapeData.resolved, landscapeData.narration, landscapeData.hookLine);
+    }
+
+    const staged = await stageAdminDualVideos(slug, { reel: reelOut, landscape: landscapeOut });
+    if (staged.videoStaged?.videoUrl) console.log(`[admin-video-render] Staged Reel: ${staged.videoStaged.videoUrl}`);
+    if (staged.videoStagedLandscape?.videoUrl) console.log(`[admin-video-render] Staged Landscape: ${staged.videoStagedLandscape.videoUrl}`);
 
     console.log('[admin-video-render] Done — awaiting admin approval in the panel.');
   } catch (e) {
