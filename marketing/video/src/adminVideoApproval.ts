@@ -26,6 +26,30 @@ import type { Beat } from './NewsRecap';
 export type VideoStatus = 'script_ready' | 'rendering' | 'render_failed' | 'video_ready' | 'publishing' | 'publish_failed' | 'published' | 'rejected';
 export type VideoFormat = 'reel' | 'landscape' | 'both';
 
+export type ThumbnailTopBar = {
+  badge: string;
+  category: string;
+};
+
+export type ThumbnailLeftColumn = {
+  kicker: string;
+  primaryHeadline: string;
+  secondaryText: string;
+  trustStamp: string;
+};
+
+export type ThumbnailRightColumn = {
+  cardHeader: string;
+  heroMetric: string;
+  subtext: string;
+};
+
+export type VideoThumbnail = {
+  topBar?: ThumbnailTopBar;
+  leftColumn?: ThumbnailLeftColumn;
+  rightColumn?: ThumbnailRightColumn;
+};
+
 export type VideoBeat = Beat;
 export type VideoMeta = {
   hookLine?: string;
@@ -36,6 +60,7 @@ export type VideoMeta = {
   instagramHashtags: string[];
   hinglishHeadline?: string;
   hinglishBeats?: (string | null)[];
+  thumbnail?: VideoThumbnail;
 };
 export type VideoStaged = { videoUrl: string; videoPublicId: string; coverUrl?: string; coverPublicId?: string };
 

@@ -88,10 +88,11 @@ async function renderPreparedFormat(
   resolved: Beat[],
   narration: NewsNarration,
   hookLine?: string,
+  thumbnail?: VideoMeta['thumbnail'],
 ): Promise<{ videoPath: string; coverPath?: string }> {
   const compositionId = format === 'landscape' ? 'NewsRecapLandscape' : 'NewsRecap';
   const { hasNewsBgm, hasOutro } = audioFlags();
-  const newsProps = { vertical, headline, beats: resolved, hookLine, narration, format, hasBgm: hasNewsBgm, hasOutro };
+  const newsProps = { vertical, headline, beats: resolved, hookLine, narration, format, hasBgm: hasNewsBgm, hasOutro, thumbnail };
 
   const outFile = await renderComposition(
     bundleLocation, compositionId, newsProps,
@@ -136,21 +137,23 @@ async function main() {
     const totalRenders = (shouldRenderReel ? 1 : 0) + (shouldRenderLandscape ? 1 : 0);
 
     // 1. Synthesize all narration BEFORE bundling so Webpack copies all audio into the bundle
-    let reelData: { resolved: Beat[]; narration: NewsNarration; hookLine?: string } | undefined;
-    let landscapeData: { resolved: Beat[]; narration: NewsNarration; hookLine?: string } | undefined;
+    let reelData: { resolved: Beat[]; narration: NewsNarration; hookLine?: string; thumbnail?: VideoMeta['thumbnail'] } | undefined;
+    let landscapeData: { resolved: Beat[]; narration: NewsNarration; hookLine?: string; thumbnail?: VideoMeta['thumbnail'] } | undefined;
 
     if (shouldRenderReel) {
       const reelBeats = (article!.reelBeats?.length ? article!.reelBeats : article!.videoBeats) || [];
       const reelMeta = article!.reelMeta?.youtubeTitle ? article!.reelMeta : article!.videoMeta;
       console.log(`[admin-video-render] Synthesizing narration for 9:16 Reel (${reelBeats.length} beats)...`);
-      reelData = await prepareNarration(headline, 'reel', reelBeats, reelMeta);
+      const prep = await prepareNarration(headline, 'reel', reelBeats, reelMeta);
+      reelData = { ...prep, thumbnail: reelMeta?.thumbnail };
     }
 
     if (shouldRenderLandscape) {
       const landscapeBeats = (article!.landscapeBeats?.length ? article!.landscapeBeats : article!.videoBeats) || [];
       const landscapeMeta = article!.landscapeMeta?.youtubeTitle ? article!.landscapeMeta : article!.videoMeta;
       console.log(`[admin-video-render] Synthesizing narration for 16:9 Landscape (${landscapeBeats.length} beats)...`);
-      landscapeData = await prepareNarration(headline, 'landscape', landscapeBeats, landscapeMeta);
+      const prep = await prepareNarration(headline, 'landscape', landscapeBeats, landscapeMeta);
+      landscapeData = { ...prep, thumbnail: landscapeMeta?.thumbnail };
     }
 
     // 2. Bundle Remotion project with all generated audio present in public/
@@ -163,12 +166,12 @@ async function main() {
 
     if (shouldRenderReel && reelData) {
       console.log(`[admin-video-render] (1/${totalRenders}) Rendering 9:16 Reel...`);
-      reelOut = await renderPreparedFormat(bundleLocation, slug, today, vertical, headline, 'reel', reelData.resolved, reelData.narration, reelData.hookLine);
+      reelOut = await renderPreparedFormat(bundleLocation, slug, today, vertical, headline, 'reel', reelData.resolved, reelData.narration, reelData.hookLine, reelData.thumbnail);
     }
 
     if (shouldRenderLandscape && landscapeData) {
       console.log(`[admin-video-render] (${shouldRenderReel ? 2 : 1}/${totalRenders}) Rendering 16:9 Landscape...`);
-      landscapeOut = await renderPreparedFormat(bundleLocation, slug, today, vertical, headline, 'landscape', landscapeData.resolved, landscapeData.narration, landscapeData.hookLine);
+      landscapeOut = await renderPreparedFormat(bundleLocation, slug, today, vertical, headline, 'landscape', landscapeData.resolved, landscapeData.narration, landscapeData.hookLine, landscapeData.thumbnail);
     }
 
     const staged = await stageAdminDualVideos(slug, { reel: reelOut, landscape: landscapeOut });
