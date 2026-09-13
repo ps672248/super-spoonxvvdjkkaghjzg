@@ -1,5 +1,54 @@
 [
   {
+    "runAt": "2026-09-13T17:35:31.770Z",
+    "windowDays": 28,
+    "youtube": {
+      "videos": 200,
+      "totalViews": 63459,
+      "byVertical": {
+        "unknown": {
+          "videos": 184,
+          "views": 55420
+        },
+        "schooling": {
+          "videos": 5,
+          "views": 4032
+        },
+        "govt": {
+          "videos": 5,
+          "views": 2778
+        },
+        "college": {
+          "videos": 6,
+          "views": 1229
+        }
+      }
+    },
+    "instagram": {
+      "reels": 50,
+      "totalViews": 581,
+      "totalReach": 463
+    },
+    "suggestions": [
+      {
+        "action": "Implement robust pre-publish checks within the YouTube publishing pipeline to eliminate instances of content with 0 views and ensure proper indexing.",
+        "why": "A significant portion of YouTube content (29 out of 165 videos) received 0 views, indicating a critical technical/publishing failure."
+      },
+      {
+        "action": "Refine YouTube title formulas for news recap reels to consistently feature urgent keywords (e.g., \"OUT!\", \"RELEASED!\") and numerical highlights like vacancy counts or candidate numbers.",
+        "why": "High-performing YouTube videos like \"CIL MT Answer Key OUT!\" (4312 views) and \"AVNL 20,000+ candidates\" (1545 views) use these effectively."
+      },
+      {
+        "action": "Mandate accurate vertical assignment for all YouTube news recap videos, replacing 'unknown', to enable use of specific per-vertical hashtag sets.",
+        "why": "Over 70% of YouTube videos are 'unknown', preventing targeted hashtag optimization and hindering performance analysis per exam vertical."
+      },
+      {
+        "action": "Revamp Instagram captions and cover/thumbnail frame choices for Reels, also exploring adjustments to video pacing/length based on platform trends.",
+        "why": "Instagram Reels show extremely low engagement (most under 20 views, almost all 0 likes), significantly underperforming YouTube content."
+      }
+    ]
+  },
+  {
     "runAt": "2026-09-06T17:19:24.253Z",
     "windowDays": 28,
     "youtube": {
@@ -304,45 +353,5 @@
         "why": "Top YouTube news videos are largely uncategorized ('unknown' vertical), showing a need for relevant cross-vertical news hashtags."
       }
     ]
-  },
-  {
-    "runAt": "2026-07-28T12:44:03.053Z",
-    "windowDays": 28,
-    "youtube": {
-      "videos": 94,
-      "totalViews": 23789,
-      "byVertical": {
-        "unknown": {
-          "videos": 85,
-          "views": 23524
-        },
-        "college": {
-          "videos": 2,
-          "views": 170
-        },
-        "entrance": {
-          "videos": 3,
-          "views": 36
-        },
-        "schooling": {
-          "videos": 2,
-          "views": 55
-        },
-        "govt": {
-          "videos": 1,
-          "views": 4
-        },
-        "engineering": {
-          "videos": 1,
-          "views": 0
-        }
-      }
-    },
-    "instagram": {
-      "reels": 50,
-      "totalViews": 5720,
-      "totalReach": 5229
-    },
-    "suggestions": []
   }
 ]
