@@ -45,14 +45,32 @@ import { renderOneRecap } from './renderNewsRecap';
 const ARTICLES_COLLECTION = 'articles';
 const TARGET_DATE = process.env.RECAP_TARGET_DATE || new Date().toISOString().slice(0, 10);
 
-// Mirrors scripts/blog_bot.ts's PW_CATEGORY_TO_VERTICAL — keep in sync.
+// Mirrors scripts/blog_bot.ts's mappings — keep in sync.
 const CATEGORY_TO_VERTICAL: Record<string, Vertical> = {
-  psu: 'engineering', entrance: 'entrance', govt: 'govt', college: 'college', boards: 'schooling',
+  psu: 'engineering',
+  entrance: 'entrance',
+  govt: 'govt',
+  college: 'college',
+  boards: 'schooling',
+  schooling: 'schooling',
+  engineering: 'engineering',
+};
+
+// Maps the 5 strictly typed notifyCategory values to their corresponding video verticals.
+const NOTIFY_CATEGORY_TO_VERTICAL: Record<string, Vertical> = {
+  psu: 'engineering',
+  govt: 'govt',
+  entrance: 'entrance',
+  college: 'college',
+  schooling: 'schooling',
 };
 
 interface PendingArticleDoc {
   title: string;
   category?: string;
+  notifyCategory?: string;
+  relatedVertical?: Vertical;
+  videoVertical?: Vertical;
   videoFormat?: 'reel' | 'landscape' | 'both';
   videoBeats?: Beat[];
   videoMeta?: ArticleVideoMeta;
@@ -62,6 +80,18 @@ interface PendingArticleDoc {
   landscapeMeta?: ArticleVideoMeta;
   videoTelegram?: TelegramCta;
   videoKind?: string;
+}
+
+function resolveArticleVertical(doc: PendingArticleDoc): Vertical | undefined {
+  if (doc.videoVertical) return doc.videoVertical;
+  if (doc.relatedVertical) return doc.relatedVertical;
+  if (doc.notifyCategory && NOTIFY_CATEGORY_TO_VERTICAL[doc.notifyCategory]) {
+    return NOTIFY_CATEGORY_TO_VERTICAL[doc.notifyCategory];
+  }
+  if (doc.category && CATEGORY_TO_VERTICAL[doc.category]) {
+    return CATEGORY_TO_VERTICAL[doc.category];
+  }
+  return undefined;
 }
 
 function normalizeBeatRows(beats?: Beat[]): Beat[] | undefined {
@@ -92,7 +122,11 @@ async function main() {
 
   const candidates = snap.docs
     .map((d) => ({ id: d.id, ...(d.data() as PendingArticleDoc) }))
-    .filter((a) => CATEGORY_TO_VERTICAL[a.category || ''] && ((a.videoBeats && a.videoBeats.length > 0) || (a.reelBeats && a.reelBeats.length > 0) || (a.landscapeBeats && a.landscapeBeats.length > 0)));
+    .filter((a) => {
+      const vertical = resolveArticleVertical(a);
+      const hasBeats = (a.videoBeats && a.videoBeats.length > 0) || (a.reelBeats && a.reelBeats.length > 0) || (a.landscapeBeats && a.landscapeBeats.length > 0);
+      return vertical && hasBeats;
+    });
 
   console.log(`[render-pending] ${snap.size} pending doc(s), ${candidates.length} renderable.`);
   if (candidates.length === 0) {
@@ -102,7 +136,7 @@ async function main() {
 
   let rendered = 0;
   for (const article of candidates) {
-    const vertical = CATEGORY_TO_VERTICAL[article.category || ''];
+    const vertical = resolveArticleVertical(article)!;
     const format = article.videoFormat || 'both';
     console.log(`[render-pending] Rendering: articles/${article.id} ("${article.title.slice(0, 60)}") [format: ${format}]`);
 
