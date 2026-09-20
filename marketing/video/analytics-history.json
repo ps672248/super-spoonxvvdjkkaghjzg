@@ -1,5 +1,54 @@
 [
   {
+    "runAt": "2026-09-20T17:36:39.177Z",
+    "windowDays": 28,
+    "youtube": {
+      "videos": 200,
+      "totalViews": 52858,
+      "byVertical": {
+        "unknown": {
+          "videos": 180,
+          "views": 43465
+        },
+        "govt": {
+          "videos": 6,
+          "views": 4795
+        },
+        "college": {
+          "videos": 7,
+          "views": 1578
+        },
+        "schooling": {
+          "videos": 7,
+          "views": 3020
+        }
+      }
+    },
+    "instagram": {
+      "reels": 50,
+      "totalViews": 1350,
+      "totalReach": 1109
+    },
+    "suggestions": [
+      {
+        "action": "Prioritize and use strong hook lines/title formulas for \"Result Declared\" and \"Admit Card Out\" news across both YouTube and Instagram.",
+        "why": "YouTube's top performers include \"AIIMS NORCET 11 Stage 1 Result\" (8170 views) and \"ISRO ICRB Admit Card\" (1628 views), indicating high user interest."
+      },
+      {
+        "action": "Incorporate \"#Shorts\" directly into YouTube video title formulas for urgent news updates like \"Admit Card Out\" or \"Exam Date Announced.\"",
+        "why": "Videos like \"IOCL 2026 Admit Card & Exam Date Out! #Shorts\" (1381 views) and \"NMDC Steel Executive Trainee Exam Date 2026 #Shorts\" (1341 views) performed strongly."
+      },
+      {
+        "action": "Optimize Instagram captions with clear calls to action and urgency for application/registration news, leveraging relevant emojis.",
+        "why": "Instagram's top views are for \"IIT JAM 2027 application process\" (144 views) and \"IBPS RRB 2026 applications close\" (114 views)."
+      },
+      {
+        "action": "Re-evaluate the hook-line pool and overall strategy for non-urgent 'strategy' or 'preparation' videos.",
+        "why": "The YouTube video \"24 hours left for IES/ESE 2026? Maximize your score | Final Day Strategy\" received 0 views, indicating low engagement."
+      }
+    ]
+  },
+  {
     "runAt": "2026-09-13T17:35:31.770Z",
     "windowDays": 28,
     "youtube": {
@@ -290,67 +339,6 @@
       {
         "action": "Update Gemini prompts for Instagram captions to explicitly include calls-to-action for likes and comments, and experiment with interactive elements within video templates.",
         "why": "Instagram engagement is low; top-viewed reels rarely exceed 3 likes or 0 comments (e.g., \"SSC CGL 2026\" 125 views, 3 likes)."
-      }
-    ]
-  },
-  {
-    "runAt": "2026-08-02T15:39:53.055Z",
-    "windowDays": 28,
-    "youtube": {
-      "videos": 131,
-      "totalViews": 32675,
-      "byVertical": {
-        "unknown": {
-          "videos": 122,
-          "views": 32410
-        },
-        "college": {
-          "videos": 2,
-          "views": 170
-        },
-        "entrance": {
-          "videos": 3,
-          "views": 36
-        },
-        "schooling": {
-          "videos": 2,
-          "views": 55
-        },
-        "govt": {
-          "videos": 1,
-          "views": 4
-        },
-        "engineering": {
-          "videos": 1,
-          "views": 0
-        }
-      }
-    },
-    "instagram": {
-      "reels": 50,
-      "totalViews": 4505,
-      "totalReach": 4097
-    },
-    "suggestions": [
-      {
-        "action": "Immediately pause or drastically reduce the production and daily rotation of all vertical-specific daily quiz reels for all exam categories.",
-        "why": "Quiz reels consistently show abysmal performance on YouTube, receiving 0-12 views (e.g., 'HPCL Quiz Challenge': 0 views)."
-      },
-      {
-        "action": "Allocate resources saved from quiz reels to significantly increase the volume and frequency of news recap reels, focusing on results, admit cards, and exam dates.",
-        "why": "News recaps generate the vast majority of views on YouTube (e.g., CIL MT: 6885 views, AIBE: 2939 views, JEECUP: 2562 views)."
-      },
-      {
-        "action": "Standardize YouTube title formulas for news recaps to prominently feature urgent keywords like 'OUT!', 'LIVE!', 'Declared!', 'Released!' early in the title.",
-        "why": "Top performing videos heavily feature these urgent keywords (e.g., 'CIL MT 2026 Exam: August dates out!': 6885 views)."
-      },
-      {
-        "action": "Implement A/B testing for cover/thumbnail frame choices and Hinglish vs English voiceovers specifically for news recap reels on Instagram.",
-        "why": "Instagram performance is very low (max 148 views) compared to YouTube, but data is thin for specific content-based reasons."
-      },
-      {
-        "action": "Revamp per-vertical hashtag sets, creating a primary set for urgent exam news relevant across all currently uncategorized 'unknown' news reels.",
-        "why": "Top YouTube news videos are largely uncategorized ('unknown' vertical), showing a need for relevant cross-vertical news hashtags."
       }
     ]
   }
