@@ -1,5 +1,46 @@
 [
   {
+    "runAt": "2026-09-27T18:37:27.499Z",
+    "windowDays": 28,
+    "youtube": {
+      "videos": 200,
+      "totalViews": 27951,
+      "byVertical": {
+        "unknown": {
+          "videos": 190,
+          "views": 27344
+        },
+        "entrance": {
+          "videos": 4,
+          "views": 189
+        },
+        "govt": {
+          "videos": 6,
+          "views": 418
+        }
+      }
+    },
+    "instagram": {
+      "reels": 50,
+      "totalViews": 1637,
+      "totalReach": 1390
+    },
+    "suggestions": [
+      {
+        "action": "Adjust content strategy to increase the frequency of news recap reels focusing on urgent updates like exam results, admit cards, and application deadlines.",
+        "why": "YouTube's \"AIIMS NORCET 11 Stage 1 Result\" (8288 views) and Instagram's \"NEET PG Results\" (122 views) show highest performance."
+      },
+      {
+        "action": "Refine YouTube title formulas and Instagram captions by consistently incorporating urgent keywords (\"OUT!\", \"LIVE!\", \"Released!\") and the \"🚨\" emoji for critical news updates.",
+        "why": "YouTube titles like \"AIIMS NORCET 11 Stage 1 Result 2026 Out\" (8288 views) and \"GATE 2027 Registration LIVE!\" (534 views) leverage these effectively."
+      },
+      {
+        "action": "Review and refine the \"hook-line pool\" and \"video pacing/length\" for daily quiz reels to enhance engagement.",
+        "why": "Current data does not show any high-performing quiz reels, and `vertical` data is too thin to assess their specific impact."
+      }
+    ]
+  },
+  {
     "runAt": "2026-09-20T17:36:39.177Z",
     "windowDays": 28,
     "youtube": {
@@ -282,63 +323,6 @@
       {
         "action": "Adjust the weekday vertical rotation to dedicate more slots to 'schooling' results/updates and 'govt' exam news given their strong engagement.",
         "why": "Schooling (HBSE 1167 views, CGBSE 685 views) and Govt (IBPS PO 832 views) results show high performance on YouTube."
-      }
-    ]
-  },
-  {
-    "runAt": "2026-08-09T15:02:38.698Z",
-    "windowDays": 28,
-    "youtube": {
-      "videos": 150,
-      "totalViews": 40786,
-      "byVertical": {
-        "unknown": {
-          "videos": 143,
-          "views": 40069
-        },
-        "schooling": {
-          "videos": 2,
-          "views": 540
-        },
-        "college": {
-          "videos": 2,
-          "views": 170
-        },
-        "entrance": {
-          "videos": 1,
-          "views": 3
-        },
-        "govt": {
-          "videos": 1,
-          "views": 4
-        },
-        "engineering": {
-          "videos": 1,
-          "views": 0
-        }
-      }
-    },
-    "instagram": {
-      "reels": 50,
-      "totalViews": 3246,
-      "totalReach": 2890
-    },
-    "suggestions": [
-      {
-        "action": "Significantly reduce or pause the production and auto-publishing of daily quiz reels. Reallocate resources to increase the frequency of \"news recap reels\".",
-        "why": "Quiz reels perform poorly (e.g., \"HPCL Quiz Challenge\" 0 views YT). News reels dominate views (e.g., \"CIL MT 2026 Exam\" 9427 views YT)."
-      },
-      {
-        "action": "Refine the hook-line pool and title formulas for \"news recap reels\" to consistently use urgent, outcome-driven language and highlight numbers (e.g., \"OUT!\", \"Declared!\", \"X posts!\").",
-        "why": "Top news reels use urgent hooks (e.g., \"CIL MT 2026 Exam: August dates out!\", \"1,731 dreams fulfilled! SSC JE 2025 Final Result\")."
-      },
-      {
-        "action": "Conduct an A/B test for Hinglish vs. English voiceovers on top-performing \"news recap reels\" to determine audience preference and engagement lift.",
-        "why": "Data on Hinglish news reels is too thin for conclusive impact (e.g., \"CBSE 10th marks badhne waale hain?\" 186 views YT). Need more data."
-      },
-      {
-        "action": "Update Gemini prompts for Instagram captions to explicitly include calls-to-action for likes and comments, and experiment with interactive elements within video templates.",
-        "why": "Instagram engagement is low; top-viewed reels rarely exceed 3 likes or 0 comments (e.g., \"SSC CGL 2026\" 125 views, 3 likes)."
       }
     ]
   }
