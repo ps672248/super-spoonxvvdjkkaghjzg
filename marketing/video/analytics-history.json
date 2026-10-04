@@ -1,5 +1,62 @@
 [
   {
+    "runAt": "2026-10-04T18:18:26.608Z",
+    "windowDays": 28,
+    "youtube": {
+      "videos": 200,
+      "totalViews": 26537,
+      "byVertical": {
+        "unknown": {
+          "videos": 176,
+          "views": 23735
+        },
+        "schooling": {
+          "videos": 10,
+          "views": 470
+        },
+        "govt": {
+          "videos": 6,
+          "views": 1926
+        },
+        "college": {
+          "videos": 2,
+          "views": 65
+        },
+        "entrance": {
+          "videos": 4,
+          "views": 150
+        },
+        "engineering": {
+          "videos": 2,
+          "views": 191
+        }
+      }
+    },
+    "instagram": {
+      "reels": 50,
+      "totalViews": 1676,
+      "totalReach": 1367
+    },
+    "suggestions": [
+      {
+        "action": "Prioritize and immediately publish news recap reels with distinct \"Breaking News\" title formulas, consistently using urgent keywords like \"OUT!\", \"LIVE!\", \"Released!\", and \"🚨\" in both YouTube titles and IG captions.",
+        "why": "High-performing YouTube videos like \"KPSC Land Surveyor Admit Card\" (2826 views) and \"NDA 2 Result\" (2497 views) demonstrate strong demand for urgent updates."
+      },
+      {
+        "action": "Implement a clear process to assign a specific, relevant vertical (engineering, entrance, govt, college, schooling) to all news recap reels, or introduce a new \"General Exam News\" vertical if appropriate.",
+        "why": "Many top-viewed YouTube videos (e.g., KPSC Land Surveyor Admit Card, 2826 views) are currently marked \"unknown\", limiting vertical performance analysis."
+      },
+      {
+        "action": "Mandate custom-designed, eye-catching cover/thumbnail frames for all news recap reels, featuring clear, bold text overlays that summarize the main update (e.g., \"RESULT OUT,\" \"DATES RELEASED\").",
+        "why": "Many videos receive very low views (e.g., \"HTET Level 1 2025 Exam Day Strategy\" with 0 views), suggesting poor discoverability; strong visuals are crucial."
+      },
+      {
+        "action": "Conduct a structured A/B test for high-impact news recap reels, creating both English and Hinglish versions of voiceovers and captions to compare their performance.",
+        "why": "The provided data is too thin (e.g., \"गलती हो गयी?\" YouTube 52 views; \"SSC ने 2026 JE...\" IG 15 views) to conclusively judge Hinglish impact."
+      }
+    ]
+  },
+  {
     "runAt": "2026-09-27T18:37:27.499Z",
     "windowDays": 28,
     "youtube": {
@@ -278,51 +335,6 @@
       {
         "action": "Update \"title formulas\" and \"IG captions\" to consistently include exact vacancy/post counts and application deadlines where relevant for news recap reels.",
         "why": "\"IBPS Clerk 2026 application extended | 11,403 Banking Jobs!\" (123 views on IG, 103 reach) shows impact of numerical value."
-      }
-    ]
-  },
-  {
-    "runAt": "2026-08-16T07:35:21.351Z",
-    "windowDays": 28,
-    "youtube": {
-      "videos": 164,
-      "totalViews": 45484,
-      "byVertical": {
-        "unknown": {
-          "videos": 160,
-          "views": 43803
-        },
-        "govt": {
-          "videos": 2,
-          "views": 840
-        },
-        "schooling": {
-          "videos": 2,
-          "views": 841
-        }
-      }
-    },
-    "instagram": {
-      "reels": 50,
-      "totalViews": 3099,
-      "totalReach": 2781
-    },
-    "suggestions": [
-      {
-        "action": "Prioritize news recap reels for immediate exam status updates, like 'Results', 'Admit Cards', 'Exam Dates', and 'Counselling/Allotment', over general recruitment notifications.",
-        "why": "Urgent news drives highest engagement, e.g., 'CIL MT Exam Date' (12634 views) and 'JEECUP Allotment' (2563 views)."
-      },
-      {
-        "action": "Refine YouTube titles and Instagram captions to emphasize urgency, include relevant numbers (posts, candidates), and use direct calls to action like 'OUT!', 'LIVE!', 'Check Now!', 'Download NOW!'.",
-        "why": "Top videos feature these elements; 'CIL MT' had 12634 views, 'HBSE 10/12' got 1167 views and 10 comments."
-      },
-      {
-        "action": "Reduce the frequency or reformat content-heavy 'complete prep' videos (e.g., 'Indian History for CIL Exam') in the daily reel pipeline.",
-        "why": "These videos consistently underperform, receiving very low views (e.g., 'Indian Economy for CIL Exam Prep' 3 views, 'Modern Indian History' 9 views)."
-      },
-      {
-        "action": "Adjust the weekday vertical rotation to dedicate more slots to 'schooling' results/updates and 'govt' exam news given their strong engagement.",
-        "why": "Schooling (HBSE 1167 views, CGBSE 685 views) and Govt (IBPS PO 832 views) results show high performance on YouTube."
       }
     ]
   }
