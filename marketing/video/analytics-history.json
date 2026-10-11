@@ -1,5 +1,58 @@
 [
   {
+    "runAt": "2026-10-11T19:08:14.322Z",
+    "windowDays": 28,
+    "youtube": {
+      "videos": 200,
+      "totalViews": 15009,
+      "byVertical": {
+        "unknown": {
+          "videos": 185,
+          "views": 14032
+        },
+        "govt": {
+          "videos": 5,
+          "views": 283
+        },
+        "entrance": {
+          "videos": 2,
+          "views": 256
+        },
+        "college": {
+          "videos": 6,
+          "views": 392
+        },
+        "schooling": {
+          "videos": 2,
+          "views": 46
+        }
+      }
+    },
+    "instagram": {
+      "reels": 50,
+      "totalViews": 1245,
+      "totalReach": 1104
+    },
+    "suggestions": [
+      {
+        "action": "Prioritize and amplify news recap reels for \"Result\", \"Answer Key\", \"Admit Card\", and \"Exam/Counselling Dates/Deadlines\" using urgent hook-lines and title formulas.",
+        "why": "YouTube videos on 'Results' (UPSC CDS: 1757 views, CIL MT: 1338 views, SBI PO: 1237 views) and 'Answer Keys' (TNPSC CTS: 414 views) drive high views, indicating strong audience demand for these critical updates."
+      },
+      {
+        "action": "Optimize title formulas and hook-line pool to consistently include urgent keywords like \"OUT!\", \"LIVE!\", \"Declared!\", \"Check Now!\", and use emojis (🚨) in IG captions.",
+        "why": "High-view YouTube videos use \"Out NOW!\" or \"Declared!\" (UPSC CDS: 1757 views). Instagram captions with '🚨' and urgency (PGIMER Postponed: 137 views, IBPS Clerk Prelims: 123 views) also perform well."
+      },
+      {
+        "action": "Experiment with cover/thumbnail frames, using high-contrast text, urgent emojis, and key numbers (e.g., \"Result OUT!\") to maximize clickbait potential for news reels.",
+        "why": "Many videos have 0-20 views despite relevant topics. A compelling thumbnail is crucial for initial clicks, especially given high-performing content often features prominent announcements. (Data too thin to specify exact impact)"
+      },
+      {
+        "action": "Analyze specific news content for \"govt\" and \"entrance\" categories more closely to identify sub-topics driving engagement. Consider adjusting weekday vertical rotation to feature these more.",
+        "why": "While 'vertical' data is largely 'unknown' on YouTube, top performers often relate to 'govt' exams (UPSC CDS, SBI PO) or 'entrance' (MP NEET UG). Instagram's 'govt' (IBPS Clerk Prelims: 123 views) also shows good engagement. (Data too thin to definitively prove vertical rotation impact)"
+      }
+    ]
+  },
+  {
     "runAt": "2026-10-04T18:18:26.608Z",
     "windowDays": 28,
     "youtube": {
@@ -294,47 +347,6 @@
       {
         "action": "Re-evaluate the weekday vertical rotation for \"daily quiz reels.\" Without specific performance data, integrate quizzes into high-performing verticals.",
         "why": "Data lacks distinct quiz reel performance. News recap reels show clear high-performing examples (e.g., CIL MT, Punjab Lecturer)."
-      }
-    ]
-  },
-  {
-    "runAt": "2026-08-23T14:53:04.503Z",
-    "windowDays": 28,
-    "youtube": {
-      "videos": 200,
-      "totalViews": 32101,
-      "byVertical": {
-        "unknown": {
-          "videos": 194,
-          "views": 30315
-        },
-        "govt": {
-          "videos": 3,
-          "views": 887
-        },
-        "schooling": {
-          "videos": 3,
-          "views": 899
-        }
-      }
-    },
-    "instagram": {
-      "reels": 50,
-      "totalViews": 1410,
-      "totalReach": 1230
-    },
-    "suggestions": [
-      {
-        "action": "Adjust \"weekday vertical rotation\" and \"hook-line pool\" to prioritize \"Admit Card\", \"Result\", and \"Answer Key\" news immediately upon release. Use \"Gemini-written\" titles emphasizing urgency.",
-        "why": "Videos like \"ISRO SDSC SHAR 2026 Exam Date OUT\" (1387 views, 18 likes) & \"HBSE 10th, 12th Result\" (1176 views, 10 comments) drive top engagement."
-      },
-      {
-        "action": "Cease publishing \"news recap reels\" for broad \"General Awareness\" topics (e.g., History, Economy) on YouTube. Reallocate resources to high-performing news categories.",
-        "why": "\"Indian Economy for CIL Exam Prep\" (4 views), \"Modern Indian History\" (10 views) show negligible interest, wasting resources."
-      },
-      {
-        "action": "Update \"title formulas\" and \"IG captions\" to consistently include exact vacancy/post counts and application deadlines where relevant for news recap reels.",
-        "why": "\"IBPS Clerk 2026 application extended | 11,403 Banking Jobs!\" (123 views on IG, 103 reach) shows impact of numerical value."
       }
     ]
   }
