@@ -1,5 +1,50 @@
 [
   {
+    "runAt": "2026-10-18T17:29:45.166Z",
+    "windowDays": 28,
+    "youtube": {
+      "videos": 200,
+      "totalViews": 20579,
+      "byVertical": {
+        "unknown": {
+          "videos": 192,
+          "views": 20291
+        },
+        "college": {
+          "videos": 2,
+          "views": 16
+        },
+        "govt": {
+          "videos": 6,
+          "views": 272
+        }
+      }
+    },
+    "instagram": {
+      "reels": 50,
+      "totalViews": 351,
+      "totalReach": 262
+    },
+    "suggestions": [
+      {
+        "action": "Prioritize news recap reels announcing 'Result OUT,' 'Admit Card OUT,' and 'Exam Dates/Timetable' for popular exams (e.g., UPSC, Board exams, NEET, JEE, SSC, Banking).",
+        "why": "These topics consistently yield highest YouTube views (e.g., KSET 2305 views, TN 10th Exam 1885 views, SBI Clerk 1111 views, NIOS Hall Ticket 916 views)."
+      },
+      {
+        "action": "Revamp Instagram strategy: Experiment with engaging hook-lines and faster video pacing/length. Add explicit calls-to-action in Gemini-written IG captions (e.g., 'Comment below if...'). A/B test Hinglish vs. English voiceovers.",
+        "why": "Instagram reels show very low views/reach (e.g., UPSSSC PET 19 views, 14 reach) and near-zero likes across all content, indicating poor engagement."
+      },
+      {
+        "action": "Standardize YouTube title formulas to precisely indicate the exam year (e.g., distinguish 2026 vs 2027). A/B test variations of Gemini-written YouTube titles/descriptions/tags.",
+        "why": "Inconsistent views for identical titles (e.g., 'SSC GD Constable 2027' 0 vs 14 views) suggest discoverability issues. Clearer titles improve search."
+      },
+      {
+        "action": "Increase news recap videos on topics that spark discussion, such as exam eligibility changes or policy updates, and craft titles to reflect controversy/debate.",
+        "why": "Videos like 'JEE Advanced 3rd Attempt?' received 10 YouTube likes (268 views), significantly higher engagement than average for similar views."
+      }
+    ]
+  },
+  {
     "runAt": "2026-10-11T19:08:14.322Z",
     "windowDays": 28,
     "youtube": {
@@ -298,55 +343,6 @@
       {
         "action": "Reduce investment in generic meme-based hook lines and shift the hook-line pool towards direct, benefit-driven, or urgent language for news content.",
         "why": "The 'Guddu Bhaiya' meme reel yielded moderate views (527 YT, 161 IG) but very low engagement (4 YT likes, 0 IG likes)."
-      }
-    ]
-  },
-  {
-    "runAt": "2026-08-30T18:10:24.252Z",
-    "windowDays": 28,
-    "youtube": {
-      "videos": 189,
-      "totalViews": 41388,
-      "byVertical": {
-        "unknown": {
-          "videos": 183,
-          "views": 39558
-        },
-        "govt": {
-          "videos": 3,
-          "views": 913
-        },
-        "schooling": {
-          "videos": 3,
-          "views": 917
-        }
-      }
-    },
-    "instagram": {
-      "reels": 50,
-      "totalViews": 1489,
-      "totalReach": 1248
-    },
-    "suggestions": [
-      {
-        "action": "Update YouTube title formulas for news reels: prominently feature \"OUT!\", \"Released!\", \"LIVE\", \"Admit Card\", \"Answer Key\", \"Result\" to convey immediate updates.",
-        "why": "Titles with these keywords show top YouTube views (e.g., CIL MT Answer Key 3455 views, Punjab Lecturer Admit Card 2966 views)."
-      },
-      {
-        "action": "Enhance YouTube titles and IG captions by integrating \"Expected Soon\", \"Coming Soon\", \"Anticipated Release\" for critical results/admit cards.",
-        "why": "Videos announcing imminent news perform strongly, e.g., SBI PO Prelims Result (1188 views) and Punjab Lecturer Admit Card (2966 views)."
-      },
-      {
-        "action": "For recruitment/result news, embed specific numbers (vacancies, applicants, qualified candidates) into YouTube titles and IG captions.",
-        "why": "Quantitative figures capture attention, demonstrated by \"1013 Vacancies! Punjab Lecturer\" (2966 views) and \"20,000+ candidates AVNL\" (1087 views)."
-      },
-      {
-        "action": "Reallocate resources from generic \"Complete General Awareness Prep\" reels; focus content on specific, time-sensitive updates and immediate exam triggers.",
-        "why": "Generic prep videos (e.g., \"Indian Economy for CIL Exam Prep\" at 5 views) receive significantly fewer views than urgent news."
-      },
-      {
-        "action": "Re-evaluate the weekday vertical rotation for \"daily quiz reels.\" Without specific performance data, integrate quizzes into high-performing verticals.",
-        "why": "Data lacks distinct quiz reel performance. News recap reels show clear high-performing examples (e.g., CIL MT, Punjab Lecturer)."
       }
     ]
   }
