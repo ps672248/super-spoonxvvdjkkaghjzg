@@ -1,5 +1,54 @@
 [
   {
+    "runAt": "2026-10-25T17:47:51.609Z",
+    "windowDays": 28,
+    "youtube": {
+      "videos": 200,
+      "totalViews": 19416,
+      "byVertical": {
+        "govt": {
+          "videos": 8,
+          "views": 1738
+        },
+        "unknown": {
+          "videos": 186,
+          "views": 17527
+        },
+        "entrance": {
+          "videos": 2,
+          "views": 19
+        },
+        "college": {
+          "videos": 4,
+          "views": 132
+        }
+      }
+    },
+    "instagram": {
+      "reels": 50,
+      "totalViews": 483,
+      "totalReach": 405
+    },
+    "suggestions": [
+      {
+        "action": "Refine YouTube title formulas and Instagram hook-line pools to consistently include urgent keywords like \"RESULT OUT!\", \"ADMIT CARD!\", \"LAST DATE!\" with a 🚨 emoji prefix.",
+        "why": "Top YouTube (CA Results 2136, AVNL 1511, BSF Steno 1440) and Instagram (Board Exam Dates 106) videos feature urgent news. 🚨 correlates with engagement (IIT JAM 269 views, 4 likes, 3 comments)."
+      },
+      {
+        "action": "Strategically prioritize daily news reels for \"govt\" (SSC, banking, state PSCs) and \"entrance/college\" (JEE, NEET, CAT, CA, Board exams) exam updates.",
+        "why": "Highest-viewed YouTube videos are predominantly \"govt\" (AVNL 1511, BSF Steno 1440) or \"entrance/college\" (CA Results 2136, JEE Adv 306)."
+      },
+      {
+        "action": "Implement a stricter process to accurately assign verticals (e.g., \"govt\", \"entrance\", \"college\") to all news recap videos, especially those currently marked \"unknown\".",
+        "why": "Many top-performing YouTube videos (e.g., CA Results 2136, BSF Steno 1440, GSSSB 1083) are 'unknown'. Proper classification will enable better targeting via hashtags and descriptions."
+      },
+      {
+        "action": "For high-performing news types, experiment with video pacing/length, cover/thumbnail frames, and stronger CTAs in Gemini-written descriptions/captions to boost engagement.",
+        "why": "Engagement is generally low. 'JEE Advanced 2027 Attempts' (306 views, 5 likes, 8 comments) shows potential for higher interaction with optimization of these pipeline knobs."
+      }
+    ]
+  },
+  {
     "runAt": "2026-10-18T17:29:45.166Z",
     "windowDays": 28,
     "youtube": {
@@ -290,59 +339,6 @@
       {
         "action": "Revamp Instagram captions and cover/thumbnail frame choices for Reels, also exploring adjustments to video pacing/length based on platform trends.",
         "why": "Instagram Reels show extremely low engagement (most under 20 views, almost all 0 likes), significantly underperforming YouTube content."
-      }
-    ]
-  },
-  {
-    "runAt": "2026-09-06T17:19:24.253Z",
-    "windowDays": 28,
-    "youtube": {
-      "videos": 200,
-      "totalViews": 47188,
-      "byVertical": {
-        "unknown": {
-          "videos": 190,
-          "views": 43488
-        },
-        "govt": {
-          "videos": 4,
-          "views": 933
-        },
-        "college": {
-          "videos": 2,
-          "views": 387
-        },
-        "schooling": {
-          "videos": 4,
-          "views": 2380
-        }
-      }
-    },
-    "instagram": {
-      "reels": 50,
-      "totalViews": 817,
-      "totalReach": 649
-    },
-    "suggestions": [
-      {
-        "action": "Prioritize news recap reels covering exam results, admit cards, answer keys, cutoffs, and recruitment notifications, making up 80%+ of content.",
-        "why": "Videos on these topics consistently garnered the highest views, e.g., 'CIL MT Answer Key' (4248 views), 'CTET' (1534 views)."
-      },
-      {
-        "action": "Update YouTube title formulas and Instagram captions to explicitly use urgent language like 'OUT NOW!', 'LAST DATE!', 'DEADLINE NEARS' for time-sensitive news.",
-        "why": "Urgency drives views; 'CIL MT Answer Key' (4248 views) and 'CTET Sep Application Closing' (621 YT, 11 IG views) highlight this."
-      },
-      {
-        "action": "For news recap reels, especially those around answer keys or grievances, craft Gemini-written YouTube descriptions and IG captions with explicit calls for comments (e.g., 'Share your score!').",
-        "why": "The 'CIL MT Answer Key' video, prompting 'Raise Objections', achieved the highest comments (17), indicating strong engagement potential."
-      },
-      {
-        "action": "Increase the frequency and breadth of news recap reels specifically for the 'schooling' (CTET, CBSE) and 'govt' (IBPS, SSC) exam verticals.",
-        "why": "The 'schooling' (CTET, 1534 views) and 'govt' (IBPS PO, 837 views) verticals had top-performing videos when identified."
-      },
-      {
-        "action": "Reduce investment in generic meme-based hook lines and shift the hook-line pool towards direct, benefit-driven, or urgent language for news content.",
-        "why": "The 'Guddu Bhaiya' meme reel yielded moderate views (527 YT, 161 IG) but very low engagement (4 YT likes, 0 IG likes)."
       }
     ]
   }
