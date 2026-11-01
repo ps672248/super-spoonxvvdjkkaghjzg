@@ -1,5 +1,54 @@
 [
   {
+    "runAt": "2026-11-01T19:05:10.531Z",
+    "windowDays": 28,
+    "youtube": {
+      "videos": 200,
+      "totalViews": 17941,
+      "byVertical": {
+        "unknown": {
+          "videos": 190,
+          "views": 17017
+        },
+        "schooling": {
+          "videos": 6,
+          "views": 738
+        },
+        "govt": {
+          "videos": 2,
+          "views": 68
+        },
+        "college": {
+          "videos": 2,
+          "views": 118
+        }
+      }
+    },
+    "instagram": {
+      "reels": 50,
+      "totalViews": 248,
+      "totalReach": 218
+    },
+    "suggestions": [
+      {
+        "action": "Adjust content publication strategy to heavily prioritize news recap reels about immediate results, admit card releases, application deadlines, and exam schedules.",
+        "why": "YouTube \"KSET Result 2026 Declared\" (1666 views) and \"SSC JE Admit Card 2026\" (1331 views) show strong interest."
+      },
+      {
+        "action": "Revamp hook-line pool and title formulas to consistently use urgent, action-oriented keywords and emojis like \"🚨 [Exam/Result Name] OUT!\", \"LAST CHANCE!\", \"Download NOW!\".",
+        "why": "High-view YouTube titles like \"🚨 SSC JE Admit Card 2026\" (1331 views) and \"GATE 2027 Application Scrutiny Closes Today\" (747 views) demonstrate this."
+      },
+      {
+        "action": "Increase dedicated slots in the weekday vertical rotation for \"schooling\" and \"govt\" verticals, especially for urgent news recap reels.",
+        "why": "\"schooling\" news (\"CBSE Class 10, 12 Date Sheet 2027\": 1053 views) and implicitly \"govt\" news (e.g., \"SSC JE Admit Card\": 1331 views) perform strongly."
+      },
+      {
+        "action": "Implement A/B testing for cover/thumbnail frame choices for news recap reels, focusing on bold, clear text overlays like \"RESULT LIVE\" or \"ADMIT CARD OUT\".",
+        "why": "Many videos have 0-8 views, indicating poor initial engagement. A strong visual hook is critical for discoverability in vertical feeds."
+      }
+    ]
+  },
+  {
     "runAt": "2026-10-25T17:47:51.609Z",
     "windowDays": 28,
     "youtube": {
@@ -290,55 +339,6 @@
       {
         "action": "Re-evaluate the hook-line pool and overall strategy for non-urgent 'strategy' or 'preparation' videos.",
         "why": "The YouTube video \"24 hours left for IES/ESE 2026? Maximize your score | Final Day Strategy\" received 0 views, indicating low engagement."
-      }
-    ]
-  },
-  {
-    "runAt": "2026-09-13T17:35:31.770Z",
-    "windowDays": 28,
-    "youtube": {
-      "videos": 200,
-      "totalViews": 63459,
-      "byVertical": {
-        "unknown": {
-          "videos": 184,
-          "views": 55420
-        },
-        "schooling": {
-          "videos": 5,
-          "views": 4032
-        },
-        "govt": {
-          "videos": 5,
-          "views": 2778
-        },
-        "college": {
-          "videos": 6,
-          "views": 1229
-        }
-      }
-    },
-    "instagram": {
-      "reels": 50,
-      "totalViews": 581,
-      "totalReach": 463
-    },
-    "suggestions": [
-      {
-        "action": "Implement robust pre-publish checks within the YouTube publishing pipeline to eliminate instances of content with 0 views and ensure proper indexing.",
-        "why": "A significant portion of YouTube content (29 out of 165 videos) received 0 views, indicating a critical technical/publishing failure."
-      },
-      {
-        "action": "Refine YouTube title formulas for news recap reels to consistently feature urgent keywords (e.g., \"OUT!\", \"RELEASED!\") and numerical highlights like vacancy counts or candidate numbers.",
-        "why": "High-performing YouTube videos like \"CIL MT Answer Key OUT!\" (4312 views) and \"AVNL 20,000+ candidates\" (1545 views) use these effectively."
-      },
-      {
-        "action": "Mandate accurate vertical assignment for all YouTube news recap videos, replacing 'unknown', to enable use of specific per-vertical hashtag sets.",
-        "why": "Over 70% of YouTube videos are 'unknown', preventing targeted hashtag optimization and hindering performance analysis per exam vertical."
-      },
-      {
-        "action": "Revamp Instagram captions and cover/thumbnail frame choices for Reels, also exploring adjustments to video pacing/length based on platform trends.",
-        "why": "Instagram Reels show extremely low engagement (most under 20 views, almost all 0 likes), significantly underperforming YouTube content."
       }
     ]
   }
