@@ -3,15 +3,15 @@
  * Renders and publishes Aspirant Arcade 3D Character Marketing Story Reels.
  *
  * Designed specifically for Instagram Reels (and YouTube Shorts):
- * Takes a key app feature (e.g. Focus Guard, Speed Arena, Formula Flashcards),
+ * Takes a key app feature or auto-generates a custom story around aspirant struggles
+ * (e.g. Exam Anxiety, 10+ Arcade Games, Focus Guard, Speed Battles),
  * pairs it with a 3D low-poly character banter storyline (Arjun & Priya),
- * renders with Ken Burns dynamic parallax and audio-synced lip sync,
- * and publishes with high-converting captions and hashtags.
+ * synthesizes Hindi voices, and publishes with high-converting captions and hashtags.
  *
  * Env:
- *   MARKETING_FEATURE       focus-guard | speed-arena | formula-flashcards | exam-radar (default: focus-guard)
- *   TARGET_PLATFORM         instagram | youtube | both (default: instagram)
- *   PUBLISH                 'true' to upload live (default: false)
+ *   STORY_PROMPT / MARKETING_FEATURE  custom prompt, or 'focus-guard', 'speed-arena', 'auto'
+ *   TARGET_PLATFORM                   instagram | youtube | both (default: instagram)
+ *   PUBLISH                           'true' to upload live (default: false)
  *   CLOUDINARY_CLOUD_NAME / CLOUDINARY_API_KEY / CLOUDINARY_API_SECRET (required if PUBLISH=true on Instagram)
  *   IG_BUSINESS_ACCOUNT_ID / IG_ACCESS_TOKEN (required if PUBLISH=true on Instagram)
  *   YT_CLIENT_SECRET / YT_UPLOAD_TOKEN (required if PUBLISH=true on YouTube)
@@ -24,6 +24,8 @@ import { bundle } from '@remotion/bundler';
 import { OUTPUT_DIR, renderComposition, renderCoverStill } from './renderShared';
 import { uploadInstagramReel } from './publishInstagram';
 import { uploadYouTubeShort, setYouTubeThumbnail } from './publishYouTube';
+import { generateMarketingStory } from './marketingStoryGenerator';
+import type { StoryPromoProps } from './StoryPromo';
 
 const SITE_URL = 'https://www.aspirant-arcade.xyz';
 
@@ -80,12 +82,12 @@ export const CAMPAIGNS: Record<string, MarketingCampaign> = {
   },
 };
 
-async function notifyDiscord(campaign: MarketingCampaign, links: { instagramUrl?: string; youtubeUrl?: string }): Promise<void> {
+async function notifyDiscord(title: string, caption: string, links: { instagramUrl?: string; youtubeUrl?: string }): Promise<void> {
   const webhookUrl = process.env.DISCORD_WEBHOOK_NEWCONTENT;
   if (!webhookUrl || (!links.instagramUrl && !links.youtubeUrl)) return;
 
   const fields: { name: string; value: string; inline?: boolean }[] = [
-    { name: 'Campaign', value: campaign.featureName, inline: true },
+    { name: 'Campaign', value: title, inline: true },
   ];
   if (links.instagramUrl) fields.push({ name: 'Instagram Reel', value: links.instagramUrl });
   if (links.youtubeUrl) fields.push({ name: 'YouTube Short', value: links.youtubeUrl });
@@ -96,8 +98,8 @@ async function notifyDiscord(campaign: MarketingCampaign, links: { instagramUrl?
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         embeds: [{
-          title: `🎬 New Marketing Reel Published: ${campaign.featureName}`,
-          description: campaign.caption.slice(0, 200) + '...',
+          title: `🎬 New Marketing Reel Published: ${title}`,
+          description: caption.slice(0, 200) + '...',
           color: 0xFDC003,
           fields,
           timestamp: new Date().toISOString(),
@@ -110,10 +112,50 @@ async function notifyDiscord(campaign: MarketingCampaign, links: { instagramUrl?
   }
 }
 
-export async function renderMarketingReel(featureId: string = 'focus-guard', targetPlatform: 'instagram' | 'youtube' | 'both' = 'instagram', publishLive: boolean = false) {
-  const campaign = CAMPAIGNS[featureId] || CAMPAIGNS['focus-guard'];
+export async function renderMarketingReel(
+  featureOrPrompt: string = 'focus-guard',
+  targetPlatform: 'instagram' | 'youtube' | 'both' = 'instagram',
+  publishLive: boolean = false
+) {
+  const isCustomOrAuto =
+    featureOrPrompt.includes(' ') ||
+    featureOrPrompt === 'auto' ||
+    featureOrPrompt.includes('anxi') ||
+    featureOrPrompt.includes('game') ||
+    featureOrPrompt.includes('stress');
+
+  let storyProps: StoryPromoProps = { hasBgm: true };
+  let fullCaption = '';
+  let metaYoutube = { title: '', description: '', tags: [] as string[] };
+  let featureId = 'marketing';
+  let featureName = 'Marketing Story';
+
+  if (isCustomOrAuto) {
+    const promptArg = featureOrPrompt === 'auto' ? undefined : featureOrPrompt;
+    const generated = await generateMarketingStory(promptArg);
+    storyProps = generated.storyProps;
+    fullCaption = `${generated.caption}\n\n${generated.hashtags.join(' ')}`;
+    metaYoutube = {
+      title: generated.youtubeTitle,
+      description: generated.youtubeDescription,
+      tags: generated.hashtags.map((h) => h.replace('#', '')),
+    };
+    featureId = generated.featureId;
+    featureName = generated.featureBadge;
+  } else {
+    const campaign = CAMPAIGNS[featureOrPrompt] || CAMPAIGNS['focus-guard'];
+    featureId = campaign.featureId;
+    featureName = campaign.featureName;
+    fullCaption = `${campaign.caption}\n\n${campaign.hashtags.join(' ')}`;
+    metaYoutube = {
+      title: campaign.youtubeTitle,
+      description: campaign.youtubeDescription,
+      tags: campaign.hashtags.map((h) => h.replace('#', '')),
+    };
+  }
+
   console.log('\n======================================================');
-  console.log(`🎬 Rendering Marketing Story Reel: [${campaign.featureName}]`);
+  console.log(`🎬 Rendering Marketing Story Reel: [${featureName}]`);
   console.log(`🎯 Platform Target: ${targetPlatform.toUpperCase()} | PUBLISH=${publishLive}`);
   console.log('======================================================\n');
 
@@ -121,31 +163,26 @@ export async function renderMarketingReel(featureId: string = 'focus-guard', tar
   const today = new Date().toISOString().slice(0, 10);
   const bundleLocation = await bundle({ entryPoint: path.join(process.cwd(), 'src', 'index.ts') });
 
-  const outFile = path.join(OUTPUT_DIR, `${today}-marketing-${campaign.featureId}.mp4`);
-  const coverFile = path.join(OUTPUT_DIR, `${today}-marketing-${campaign.featureId}-cover.jpg`);
-  const priyaCoverFile = path.join(OUTPUT_DIR, `${today}-marketing-${campaign.featureId}-priya.jpg`);
+  const outFile = path.join(OUTPUT_DIR, `${today}-marketing-${featureId}.mp4`);
+  const coverFile = path.join(OUTPUT_DIR, `${today}-marketing-${featureId}-cover.jpg`);
+  const priyaCoverFile = path.join(OUTPUT_DIR, `${today}-marketing-${featureId}-priya.jpg`);
 
   // 1. Render Video
   console.log(`[marketing-reel] Rendering StoryPromo composition to: ${outFile}...`);
-  await renderComposition(bundleLocation, 'StoryPromo', { hasBgm: true }, outFile);
+  await renderComposition(bundleLocation, 'StoryPromo', storyProps as unknown as Record<string, unknown>, outFile);
 
   // 2. Render Stills
   console.log(`[marketing-reel] Rendering cover stills...`);
-  await renderCoverStill(bundleLocation, 'StoryPromo', {}, 60, coverFile);
-  await renderCoverStill(bundleLocation, 'StoryPromo', {}, 280, priyaCoverFile);
+  await renderCoverStill(bundleLocation, 'StoryPromo', storyProps as unknown as Record<string, unknown>, 60, coverFile);
+  await renderCoverStill(bundleLocation, 'StoryPromo', storyProps as unknown as Record<string, unknown>, 280, priyaCoverFile);
 
   // 3. Save Metadata JSON
-  const fullCaption = `${campaign.caption}\n\n${campaign.hashtags.join(' ')}`;
   const meta = {
-    campaign: campaign.featureName,
+    campaign: featureName,
     instagram: {
       caption: fullCaption,
     },
-    youtube: {
-      title: campaign.youtubeTitle,
-      description: campaign.youtubeDescription,
-      tags: campaign.hashtags.map((h) => h.replace('#', '')),
-    },
+    youtube: metaYoutube,
   };
   const metaFile = outFile.replace(/\.mp4$/, '.meta.json');
   writeFileSync(metaFile, JSON.stringify(meta, null, 2));
@@ -180,7 +217,7 @@ export async function renderMarketingReel(featureId: string = 'focus-guard', tar
       }
     }
 
-    await notifyDiscord(campaign, results);
+    await notifyDiscord(featureName, fullCaption, results);
   } else {
     console.log(`[marketing-reel] PUBLISH is false — local video ready at: ${outFile}`);
   }
@@ -196,11 +233,11 @@ export async function renderMarketingReel(featureId: string = 'focus-guard', tar
 
 // CLI runner
 async function main() {
-  const feature = (process.env.MARKETING_FEATURE || 'focus-guard').toLowerCase();
+  const prompt = (process.env.STORY_PROMPT || process.env.MARKETING_FEATURE || 'focus-guard').trim();
   const platform = (process.env.TARGET_PLATFORM || 'instagram').toLowerCase() as 'instagram' | 'youtube' | 'both';
   const publish = process.env.PUBLISH === 'true';
 
-  await renderMarketingReel(feature, platform, publish);
+  await renderMarketingReel(prompt, platform, publish);
 }
 
 const isDirectRun = process.argv[1]?.includes('renderMarketingReel');

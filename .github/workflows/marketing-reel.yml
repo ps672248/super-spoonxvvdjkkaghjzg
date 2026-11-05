@@ -1,21 +1,18 @@
-name: Marketing Reel Bot (App Promo Story)
+name: Marketing Reel Bot (AI Story & App Promo)
 
 # Dedicated workflow for Aspirant Arcade 3D Character Marketing Story Reels.
-# Pairs Arjun & Priya in an engaging bantered story around an app feature
-# (e.g. Focus Guard, Speed Arena) and publishes directly to Instagram Reels
-# (and optionally YouTube Shorts).
+# Auto-generates engaging bantered stories between Arjun & Priya around app features
+# (e.g. Exam Anxiety & 10+ Arcade Games, Focus Guard, Speed Battles),
+# synthesizes Hindi voices, and publishes directly to Instagram Reels (and optionally YouTube Shorts).
 
 on:
   workflow_dispatch:
     inputs:
-      feature:
-        description: 'Marketing Feature Story'
-        required: true
-        type: choice
-        default: 'focus-guard'
-        options:
-          - 'focus-guard'
-          - 'speed-arena'
+      story_prompt:
+        description: 'Story Brief / Pain Point (e.g. "anxious of exam / 10+ games", "focus-guard", "speed-arena", "auto")'
+        required: false
+        type: string
+        default: 'arjun why you are not studing / anxious of exam / play 10+ games on aspirant arcade'
       target_platform:
         description: 'Publish Target (default: Instagram Only as per policy)'
         required: true
@@ -65,7 +62,7 @@ jobs:
       - name: Render Marketing Story Reel
         working-directory: marketing/video
         env:
-          MARKETING_FEATURE: ${{ github.event.inputs.feature || 'focus-guard' }}
+          STORY_PROMPT: ${{ github.event.inputs.story_prompt || 'arjun why you are not studing / anxious of exam / play 10+ games on aspirant arcade' }}
           TARGET_PLATFORM: ${{ github.event.inputs.target_platform || 'instagram' }}
           PUBLISH: ${{ github.event.inputs.publish || 'false' }}
           SARVAM_API_KEY: ${{ secrets.SARVAM_API_KEY }}

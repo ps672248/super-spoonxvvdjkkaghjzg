@@ -15,9 +15,41 @@ import { BORDER, GOLD, INK, MUTED, PANEL, WHITE, CORRECT_GREEN } from './theme';
 import audioEnvelopes from './audioEnvelopes.json';
 import { LowPolyMouth } from './LowPolyCharacter';
 
+export interface StoryDialogue {
+  hindi: string;
+  englishSub?: string;
+  audioSrc?: string;
+  durationFrames?: number;
+}
+
+export interface StoryPromoProps {
+  hasBgm?: boolean;
+  featureTag?: string;
+  scene1Priya?: StoryDialogue;
+  scene1Arjun?: StoryDialogue;
+  scene2Priya?: StoryDialogue;
+  scene2Arjun?: StoryDialogue;
+  scene3Arjun?: StoryDialogue;
+  outro?: {
+    headlineMain?: string;
+    headlineSub?: string;
+    tagline?: string;
+    ctaButton?: string;
+  };
+}
+
 export const STORY_PROMO_DURATION_IN_FRAMES = 1310; // ~43.6 seconds @ 30fps
 
-export const StoryPromo: React.FC<{ hasBgm?: boolean }> = ({ hasBgm = true }) => {
+export const StoryPromo: React.FC<StoryPromoProps> = ({
+  hasBgm = true,
+  featureTag = 'Focus Guard',
+  scene1Priya,
+  scene1Arjun,
+  scene2Priya,
+  scene2Arjun,
+  scene3Arjun,
+  outro,
+}) => {
   return (
     <AbsoluteFill
       style={{
@@ -78,28 +110,28 @@ export const StoryPromo: React.FC<{ hasBgm?: boolean }> = ({ hasBgm = true }) =>
             textTransform: 'uppercase',
           }}
         >
-          Focus Guard
+          {featureTag}
         </div>
       </div>
 
       {/* ─── SCENE 1 (Frames 0 - 490): The Reality Check Hook ─── */}
       <Sequence from={0} durationInFrames={490}>
-        <Scene1RealityCheck />
+        <Scene1RealityCheck priyaDialogue={scene1Priya} arjunDialogue={scene1Arjun} />
       </Sequence>
 
       {/* ─── SCENE 2 (Frames 490 - 830): The Focus Guard Intervention (POV Phone) ─── */}
       <Sequence from={490} durationInFrames={340}>
-        <Scene2Intervention />
+        <Scene2Intervention priyaDialogue={scene2Priya} arjunDialogue={scene2Arjun} />
       </Sequence>
 
       {/* ─── SCENE 3 (Frames 830 - 1070): The Breakthrough ─── */}
       <Sequence from={830} durationInFrames={240}>
-        <Scene3Breakthrough />
+        <Scene3Breakthrough arjunDialogue={scene3Arjun} />
       </Sequence>
 
       {/* ─── SCENE 4 (Frames 1070 - 1310): Dual Victory & CTA Outro ─── */}
       <Sequence from={1070} durationInFrames={240}>
-        <Scene4Outro />
+        <Scene4Outro outroProps={outro} />
       </Sequence>
     </AbsoluteFill>
   );
@@ -109,7 +141,10 @@ export const StoryPromo: React.FC<{ hasBgm?: boolean }> = ({ hasBgm = true }) =>
    SCENE 1: THE REALITY CHECK (Cinematic 3D Low-Poly Arjun & Priya)
    Matching @base.learn Reel 1 (Arjun at desk) & Reel 2 (Priya mentor)
 ══════════════════════════════════════════════════════════════════ */
-const Scene1RealityCheck: React.FC = () => {
+const Scene1RealityCheck: React.FC<{
+  priyaDialogue?: StoryDialogue;
+  arjunDialogue?: StoryDialogue;
+}> = ({ priyaDialogue, arjunDialogue }) => {
   const frame = useCurrentFrame();
 
   // Part A (Arjun speaks): 0 to 221 frames
@@ -134,10 +169,10 @@ const Scene1RealityCheck: React.FC = () => {
     <AbsoluteFill>
       {/* 1. Spoken Audio */}
       <Sequence from={0} durationInFrames={221}>
-        <Audio src={staticFile('audio/narration/dialogue1_arjun.mp3')} volume={1.0} />
+        <Audio src={staticFile(arjunDialogue?.audioSrc || 'audio/narration/dialogue1_arjun.mp3')} volume={1.0} />
       </Sequence>
       <Sequence from={221} durationInFrames={269}>
-        <Audio src={staticFile('audio/narration/dialogue2_priya.mp3')} volume={1.0} />
+        <Audio src={staticFile(priyaDialogue?.audioSrc || 'audio/narration/dialogue2_priya.mp3')} volume={1.0} />
       </Sequence>
 
       {/* 2. Visual 3D Low-Poly World */}
@@ -282,13 +317,17 @@ const Scene1RealityCheck: React.FC = () => {
           }}
         >
           {isArjunPart ? (
-            <>
-              "Bhai sach bata... phone sirf <span style={{ color: GOLD }}>5 MINUTE</span> ke liye uthaya tha, aur 2 ghante se swipe kar raha hoon!"
-            </>
+            arjunDialogue?.hindi ? `"${arjunDialogue.hindi}"` : (
+              <>
+                "Bhai sach bata... phone sirf <span style={{ color: GOLD }}>5 MINUTE</span> ke liye uthaya tha, aur 2 ghante se swipe kar raha hoon!"
+              </>
+            )
           ) : (
-            <>
-              "Aur raat ko guilt karega: <span style={{ color: '#FB7185' }}>'Aaj ka syllabus phir reh gaya!'</span> Kitni baar bola hai Focus Guard laga le!"
-            </>
+            priyaDialogue?.hindi ? `"${priyaDialogue.hindi}"` : (
+              <>
+                "Aur raat ko guilt karega: <span style={{ color: '#FB7185' }}>'Aaj ka syllabus phir reh gaya!'</span> Kitni baar bola hai Focus Guard laga le!"
+              </>
+            )
           )}
         </h2>
       </div>
@@ -300,7 +339,10 @@ const Scene1RealityCheck: React.FC = () => {
    SCENE 2: THE INTERVENTION (First-Person POV of Smartphone)
    Reels Feed Blocked by Holographic Focus Guard GATE Quiz
 ══════════════════════════════════════════════════════════════════ */
-const Scene2Intervention: React.FC = () => {
+const Scene2Intervention: React.FC<{
+  priyaDialogue?: StoryDialogue;
+  arjunDialogue?: StoryDialogue;
+}> = ({ priyaDialogue, arjunDialogue }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
@@ -319,10 +361,10 @@ const Scene2Intervention: React.FC = () => {
     <AbsoluteFill>
       {/* 1. Spoken Audio */}
       <Sequence from={0} durationInFrames={74}>
-        <Audio src={staticFile('audio/narration/dialogue3_arjun.mp3')} volume={1.0} />
+        <Audio src={staticFile(arjunDialogue?.audioSrc || 'audio/narration/dialogue3_arjun.mp3')} volume={1.0} />
       </Sequence>
       <Sequence from={74} durationInFrames={266}>
-        <Audio src={staticFile('audio/narration/dialogue4_priya.mp3')} volume={1.0} />
+        <Audio src={staticFile(priyaDialogue?.audioSrc || 'audio/narration/dialogue4_priya.mp3')} volume={1.0} />
       </Sequence>
 
       {/* 2. Visual Scene */}
@@ -446,11 +488,13 @@ const Scene2Intervention: React.FC = () => {
           }}
         >
           {isArjunAsking ? (
-            '"Lekin Focus Guard se kya hoga?"'
+            arjunDialogue?.hindi ? `"${arjunDialogue.hindi}"` : '"Lekin Focus Guard se kya hoga?"'
           ) : (
-            <>
-              "Instagram kholte hi har 3 reel ke baad ek <span style={{ color: GOLD }}>GATE question</span> screen block karega!"
-            </>
+            priyaDialogue?.hindi ? `"${priyaDialogue.hindi}"` : (
+              <>
+                "Instagram kholte hi har 3 reel ke baad ek <span style={{ color: GOLD }}>GATE question</span> screen block karega!"
+              </>
+            )
           )}
         </h2>
       </div>
@@ -462,7 +506,9 @@ const Scene2Intervention: React.FC = () => {
    SCENE 3: THE BREAKTHROUGH (Arjun Celebrates Two Thumbs Up)
    "Doomscrolling Defeated" Emerald Green Monitor
 ══════════════════════════════════════════════════════════════════ */
-const Scene3Breakthrough: React.FC = () => {
+const Scene3Breakthrough: React.FC<{
+  arjunDialogue?: StoryDialogue;
+}> = ({ arjunDialogue }) => {
   const frame = useCurrentFrame();
 
   const cameraScale = interpolate(frame, [0, 240], [1.02, 1.15], { extrapolateRight: 'clamp' });
@@ -470,7 +516,7 @@ const Scene3Breakthrough: React.FC = () => {
 
   return (
     <AbsoluteFill>
-      <Audio src={staticFile('audio/narration/dialogue5_arjun.mp3')} volume={1.0} />
+      <Audio src={staticFile(arjunDialogue?.audioSrc || 'audio/narration/dialogue5_arjun.mp3')} volume={1.0} />
 
       {/* 1. Arjun Celebrating in 3D Low-Poly Room */}
       <AbsoluteFill
@@ -576,7 +622,11 @@ const Scene3Breakthrough: React.FC = () => {
             textShadow: '0 4px 30px rgba(0,0,0,0.85)',
           }}
         >
-          "Arrey waah! Sahi answer diya tabhi scroll hua! Matlab <span style={{ color: GOLD }}>DOOMSCROLLING BAND</span> aur score chalu!"
+          {arjunDialogue?.hindi ? `"${arjunDialogue.hindi}"` : (
+            <>
+              "Arrey waah! Sahi answer diya tabhi scroll hua! Matlab <span style={{ color: GOLD }}>DOOMSCROLLING BAND</span> aur score chalu!"
+            </>
+          )}
         </h2>
       </div>
     </AbsoluteFill>
@@ -587,7 +637,9 @@ const Scene3Breakthrough: React.FC = () => {
    SCENE 4: DUAL CTA OUTRO
    "Stop Scrolling. Start Scoring."
 ══════════════════════════════════════════════════════════════════ */
-const Scene4Outro: React.FC = () => {
+const Scene4Outro: React.FC<{
+  outroProps?: StoryPromoProps['outro'];
+}> = ({ outroProps }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
@@ -647,15 +699,15 @@ const Scene4Outro: React.FC = () => {
 
         <div>
           <h2 style={{ fontSize: '60px', fontWeight: 900, color: WHITE, margin: 0, letterSpacing: '-1.5px' }}>
-            STOP SCROLLING.
+            {outroProps?.headlineMain || 'STOP SCROLLING.'}
           </h2>
           <h2 style={{ fontSize: '60px', fontWeight: 900, color: GOLD, margin: '6px 0 0 0', letterSpacing: '-1.5px', textShadow: '0 0 35px rgba(253, 192, 3, 0.5)' }}>
-            START SCORING.
+            {outroProps?.headlineSub || 'START SCORING.'}
           </h2>
         </div>
 
         <p style={{ color: MUTED, fontSize: '22px', fontWeight: 700, margin: 0 }}>
-          Beat reel addiction with real GATE & PSU questions.
+          {outroProps?.tagline || 'Beat reel addiction with real GATE & PSU questions.'}
         </p>
 
         <div
@@ -671,7 +723,7 @@ const Scene4Outro: React.FC = () => {
             boxShadow: '0 15px 40px rgba(253, 192, 3, 0.5)',
           }}
         >
-          Download Aspirant Arcade App • Play Store
+          {outroProps?.ctaButton || 'Download Aspirant Arcade App • Play Store'}
         </div>
       </div>
     </AbsoluteFill>
