@@ -10,9 +10,10 @@ import {
   interpolate,
 } from 'remotion';
 import { Audio } from '@remotion/media';
-import { ThreeCharacterScene } from './ThreeCharacterScene';
 import { fontFamily } from './Brand';
 import { BORDER, GOLD, INK, MUTED, PANEL, WHITE, CORRECT_GREEN } from './theme';
+import audioEnvelopes from './audioEnvelopes.json';
+import { LowPolyMouth } from './LowPolyCharacter';
 
 export const STORY_PROMO_DURATION_IN_FRAMES = 1310; // ~43.6 seconds @ 30fps
 
@@ -28,21 +29,7 @@ export const StoryPromo: React.FC<{ hasBgm?: boolean }> = ({ hasBgm = true }) =>
       }}
     >
       {/* Background BGM Bed */}
-      {hasBgm && <Audio src={staticFile('audio/bgm.mp3')} loop volume={0.10} />}
-
-      {/* Top Scrim Gradient for Ultra-Crisp Subtitle Readability */}
-      <div
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          height: '380px',
-          background: 'linear-gradient(180deg, rgba(6, 9, 19, 0.92) 0%, rgba(6, 9, 19, 0.75) 55%, rgba(6, 9, 19, 0) 100%)',
-          zIndex: 32,
-          pointerEvents: 'none',
-        }}
-      />
+      {hasBgm && <Audio src={staticFile('audio/bgm.mp3')} loop volume={0.12} />}
 
       {/* ─── Top Header Watermark (Real Aspirant Arcade Logo) ─── */}
       <div
@@ -97,12 +84,12 @@ export const StoryPromo: React.FC<{ hasBgm?: boolean }> = ({ hasBgm = true }) =>
 
       {/* ─── SCENE 1 (Frames 0 - 490): The Reality Check Hook ─── */}
       <Sequence from={0} durationInFrames={490}>
-        <Scene1Dialogue />
+        <Scene1RealityCheck />
       </Sequence>
 
-      {/* ─── SCENE 2 (Frames 490 - 830): The Focus Guard Intervention ─── */}
+      {/* ─── SCENE 2 (Frames 490 - 830): The Focus Guard Intervention (POV Phone) ─── */}
       <Sequence from={490} durationInFrames={340}>
-        <Scene2FocusGuard />
+        <Scene2Intervention />
       </Sequence>
 
       {/* ─── SCENE 3 (Frames 830 - 1070): The Breakthrough ─── */}
@@ -119,15 +106,29 @@ export const StoryPromo: React.FC<{ hasBgm?: boolean }> = ({ hasBgm = true }) =>
 };
 
 /* ══════════════════════════════════════════════════════════════════
-   SCENE 1: THE REALITY CHECK (Cinematic 3D Low-Poly Close-ups)
-   Matching @base.learn Reel 1 (Arjun at desk) & Reel 2 (Investigation)
+   SCENE 1: THE REALITY CHECK (Cinematic 3D Low-Poly Arjun & Priya)
+   Matching @base.learn Reel 1 (Arjun at desk) & Reel 2 (Priya mentor)
 ══════════════════════════════════════════════════════════════════ */
-const Scene1Dialogue: React.FC = () => {
+const Scene1RealityCheck: React.FC = () => {
   const frame = useCurrentFrame();
 
   // Part A (Arjun speaks): 0 to 221 frames
   // Part B (Priya speaks): 221 to 490 frames
   const isArjunPart = frame < 221;
+
+  // Cinematic Ken Burns Camera Motion
+  const arjunScale = interpolate(frame, [0, 220], [1.02, 1.18], { extrapolateRight: 'clamp' });
+  const arjunY = interpolate(frame, [0, 220], [0, -30], { extrapolateRight: 'clamp' });
+
+  const priyaLocalFrame = frame - 221;
+  const priyaScale = interpolate(priyaLocalFrame, [0, 269], [1.03, 1.16], { extrapolateRight: 'clamp' });
+  const priyaY = interpolate(priyaLocalFrame, [0, 269], [0, -25], { extrapolateRight: 'clamp' });
+
+  // Audio amplitude for subtle screen light pulse
+  const clipKey = isArjunPart ? 'dialogue1_arjun' : 'dialogue2_priya';
+  const ampArray = (audioEnvelopes as any)[clipKey] || [];
+  const localIndex = isArjunPart ? frame : priyaLocalFrame;
+  const amplitude = ampArray[localIndex] || 0;
 
   return (
     <AbsoluteFill>
@@ -139,34 +140,94 @@ const Scene1Dialogue: React.FC = () => {
         <Audio src={staticFile('audio/narration/dialogue2_priya.mp3')} volume={1.0} />
       </Sequence>
 
-      {/* 2. 3D Low-Poly Character Scene (Cut between Arjun & Priya) */}
+      {/* 2. Visual 3D Low-Poly World */}
       {isArjunPart ? (
-        <ThreeCharacterScene
-          key="s1_arjun"
-          variant="arjun"
-          cameraAngle="closeup"
-          dialogueClip="dialogue1_arjun"
-          dialogueStartFrame={0}
-          mood="talking"
-          showMonitor={true}
-        />
+        <AbsoluteFill
+          style={{
+            transform: `scale(${arjunScale}) translateY(${arjunY}px)`,
+            transformOrigin: '55% 40%',
+          }}
+        >
+          <Img
+            src={staticFile('scenes/scene1_arjun_desk.jpg')}
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          />
+          {/* Real-time audio-synced Lip Sync Mouth */}
+          <LowPolyMouth
+            amplitude={amplitude}
+            centerX="59.9%"
+            centerY="40.3%"
+            baseWidth={24}
+            maxHeight={14}
+            rotationDeg={-6}
+            lipColor="rgba(100, 45, 30, 0.95)"
+          />
+          {/* Subtle audio-reactive monitor glow reflection overlay */}
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              background: 'radial-gradient(circle at 20% 50%, rgba(6, 182, 212, 0.22) 0%, transparent 60%)',
+              opacity: 0.6 + amplitude * 0.4,
+              mixBlendMode: 'screen',
+              pointerEvents: 'none',
+            }}
+          />
+        </AbsoluteFill>
       ) : (
-        <ThreeCharacterScene
-          key="s1_priya"
-          variant="priya"
-          cameraAngle="closeup"
-          dialogueClip="dialogue2_priya"
-          dialogueStartFrame={221}
-          mood="talking"
-          showMonitor={true}
-        />
+        <AbsoluteFill
+          style={{
+            transform: `scale(${priyaScale}) translateY(${priyaY}px)`,
+            transformOrigin: '50% 35%',
+          }}
+        >
+          <Img
+            src={staticFile('scenes/scene2_priya_desk.jpg')}
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          />
+          {/* Real-time audio-synced Lip Sync Mouth */}
+          <LowPolyMouth
+            amplitude={amplitude}
+            centerX="65.75%"
+            centerY="39.97%"
+            baseWidth={26}
+            maxHeight={14}
+            rotationDeg={1}
+            lipColor="rgba(110, 40, 30, 0.95)"
+          />
+          {/* Warm desk lamp glow overlay */}
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              background: 'radial-gradient(circle at 18% 40%, rgba(253, 192, 3, 0.18) 0%, transparent 55%)',
+              opacity: 0.7 + amplitude * 0.3,
+              mixBlendMode: 'screen',
+              pointerEvents: 'none',
+            }}
+          />
+        </AbsoluteFill>
       )}
 
-      {/* 3. Sleek Editorial Editorial Subtitle Overlay (Reel 2 Style) */}
+      {/* 3. Top Scrim Gradient for Ultra-Crisp Subtitle Readability */}
       <div
         style={{
           position: 'absolute',
-          top: '120px',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: '420px',
+          background: 'linear-gradient(180deg, rgba(6, 9, 19, 0.94) 0%, rgba(6, 9, 19, 0.80) 65%, rgba(6, 9, 19, 0) 100%)',
+          zIndex: 32,
+          pointerEvents: 'none',
+        }}
+      />
+
+      {/* 4. Editorial Subtitle Card (Reel 2 Style: // 01 · the hook) */}
+      <div
+        style={{
+          position: 'absolute',
+          top: '115px',
           left: '48px',
           right: '48px',
           zIndex: 35,
@@ -194,9 +255,9 @@ const Scene1Dialogue: React.FC = () => {
           <span
             style={{
               padding: '6px 18px',
-              backgroundColor: isArjunPart ? 'rgba(244, 63, 94, 0.2)' : 'rgba(253, 192, 3, 0.2)',
+              backgroundColor: isArjunPart ? 'rgba(244, 63, 94, 0.25)' : 'rgba(253, 192, 3, 0.25)',
               color: isArjunPart ? '#FB7185' : GOLD,
-              border: `2px solid ${isArjunPart ? 'rgba(244, 63, 94, 0.5)' : 'rgba(253, 192, 3, 0.5)'}`,
+              border: `2px solid ${isArjunPart ? 'rgba(244, 63, 94, 0.6)' : 'rgba(253, 192, 3, 0.6)'}`,
               borderRadius: '999px',
               fontWeight: 900,
               fontSize: '14px',
@@ -217,7 +278,7 @@ const Scene1Dialogue: React.FC = () => {
             margin: '0 auto',
             maxWidth: '820px',
             color: WHITE,
-            textShadow: '0 4px 30px rgba(0,0,0,0.8)',
+            textShadow: '0 4px 30px rgba(0,0,0,0.85)',
           }}
         >
           {isArjunPart ? (
@@ -226,7 +287,7 @@ const Scene1Dialogue: React.FC = () => {
             </>
           ) : (
             <>
-              "Aur raat ko guilt karega: <span style={{ color: '#FB7185' }}>'Aaj ka syllabus phir reh gaya!'</span> Focus Guard laga le!"
+              "Aur raat ko guilt karega: <span style={{ color: '#FB7185' }}>'Aaj ka syllabus phir reh gaya!'</span> Kitni baar bola hai Focus Guard laga le!"
             </>
           )}
         </h2>
@@ -236,15 +297,23 @@ const Scene1Dialogue: React.FC = () => {
 };
 
 /* ══════════════════════════════════════════════════════════════════
-   SCENE 2: THE FOCUS GUARD INTERVENTION (Interactive Quiz Overlay)
+   SCENE 2: THE INTERVENTION (First-Person POV of Smartphone)
+   Reels Feed Blocked by Holographic Focus Guard GATE Quiz
 ══════════════════════════════════════════════════════════════════ */
-const Scene2FocusGuard: React.FC = () => {
+const Scene2Intervention: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
-  const isArjunPart = frame < 74;
-  const isCorrect = frame > 190;
-  const popAnim = spring({ frame: frame - 40, fps, config: { damping: 11, mass: 0.8 } });
+  // Part A (Arjun asks): 0 to 74 frames (490-564 in master)
+  // Part B (Priya explains on POV phone): 74 to 340 frames (564-830 in master)
+  const isArjunAsking = frame < 74;
+
+  const priyaLocalFrame = frame - 74;
+  const isAnswerRevealed = priyaLocalFrame > 140;
+
+  // Cinematic Camera push-in towards the smartphone screen
+  const cameraZoom = interpolate(frame, [0, 340], [1.02, 1.15], { extrapolateRight: 'clamp' });
+  const cameraY = interpolate(frame, [0, 340], [0, -20], { extrapolateRight: 'clamp' });
 
   return (
     <AbsoluteFill>
@@ -256,34 +325,75 @@ const Scene2FocusGuard: React.FC = () => {
         <Audio src={staticFile('audio/narration/dialogue4_priya.mp3')} volume={1.0} />
       </Sequence>
 
-      {/* 2. 3D Low-Poly Character Scene */}
-      {isArjunPart ? (
-        <ThreeCharacterScene
-          key="s2_arjun"
-          variant="arjun"
-          cameraAngle="medium"
-          dialogueClip="dialogue3_arjun"
-          dialogueStartFrame={0}
-          mood="questioning"
-          showMonitor={true}
-        />
+      {/* 2. Visual Scene */}
+      {isArjunAsking ? (
+        <AbsoluteFill
+          style={{
+            transform: 'scale(1.15) translateY(-30px)',
+            transformOrigin: '55% 40%',
+          }}
+        >
+          <Img
+            src={staticFile('scenes/scene1_arjun_desk.jpg')}
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          />
+          <LowPolyMouth
+            amplitude={((audioEnvelopes as any)['dialogue3_arjun'] || [])[frame] || 0}
+            centerX="59.9%"
+            centerY="40.3%"
+            baseWidth={24}
+            maxHeight={14}
+            rotationDeg={-6}
+            lipColor="rgba(100, 45, 30, 0.95)"
+          />
+        </AbsoluteFill>
       ) : (
-        <ThreeCharacterScene
-          key="s2_priya"
-          variant="priya"
-          cameraAngle="over_shoulder"
-          dialogueClip="dialogue4_priya"
-          dialogueStartFrame={74}
-          mood="talking"
-          showMonitor={true}
-        />
+        <AbsoluteFill
+          style={{
+            transform: `scale(${cameraZoom}) translateY(${cameraY}px)`,
+            transformOrigin: '50% 50%',
+          }}
+        >
+          <Img
+            src={staticFile('scenes/scene3_phone_intervention.jpg')}
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          />
+          {/* Holographic cyan/gold energy shimmer */}
+          <div
+            style={{
+              position: 'absolute',
+              top: '28%',
+              left: '30%',
+              width: '40%',
+              height: '35%',
+              background: 'radial-gradient(circle, rgba(6, 182, 212, 0.25) 0%, transparent 70%)',
+              opacity: Math.sin(frame / 6) * 0.2 + 0.8,
+              mixBlendMode: 'screen',
+              pointerEvents: 'none',
+            }}
+          />
+        </AbsoluteFill>
       )}
 
-      {/* 3. Header Subtitles */}
+      {/* 3. Top Scrim Gradient */}
       <div
         style={{
           position: 'absolute',
-          top: '120px',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: '420px',
+          background: 'linear-gradient(180deg, rgba(6, 9, 19, 0.94) 0%, rgba(6, 9, 19, 0.80) 65%, rgba(6, 9, 19, 0) 100%)',
+          zIndex: 32,
+          pointerEvents: 'none',
+        }}
+      />
+
+      {/* 4. Editorial Subtitle Overlay */}
+      <div
+        style={{
+          position: 'absolute',
+          top: '115px',
           left: '48px',
           right: '48px',
           zIndex: 35,
@@ -305,14 +415,14 @@ const Scene2FocusGuard: React.FC = () => {
               textTransform: 'uppercase',
             }}
           >
-            // 02 · THE SOLUTION
+            // 02 · THE INTERVENTION
           </span>
           <span
             style={{
               padding: '6px 16px',
-              backgroundColor: 'rgba(34, 197, 94, 0.2)',
+              backgroundColor: 'rgba(34, 197, 94, 0.25)',
               color: CORRECT_GREEN,
-              border: '2px solid rgba(34, 197, 94, 0.5)',
+              border: '2px solid rgba(34, 197, 94, 0.6)',
               borderRadius: '999px',
               fontWeight: 900,
               fontSize: '13px',
@@ -320,128 +430,100 @@ const Scene2FocusGuard: React.FC = () => {
               textTransform: 'uppercase',
             }}
           >
-            🛡️ Focus Guard
+            🛡️ Focus Guard Active
           </span>
         </div>
 
         <h2
           style={{
-            fontSize: '40px',
+            fontSize: '42px',
             fontWeight: 900,
             lineHeight: 1.25,
             color: WHITE,
             margin: '0 auto',
             maxWidth: '820px',
-            textShadow: '0 4px 30px rgba(0,0,0,0.8)',
+            textShadow: '0 4px 30px rgba(0,0,0,0.85)',
           }}
         >
-          {isArjunPart ? (
+          {isArjunAsking ? (
             '"Lekin Focus Guard se kya hoga?"'
           ) : (
             <>
-              "Har 3 reel ke baad ek <span style={{ color: GOLD }}>GATE question</span> screen block karega!"
+              "Instagram kholte hi har 3 reel ke baad ek <span style={{ color: GOLD }}>GATE question</span> screen block karega!"
             </>
           )}
         </h2>
-      </div>
-
-      {/* 4. Floating 3D-styled Intervention Card */}
-      <div
-        style={{
-          position: 'absolute',
-          bottom: '140px',
-          left: '48px',
-          right: '48px',
-          zIndex: 35,
-          transform: `scale(${Math.max(0, popAnim)})`,
-          maxWidth: '560px',
-          margin: '0 auto',
-          backgroundColor: 'rgba(15, 23, 42, 0.95)',
-          border: '3px solid rgba(253, 192, 3, 0.55)',
-          borderRadius: '26px',
-          padding: '26px',
-          boxShadow: '0 25px 60px rgba(0,0,0,0.7)',
-          backdropFilter: 'blur(16px)',
-        }}
-      >
-        <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: `2px solid ${BORDER}`, paddingBottom: '12px', marginBottom: '14px' }}>
-          <span style={{ fontSize: '14px', fontWeight: 900, color: GOLD, letterSpacing: '0.5px' }}>
-            ⚡ FOCUS GUARD INTERVENTION
-          </span>
-          <span
-            style={{
-              fontSize: '11px',
-              backgroundColor: 'rgba(244, 63, 94, 0.25)',
-              color: '#FB7185',
-              border: '1px solid rgba(244, 63, 94, 0.4)',
-              padding: '3px 12px',
-              borderRadius: '999px',
-              fontWeight: 900,
-              letterSpacing: '0.5px',
-              textTransform: 'uppercase',
-            }}
-          >
-            Reels Paused: 3/3
-          </span>
-        </div>
-
-        <p style={{ fontSize: '20px', fontWeight: 900, color: WHITE, margin: '0 0 16px 0', lineHeight: 1.3 }}>
-          In a reversible adiabatic process, what happens to entropy?
-        </p>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '16px', fontWeight: 700 }}>
-          <div
-            style={{
-              padding: '12px 16px',
-              borderRadius: '14px',
-              backgroundColor: 'rgba(30, 41, 59, 0.6)',
-              border: `2px solid ${BORDER}`,
-              color: MUTED,
-            }}
-          >
-            A) Increases continuously
-          </div>
-          <div
-            style={{
-              padding: '12px 16px',
-              borderRadius: '14px',
-              backgroundColor: isCorrect ? 'rgba(34, 197, 94, 0.25)' : 'rgba(30, 41, 59, 0.6)',
-              border: `2px solid ${isCorrect ? CORRECT_GREEN : BORDER}`,
-              color: isCorrect ? CORRECT_GREEN : MUTED,
-              fontWeight: 800,
-            }}
-          >
-            B) Remains Constant (Isentropic) {isCorrect && '✅ Sahi Answer!'}
-          </div>
-        </div>
       </div>
     </AbsoluteFill>
   );
 };
 
 /* ══════════════════════════════════════════════════════════════════
-   SCENE 3: THE BREAKTHROUGH (Celebrating in 3D)
+   SCENE 3: THE BREAKTHROUGH (Arjun Celebrates Two Thumbs Up)
+   "Doomscrolling Defeated" Emerald Green Monitor
 ══════════════════════════════════════════════════════════════════ */
 const Scene3Breakthrough: React.FC = () => {
+  const frame = useCurrentFrame();
+
+  const cameraScale = interpolate(frame, [0, 240], [1.02, 1.15], { extrapolateRight: 'clamp' });
+  const cameraY = interpolate(frame, [0, 240], [0, -25], { extrapolateRight: 'clamp' });
+
   return (
     <AbsoluteFill>
       <Audio src={staticFile('audio/narration/dialogue5_arjun.mp3')} volume={1.0} />
 
-      {/* 3D Celebrating Arjun */}
-      <ThreeCharacterScene
-        variant="arjun"
-        cameraAngle="medium"
-        dialogueClip="dialogue5_arjun"
-        dialogueStartFrame={0}
-        mood="celebrating"
-        showMonitor={true}
-      />
+      {/* 1. Arjun Celebrating in 3D Low-Poly Room */}
+      <AbsoluteFill
+        style={{
+          transform: `scale(${cameraScale}) translateY(${cameraY}px)`,
+          transformOrigin: '55% 45%',
+        }}
+      >
+        <Img
+          src={staticFile('scenes/scene4_arjun_victory.jpg')}
+          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+        />
+        <LowPolyMouth
+          amplitude={((audioEnvelopes as any)['dialogue5_arjun'] || [])[frame] || 0}
+          centerX="62.5%"
+          centerY="40.7%"
+          baseWidth={26}
+          maxHeight={13}
+          rotationDeg={0}
+          lipColor="rgba(100, 45, 30, 0.95)"
+        />
+        {/* Celebratory Emerald Green monitor glow shimmer */}
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            background: 'radial-gradient(circle at 22% 48%, rgba(34, 197, 94, 0.24) 0%, transparent 60%)',
+            opacity: Math.sin(frame / 5) * 0.2 + 0.8,
+            mixBlendMode: 'screen',
+            pointerEvents: 'none',
+          }}
+        />
+      </AbsoluteFill>
 
-      {/* Subtitles Overlay */}
+      {/* 2. Top Scrim Gradient */}
       <div
         style={{
           position: 'absolute',
-          top: '120px',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: '420px',
+          background: 'linear-gradient(180deg, rgba(6, 9, 19, 0.94) 0%, rgba(6, 9, 19, 0.80) 65%, rgba(6, 9, 19, 0) 100%)',
+          zIndex: 32,
+          pointerEvents: 'none',
+        }}
+      />
+
+      {/* 3. Subtitles */}
+      <div
+        style={{
+          position: 'absolute',
+          top: '115px',
           left: '48px',
           right: '48px',
           zIndex: 35,
@@ -468,9 +550,9 @@ const Scene3Breakthrough: React.FC = () => {
           <span
             style={{
               padding: '6px 16px',
-              backgroundColor: 'rgba(34, 197, 94, 0.2)',
+              backgroundColor: 'rgba(34, 197, 94, 0.25)',
               color: CORRECT_GREEN,
-              border: '2px solid rgba(34, 197, 94, 0.5)',
+              border: '2px solid rgba(34, 197, 94, 0.6)',
               borderRadius: '999px',
               fontWeight: 900,
               fontSize: '13px',
@@ -491,7 +573,7 @@ const Scene3Breakthrough: React.FC = () => {
             margin: '0 auto',
             maxWidth: '820px',
             color: WHITE,
-            textShadow: '0 4px 30px rgba(0,0,0,0.8)',
+            textShadow: '0 4px 30px rgba(0,0,0,0.85)',
           }}
         >
           "Arrey waah! Sahi answer diya tabhi scroll hua! Matlab <span style={{ color: GOLD }}>DOOMSCROLLING BAND</span> aur score chalu!"
@@ -503,32 +585,45 @@ const Scene3Breakthrough: React.FC = () => {
 
 /* ══════════════════════════════════════════════════════════════════
    SCENE 4: DUAL CTA OUTRO
+   "Stop Scrolling. Start Scoring."
 ══════════════════════════════════════════════════════════════════ */
 const Scene4Outro: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
-  const scaleIn = spring({ frame, fps, config: { damping: 12, mass: 0.9 } });
+  const scaleIn = spring({ frame, fps, config: { damping: 11, mass: 0.8 } });
 
   return (
     <AbsoluteFill>
       <Audio src={staticFile('audio/narration/dialogue6_both.mp3')} volume={1.0} />
 
-      {/* 3D Background Scene */}
-      <ThreeCharacterScene
-        variant="arjun"
-        cameraAngle="wide"
-        dialogueClip="dialogue6_both"
-        dialogueStartFrame={0}
-        mood="celebrating"
-        showMonitor={true}
+      {/* Cinematic Blurred Study Background */}
+      <AbsoluteFill
+        style={{
+          transform: 'scale(1.1)',
+          filter: 'blur(10px) brightness(0.4)',
+        }}
+      >
+        <Img
+          src={staticFile('scenes/scene4_arjun_victory.jpg')}
+          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+        />
+      </AbsoluteFill>
+
+      {/* Dark Vignette Overlay */}
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          background: 'radial-gradient(circle, rgba(15, 23, 42, 0.4) 0%, rgba(6, 9, 19, 0.95) 85%)',
+        }}
       />
 
       {/* Floating CTA Card Overlay */}
       <div
         style={{
           position: 'absolute',
-          top: '180px',
+          top: '220px',
           left: '48px',
           right: '48px',
           zIndex: 35,
@@ -537,39 +632,43 @@ const Scene4Outro: React.FC = () => {
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          gap: '20px',
+          gap: '24px',
         }}
       >
         <Img
           src={staticFile('logo_transparent.png')}
           style={{
-            width: '110px',
-            height: '110px',
+            width: '120px',
+            height: '120px',
             objectFit: 'contain',
-            filter: 'drop-shadow(0 15px 35px rgba(253, 192, 3, 0.5))',
+            filter: 'drop-shadow(0 15px 40px rgba(253, 192, 3, 0.6))',
           }}
         />
 
         <div>
-          <h2 style={{ fontSize: '56px', fontWeight: 900, color: WHITE, margin: 0, letterSpacing: '-1px' }}>
+          <h2 style={{ fontSize: '60px', fontWeight: 900, color: WHITE, margin: 0, letterSpacing: '-1.5px' }}>
             STOP SCROLLING.
           </h2>
-          <h2 style={{ fontSize: '56px', fontWeight: 900, color: GOLD, margin: '4px 0 0 0', letterSpacing: '-1px' }}>
+          <h2 style={{ fontSize: '60px', fontWeight: 900, color: GOLD, margin: '6px 0 0 0', letterSpacing: '-1.5px', textShadow: '0 0 35px rgba(253, 192, 3, 0.5)' }}>
             START SCORING.
           </h2>
         </div>
 
+        <p style={{ color: MUTED, fontSize: '22px', fontWeight: 700, margin: 0 }}>
+          Beat reel addiction with real GATE & PSU questions.
+        </p>
+
         <div
           style={{
-            padding: '14px 34px',
+            padding: '16px 38px',
             borderRadius: '999px',
             backgroundColor: GOLD,
             color: INK,
-            fontSize: '22px',
+            fontSize: '24px',
             fontWeight: 900,
             letterSpacing: '0.8px',
             textTransform: 'uppercase',
-            boxShadow: '0 12px 35px rgba(253, 192, 3, 0.45)',
+            boxShadow: '0 15px 40px rgba(253, 192, 3, 0.5)',
           }}
         >
           Download Aspirant Arcade App • Play Store
