@@ -103,7 +103,16 @@ export const NewsAnchorArjun: React.FC<NewsAnchorArjunProps> = ({
   const frame = useCurrentFrame();
 
   const ampArray = currentClipKey ? (audioEnvelopes as any)[currentClipKey] || [] : [];
-  const amplitude = ampArray[clipFrameOffset] || 0;
+  let amplitude = 0;
+  if (ampArray.length > 0) {
+    amplitude = ampArray[clipFrameOffset] || 0;
+  } else if (currentClipKey) {
+    // Dynamic procedural speech cadence fallback for newly generated / random news clips
+    const syllableWave = Math.sin(clipFrameOffset / 2.7) * Math.cos(clipFrameOffset / 1.8);
+    const speechPulse = Math.abs(syllableWave);
+    const pauseCycle = (clipFrameOffset % 48) < 40 ? 1 : 0;
+    amplitude = speechPulse > 0.15 ? speechPulse * 0.85 * pauseCycle : 0;
+  }
 
   // Natural conversational head motion
   const headTilt = Math.sin(frame / 7) * 1.4;
@@ -212,3 +221,4 @@ export const NewsAnchorArjun: React.FC<NewsAnchorArjunProps> = ({
     </div>
   );
 };
+
