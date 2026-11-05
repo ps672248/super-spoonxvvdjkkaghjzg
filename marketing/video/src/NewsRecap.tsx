@@ -35,6 +35,8 @@ import {
 } from './MediaCards';
 import { KineticCaptions } from './KineticCaptions';
 import { SegmentedProgressBar } from './SegmentedProgressBar';
+import { CharacterPresenter } from './CharacterPresenter';
+import { ThreeCharacterScene } from './ThreeCharacterScene';
 
 export type BeatMediaType =
   | 'none'
@@ -504,8 +506,8 @@ export const NewsRecap: React.FC<NewsRecapProps> = ({
     bgmMood === 'motivation'
       ? BGM_MOTIVATION_FILE
       : bgmMood === 'corporate'
-      ? BGM_CORPORATE_FILE
-      : BGM_FILE;
+        ? BGM_CORPORATE_FILE
+        : BGM_FILE;
 
   const beatStart = (i: number) => headlineLen + beatFrames.slice(0, i).reduce((a, b) => a + b, 0);
 
@@ -607,6 +609,31 @@ export const NewsRecap: React.FC<NewsRecapProps> = ({
       {!inCta && fullStoryLabel ? (
         <Sequence from={0} durationInFrames={totalNonCta} layout="none">
           <FullStoryStrip label={fullStoryLabel} format={format} />
+        </Sequence>
+      ) : null}
+
+      {/* Corner Anchor Character Presenter in vertical format */}
+      {!inCta && !isLandscape ? (
+        <Sequence from={0} durationInFrames={totalNonCta} layout="none">
+          <div
+            style={{
+              position: 'absolute',
+              right: '-20px',
+              bottom: '50px',
+              zIndex: 25,
+              pointerEvents: 'none',
+            }}
+          >
+            <ThreeCharacterScene
+              variant="arjun"
+              cameraAngle="closeup"
+              mood="talking"
+              showMonitor={false}
+              transparentBackground={true}
+              width={380}
+              height={500}
+            />
+          </div>
         </Sequence>
       ) : null}
     </AbsoluteFill>

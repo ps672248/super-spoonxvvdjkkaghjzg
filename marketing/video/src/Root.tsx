@@ -4,6 +4,8 @@ import { QuizCard, QUIZ_CARD_DURATION_IN_FRAMES, QUIZ_CARD_FPS, calculateQuizCar
 import { NewsRecap, NEWS_RECAP_DURATION_IN_FRAMES, NEWS_RECAP_FPS, calculateNewsRecapMetadata, type NewsRecapProps } from './NewsRecap';
 import { MemeCard, MEME_CARD_DURATION_IN_FRAMES, MEME_CARD_FPS, calculateMemeCardMetadata, type MemeCardProps } from './MemeCard';
 import { LongFormEdit, calculateLongFormEditMetadata, VIDEO_FPS } from './LongFormEdit';
+import { SingleFrameJob } from './SingleFrameJob';
+import { StoryPromo, STORY_PROMO_DURATION_IN_FRAMES } from './StoryPromo';
 
 // hasBgm/hasTick/hasReveal default to true here (unlike render.ts, which computes
 // them from actual file presence — see src/render.ts audioFlags()). Root.tsx runs
@@ -275,6 +277,37 @@ export const RemotionRoot: React.FC = () => {
         height={720}
         defaultProps={{}}
         calculateMetadata={calculateLongFormEditMetadata}
+      />
+      <Composition
+        id="SingleFrameJob"
+        component={SingleFrameJob}
+        durationInFrames={120} // 4 seconds @ 30fps (looping format)
+        fps={30}
+        width={1080}
+        height={1920}
+        defaultProps={{
+          orgName: 'ISRO Recruitment 2026',
+          badge: '320 Vacancies • Freshers Eligible',
+          role: "Scientist / Engineer 'SC'",
+          salary: '₹1,56,000 / mo',
+          salarySub: 'Pay Level 10 + Central DA, HRA & Perks',
+          branches: ['Mechanical', 'Electronics', 'Computer Science', 'Electrical', 'Civil'],
+          deadline: '28 MARCH 2026',
+          examDate: 'MAY 2026 (CBT)',
+          selectionProcess: 'Valid GATE Score / Written Test + Interview',
+          hasBgm: true,
+        }}
+      />
+      <Composition
+        id="StoryPromo"
+        component={StoryPromo}
+        durationInFrames={STORY_PROMO_DURATION_IN_FRAMES} // ~43.6 seconds @ 30fps
+        fps={30}
+        width={1080}
+        height={1920}
+        defaultProps={{
+          hasBgm: true,
+        }}
       />
     </Folder>
   );
