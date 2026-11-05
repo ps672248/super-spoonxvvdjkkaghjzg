@@ -1,0 +1,91 @@
+name: Marketing Reel Bot (App Promo Story)
+
+# Dedicated workflow for Aspirant Arcade 3D Character Marketing Story Reels.
+# Pairs Arjun & Priya in an engaging bantered story around an app feature
+# (e.g. Focus Guard, Speed Arena) and publishes directly to Instagram Reels
+# (and optionally YouTube Shorts).
+
+on:
+  workflow_dispatch:
+    inputs:
+      feature:
+        description: 'Marketing Feature Story'
+        required: true
+        type: choice
+        default: 'focus-guard'
+        options:
+          - 'focus-guard'
+          - 'speed-arena'
+      target_platform:
+        description: 'Publish Target (default: Instagram Only as per policy)'
+        required: true
+        type: choice
+        default: 'instagram'
+        options:
+          - 'instagram'
+          - 'both'
+          - 'youtube'
+      publish:
+        description: 'Publish live to social platforms? (true/false)'
+        required: true
+        type: choice
+        default: 'false'
+        options:
+          - 'false'
+          - 'true'
+
+permissions:
+  contents: read
+
+jobs:
+  render_marketing:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        working-directory: marketing/video
+        run: npm install
+
+      # Credentials for YouTube (only used if target_platform is youtube or both, and publish=true)
+      - name: Write YouTube upload credentials from secrets
+        if: ${{ github.event.inputs.target_platform == 'youtube' || github.event.inputs.target_platform == 'both' }}
+        working-directory: marketing/video
+        run: |
+          echo '${{ secrets.YT_CLIENT_SECRET }}' > client_secret.json
+          echo '${{ secrets.YT_UPLOAD_TOKEN }}' > youtube_upload_token.json
+
+      - name: Render Marketing Story Reel
+        working-directory: marketing/video
+        env:
+          MARKETING_FEATURE: ${{ github.event.inputs.feature || 'focus-guard' }}
+          TARGET_PLATFORM: ${{ github.event.inputs.target_platform || 'instagram' }}
+          PUBLISH: ${{ github.event.inputs.publish || 'false' }}
+          SARVAM_API_KEY: ${{ secrets.SARVAM_API_KEY }}
+          GEMINI_API_KEYS: ${{ secrets.GEMINI_API_KEYS }}
+          CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
+          CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
+          CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
+          IG_BUSINESS_ACCOUNT_ID: ${{ secrets.IG_BUSINESS_ACCOUNT_ID }}
+          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+          DISCORD_WEBHOOK_NEWCONTENT: ${{ secrets.DISCORD_WEBHOOK_NEWCONTENT }}
+        run: |
+          npm run render:marketing
+
+      - name: Upload rendered marketing video & covers as workflow artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: marketing-story-reel
+          path: |
+            marketing/video/output/*marketing*.mp4
+            marketing/video/output/*marketing*.jpg
+            marketing/video/output/*marketing*.json
+          retention-days: 14
