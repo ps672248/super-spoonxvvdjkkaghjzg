@@ -7,6 +7,7 @@ import { LongFormEdit, calculateLongFormEditMetadata, VIDEO_FPS } from './LongFo
 import { SingleFrameJob } from './SingleFrameJob';
 import { StoryPromo, STORY_PROMO_DURATION_IN_FRAMES } from './StoryPromo';
 import { DynamicStoryDirector, DYNAMIC_DIRECTOR_DEFAULT_PROPS, type DynamicDirectorProps } from './DynamicStoryDirector';
+import { ThreeCharacterScene, type ThreeCharacterSceneProps } from './ThreeCharacterScene';
 
 // hasBgm/hasTick/hasReveal default to true here (unlike render.ts, which computes
 // them from actual file presence — see src/render.ts audioFlags()). Root.tsx runs
@@ -325,6 +326,19 @@ export const RemotionRoot: React.FC = () => {
           return {
             durationInFrames: Math.max(totalFrames, 30),
           };
+        }}
+      />
+      <Composition
+        id="ThreeCharacterScene"
+        component={ThreeCharacterScene}
+        durationInFrames={150}
+        fps={30}
+        width={1080}
+        height={1920}
+        defaultProps={{
+          variant: 'arjun',
+          mood: 'talking',
+          cameraAngle: 'medium',
         }}
       />
     </Folder>
