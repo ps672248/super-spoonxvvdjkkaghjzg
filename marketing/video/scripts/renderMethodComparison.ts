@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execSync } from 'node:child_process';
@@ -34,7 +35,7 @@ async function main() {
 
   // 2. Render Method 2: Hybrid Director Reel (Cached 3D Plates + Procedural Lip Sync)
   const method2Mp4 = path.join(OUTPUT_DIR, 'sample-method2-hybrid-director.mp4');
-  const skipMethod2 = process.env.SKIP_M2 === '1' || process.env.M1_ONLY === '1';
+  const skipMethod2 = process.env.SKIP_M2 === '1' || process.env.M1_ONLY === '1' || fs.existsSync(method2Mp4);
 
   if (!skipMethod2) {
     console.log('[2/4] 🚀 Rendering Method 2 (Hybrid 3D Plates)...');

@@ -358,7 +358,20 @@ export const RemotionRoot: React.FC = () => {
         defaultProps={{
           variant: 'arjun',
           mood: 'talking',
-          cameraAngle: 'medium',
+          cameraAngle: 'cinematic_3quarter',
+        }}
+      />
+      <Composition
+        id="ThreeCharacterScenePriya"
+        component={ThreeCharacterScene}
+        durationInFrames={150}
+        fps={30}
+        width={1080}
+        height={1920}
+        defaultProps={{
+          variant: 'priya',
+          mood: 'talking',
+          cameraAngle: 'cinematic_3quarter',
         }}
       />
     </Folder>
