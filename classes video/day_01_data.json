@@ -1,0 +1,127 @@
+{
+  "day": 1,
+  "title": "Fractional Multipliers & The Harmonic Invariance Law",
+  "targetExams": ["GATE", "HPCL", "ONGC", "SSC JE", "RRB JE", "NTPC", "BHEL"],
+  "totalDurationSeconds": 840,
+  "parts": [
+    {
+      "partNumber": 1,
+      "title": "The Harmonic Invariance Law",
+      "concept": {
+        "heading": "The Harmonic Invariance Theorem ($A \\times B = \\text{Constant}$)",
+        "subText": "When two quantities multiply to maintain a constant product, any fractional surge in A requires an exact harmonic reduction in B.",
+        "formulaLatex": "\\text{If } A \\text{ increases by } +\\frac{1}{x} \\implies B \\text{ MUST decrease by } -\\frac{1}{x+1}",
+        "cards": [
+          { "title": "🔑 Key Multipliers", "content": "+25% (+1/4) ⟺ -20% (-1/5) | +16.66% (+1/6) ⟺ -14.28% (-1/7) | +33.33% (+1/3) ⟺ -25% (-1/4)" },
+          { "title": "🎯 Universal Duals", "content": "Price × Consumption = Expenditure | Speed × Time = Distance | Efficiency × Days = Total Work" }
+        ],
+        "voiceover": "Welcome to Part 1. In competitive exams, you cannot afford 90 seconds of algebraic substitution. When two terms multiply to give a constant, any increase of plus one by x in the first term demands an exact decrease of minus one by x plus one in the second."
+      },
+      "workedExample": {
+        "examTag": "HPCL / ONGC REPEATED PYQ",
+        "question": "The price of crude oil increases by 16.66%. A refinery reduces monthly consumption by 14.28%. What is the net percentage change in total monthly expenditure?",
+        "solutionSteps": [
+          { "label": "Price Factor", "latex": "+16.66\\% = +\\frac{1}{6} \\longrightarrow \\text{Multiplier } = \\frac{7}{6}", "color": "#fdc003" },
+          { "label": "Consumption", "latex": "-14.28\\% = -\\frac{1}{7} \\longrightarrow \\text{Multiplier } = \\frac{6}{7}", "color": "#00f0ff" },
+          { "label": "Net Change", "latex": "\\left(\\frac{7}{6}\\right) \\times \\left(\\frac{6}{7}\\right) = 1.000 \\implies 0.00\\% \\text{ Net Change!}", "isResult": true }
+        ],
+        "voiceover": "Look at this repeated PSU question. Price rises by sixteen point six six percent, which is plus one-sixth, meaning multiplier seven-sixths. Consumption drops by fourteen point two eight percent, which is minus one-seventh, meaning six-sevenths. Multiply seven-sixths by six-sevenths and you get exactly one point zero zero. That is zero percent net change in three seconds flat."
+      },
+      "practiceDrill": {
+        "questionTitle": "Question 01: Test Your Speed",
+        "question": "If the salary of Person A is 25% more than Person B, by what percentage is the salary of B less than A?",
+        "options": ["25.00%", "20.00%", "16.66%", "33.33%"],
+        "correctIndex": 1,
+        "timerSeconds": 10,
+        "explanation": "+25% (+1/4) is countered by -1/(4+1) = -1/5 = 20.00% (Option B).",
+        "voiceover": "Now it is your turn. If salary of A is twenty-five percent more than B, how much is B less than A? You have ten seconds on the clock!"
+      }
+    },
+    {
+      "partNumber": 2,
+      "title": "Kinematics & Work Invariance Transfer",
+      "concept": {
+        "heading": "Kinematics & Work Invariance Transfer",
+        "subText": "Distance = Speed × Time and Work = Efficiency × Days follow the exact same reciprocal invariant law.",
+        "formulaLatex": "\\text{If Speed drops by } -\\frac{1}{y} \\implies \\text{Time increases by } +\\frac{1}{y-1}",
+        "cards": [
+          { "title": "🚂 Kinematics Invariant", "content": "Speed -1/7 (-14.28%) ➔ Time +1/6 (+16.66%) for fixed distance" },
+          { "title": "⚙️ Workforce Invariant", "content": "Efficiency +1/3 (+33.33%) ➔ Days -1/4 (-25.00%) for fixed target" }
+        ],
+        "voiceover": "In Part 2, we see that Speed times Time equals Distance. If a train drops speed by one-seventh, journey time immediately surges by plus one-sixth. No equations needed."
+      },
+      "workedExample": {
+        "examTag": "GATE GENERAL APTITUDE / NTPC PYQ",
+        "question": "Due to dense fog, an express train reduces speed by 14.28% and takes 24 minutes extra to complete its 200 km run. Find its usual travel time.",
+        "solutionSteps": [
+          { "label": "Speed Deficit", "latex": "-\\frac{1}{7} \\implies \\text{Time Surge } = +\\frac{1}{6}", "color": "#fdc003" },
+          { "label": "Time Unit Equivalence", "latex": "\\frac{1}{6} T_{\\text{usual}} = 24 \\text{ mins}", "color": "#00f0ff" },
+          { "label": "Usual Time", "latex": "T_{\\text{usual}} = 6 \\times 24 = 144 \\text{ mins (2h 24m)}", "isResult": true }
+        ],
+        "voiceover": "Speed drops by one-seventh, so time increases by one-sixth. This one-sixth is given as 24 extra minutes. Therefore, usual time is 6 times 24 equals 144 minutes."
+      },
+      "practiceDrill": {
+        "questionTitle": "Question 02: Test Your Speed",
+        "question": "A modernized machine increases daily production efficiency by 33.33%. By what percentage is the time required to complete a batch reduced?",
+        "options": ["33.33%", "30.00%", "25.00%", "20.00%"],
+        "correctIndex": 2,
+        "timerSeconds": 10,
+        "explanation": "+33.33% (+1/3) efficiency reduces time by -1/(3+1) = -1/4 = 25.00% (Option C).",
+        "voiceover": "Second drill! Efficiency increases by thirty-three point three three percent. By what percentage does batch completion time drop? 10 seconds!"
+      }
+    },
+    {
+      "partNumber": 3,
+      "title": "Successive Scaling & The Asymmetry Trap",
+      "concept": {
+        "heading": "Successive Scaling & The Asymmetry Trap",
+        "subText": "Why symmetric +r% and -r% always yields a net loss of -(r/10)^2%, and how 2D dimensional scaling compounds areas.",
+        "formulaLatex": "\\text{Net Change } = a + b + \\frac{a \\cdot b}{100} \\quad \\Big| \\quad (+r\\%) + (-r\\%) = -\\left(\\frac{r}{10}\\right)^2 \\%",
+        "cards": [
+          { "title": "⚠️ The Parity Trap", "content": "+20% then -20% = -4% Deficit | +50% then -50% = -25% Deficit" },
+          { "title": "📐 2D Area Multiplier", "content": "Side +25% (5/4) ➔ Area Multiplier = (5/4)^2 = 25/16 (+56.25%)" }
+        ],
+        "voiceover": "Part 3 reveals the famous asymmetry trap. If a price is hiked by twenty percent and then discounted by twenty percent, you are NOT back at zero; you have suffered a four percent loss."
+      },
+      "workedExample": {
+        "examTag": "SSC CGL / BHEL PYQ",
+        "question": "Each side of a square plot is increased by 25%. What is the percentage increase in its total surface area?",
+        "solutionSteps": [
+          { "label": "Dimension Factor", "latex": "s' = s \\times \\left(1 + \\frac{1}{4}\\right) = \\frac{5}{4} s", "color": "#fdc003" },
+          { "label": "Area Multiplier", "latex": "A' = (s')^2 = \\left(\\frac{5}{4}\\right)^2 A = \\frac{25}{16} A", "color": "#00f0ff" },
+          { "label": "Net Growth", "latex": "\\frac{25 - 16}{16} = +\\frac{9}{16} = +56.25\\% \\text{ Surge!}", "isResult": true }
+        ],
+        "voiceover": "Side increases by twenty-five percent, multiplier five-fourths. Area depends on side squared, so five-fourths squared is twenty-five sixteenths. That gives plus nine sixteenths or fifty-six point two five percent."
+      },
+      "practiceDrill": {
+        "questionTitle": "Question 03: Test Your Speed",
+        "question": "An online retail store offers two successive discounts of 20% and 10%. What is the single equivalent overall discount percentage?",
+        "options": ["30.00%", "28.00%", "25.00%", "26.50%"],
+        "correctIndex": 1,
+        "timerSeconds": 10,
+        "explanation": "Net Discount = 20 + 10 - (20×10)/100 = 30 - 2 = 28.00% (Option B).",
+        "voiceover": "Final drill! Two successive discounts of 20% and 10%. What is the single net equivalent discount? You have 10 seconds!"
+      }
+    }
+  ],
+  "formulaVault": {
+    "title": "⚡ DAY 01 MASTER CHEAT SHEET",
+    "points": [
+      "✅ Inversion Law: +1/x ⟺ -1/(x+1) for A × B = Constant",
+      "✅ Speed Drop -1/7 ➔ Journey Time +1/6 = +16.66%",
+      "✅ Symmetric +r% and -r% Net Deficit = -(r/10)^2 %",
+      "✅ Successive Discounts: Net = d1 + d2 - (d1 * d2)/100"
+    ]
+  },
+  "appCompanion": {
+    "packId": "speed-math-01",
+    "ctaHeading": "PRACTICE TODAY'S 25-MCQ BATTLE PACK",
+    "ctaSubtext": "Now drill all 25 speed questions in the live multiplayer lobby on Aspirant Arcade.",
+    "webPracticeUrl": "https://aspirant-arcade.xyz/practice/speed-math-01",
+    "apkDownloadUrl": "https://aspirant-arcade.xyz/download"
+  },
+  "youtubeMetadata": {
+    "title": "DAY 01: Speed Math & Percentage Multipliers (3-Part Masterclass) | GATE, HPCL, ONGC, SSC JE",
+    "description": "⚡ Aspirant Arcade Masterclass Day 01\nFull 3-Part Architecture: First Principles ➔ Shortcut Mechanics ➔ 10s Practice Drills.\n\n📱 Practice today's 25-MCQ Battle Pack on the app: https://aspirant-arcade.xyz/practice/speed-math-01\n📲 Download Android APK: https://aspirant-arcade.xyz/download\n\n📌 Timestamps:\n00:00 — Introduction & Master Formula\n00:45 — Part 1 Concept: Harmonic Invariance Law\n02:15 — Part 1 Worked Example: Crude Oil Multipliers\n03:00 — Part 1 Practice Drill (10s Countdown)\n04:15 — Part 2 Concept: Kinematics & Work Duals\n06:00 — Part 2 Worked Example: Fog Train Problem\n07:15 — Part 2 Practice Drill (10s Countdown)\n08:30 — Part 3 Concept: Asymmetry & Area Scaling\n10:15 — Part 3 Worked Example: Square Area Growth\n11:30 — Part 3 Practice Drill (10s Countdown)\n12:45 — Formula Vault & App Arena CTA"
+  }
+}

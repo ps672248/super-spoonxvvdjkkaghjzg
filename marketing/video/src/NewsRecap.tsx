@@ -35,6 +35,8 @@ import {
 } from './MediaCards';
 import { KineticCaptions } from './KineticCaptions';
 import { SegmentedProgressBar } from './SegmentedProgressBar';
+import { CharacterPresenter } from './CharacterPresenter';
+import { NewsAnchorArjun } from './LowPolyCharacter';
 
 export type BeatMediaType =
   | 'none'
@@ -504,8 +506,8 @@ export const NewsRecap: React.FC<NewsRecapProps> = ({
     bgmMood === 'motivation'
       ? BGM_MOTIVATION_FILE
       : bgmMood === 'corporate'
-      ? BGM_CORPORATE_FILE
-      : BGM_FILE;
+        ? BGM_CORPORATE_FILE
+        : BGM_FILE;
 
   const beatStart = (i: number) => headlineLen + beatFrames.slice(0, i).reduce((a, b) => a + b, 0);
 
@@ -607,6 +609,40 @@ export const NewsRecap: React.FC<NewsRecapProps> = ({
       {!inCta && fullStoryLabel ? (
         <Sequence from={0} durationInFrames={totalNonCta} layout="none">
           <FullStoryStrip label={fullStoryLabel} format={format} />
+        </Sequence>
+      ) : null}
+
+      {/* Corner Anchor Character Presenter in vertical format */}
+      {!inCta && !isLandscape ? (
+        <Sequence from={0} durationInFrames={totalNonCta} layout="none">
+          <NewsAnchorArjun
+            currentClipKey={
+              frame < headlineLen
+                ? 'news_headline'
+                : (() => {
+                    for (let i = 0; i < resolvedBeats.length; i++) {
+                      const st = beatStart(i);
+                      if (frame >= st && frame < st + beatFrames[i]) {
+                        return `news_beat${i}`;
+                      }
+                    }
+                    return undefined;
+                  })()
+            }
+            clipFrameOffset={
+              frame < headlineLen
+                ? frame
+                : (() => {
+                    for (let i = 0; i < resolvedBeats.length; i++) {
+                      const st = beatStart(i);
+                      if (frame >= st && frame < st + beatFrames[i]) {
+                        return frame - st;
+                      }
+                    }
+                    return 0;
+                  })()
+            }
+          />
         </Sequence>
       ) : null}
     </AbsoluteFill>

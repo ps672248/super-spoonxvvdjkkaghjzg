@@ -1,0 +1,20 @@
+#!/bin/sh
+
+# Pre-push hook to prevent pushing directly to main and master branches
+remote="$1"
+url="$2"
+
+z40="0000000000000000000000000000000000000000"
+
+while read local_ref local_sha remote_ref remote_sha
+do
+    if [ "$remote_ref" = "refs/heads/master" ] || [ "$remote_ref" = "refs/heads/main" ]; then
+        echo ""
+        echo "❌ [Protected Branch Error] Direct push to protected branch '$remote_ref' is blocked!"
+        echo "👉 Policy requires creating a feature/fix branch (e.g. 'feature/...', 'fix/...') and opening a PR."
+        echo ""
+        exit 1
+    fi
+done
+
+exit 0
