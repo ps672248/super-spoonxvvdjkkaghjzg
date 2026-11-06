@@ -16,6 +16,7 @@ import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { parseFile } from 'music-metadata';
 import { buildCatalogPromptSummary, getShotDefinition } from './catalog/scenesCatalog';
+import { resolveSceneAsset } from './catalog/sceneImageGenerator';
 import type { DirectorShotProps, DynamicDirectorProps } from './DynamicStoryDirector';
 
 const NARRATION_DIR = path.join(process.cwd(), 'public', 'audio', 'narration');
@@ -216,6 +217,7 @@ export async function generateDirectorStory(userPrompt?: string): Promise<Genera
 
     const audioSrc = await synthesizeDirectorVoice(rawShot.dialogueHindi, voice, audioFilename);
     const durationFrames = await measureFrames(audioSrc);
+    const { assetRelPath } = await resolveSceneAsset(rawShot.sceneId);
 
     preparedShots.push({
       sceneId: rawShot.sceneId,
@@ -226,6 +228,7 @@ export async function generateDirectorStory(userPrompt?: string): Promise<Genera
       durationFrames,
       cameraMotion: rawShot.cameraMotion,
       editorialTag: rawShot.editorialTag,
+      assetPath: assetRelPath,
     });
   }
 

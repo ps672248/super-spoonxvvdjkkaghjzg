@@ -26,6 +26,7 @@ export interface DirectorShotProps {
   cameraMotion?: 'zoom_in' | 'zoom_out' | 'pan_left' | 'pan_right' | 'shake' | 'static';
   editorialTag?: string;
   badgeLabel?: string;
+  assetPath?: string;
 }
 
 export interface DynamicDirectorProps {
@@ -266,8 +267,8 @@ const ShotRenderer: React.FC<{
     speakerBorder = 'rgba(56, 189, 248, 0.6)';
   }
 
-  // Use fallback if asset is placeholder
-  const imageSrc = shotDef.fallbackAsset || 'scenes/scene1_arjun_desk.jpg';
+  // Use dedicated on-demand generated/cached asset, or fallback
+  const imageSrc = shot.assetPath || shotDef.fallbackAsset || 'scenes/scene1_arjun_desk.jpg';
 
   return (
     <AbsoluteFill>
