@@ -8,6 +8,7 @@
     "preview": "npx remotion studio src/index.ts",
     "render": "npx tsx src/render.ts",
     "render:marketing": "npx tsx src/renderMarketingReel.ts",
+    "render:director": "npx tsx src/renderDirectorReel.ts",
     "render:news": "npx tsx src/renderNewsRecap.ts",
     "render:pending": "npx tsx src/renderPendingRecaps.ts",
     "render:longform": "npx tsx src/renderLongForm.ts",

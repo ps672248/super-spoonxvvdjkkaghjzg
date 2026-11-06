@@ -6,6 +6,7 @@ import { MemeCard, MEME_CARD_DURATION_IN_FRAMES, MEME_CARD_FPS, calculateMemeCar
 import { LongFormEdit, calculateLongFormEditMetadata, VIDEO_FPS } from './LongFormEdit';
 import { SingleFrameJob } from './SingleFrameJob';
 import { StoryPromo, STORY_PROMO_DURATION_IN_FRAMES } from './StoryPromo';
+import { DynamicStoryDirector, DYNAMIC_DIRECTOR_DEFAULT_PROPS, type DynamicDirectorProps } from './DynamicStoryDirector';
 
 // hasBgm/hasTick/hasReveal default to true here (unlike render.ts, which computes
 // them from actual file presence — see src/render.ts audioFlags()). Root.tsx runs
@@ -307,6 +308,23 @@ export const RemotionRoot: React.FC = () => {
         height={1920}
         defaultProps={{
           hasBgm: true,
+        }}
+      />
+      <Composition
+        id="DynamicDirector"
+        component={DynamicStoryDirector}
+        durationInFrames={1230}
+        fps={30}
+        width={1080}
+        height={1920}
+        defaultProps={DYNAMIC_DIRECTOR_DEFAULT_PROPS}
+        calculateMetadata={({ props }) => {
+          const p = props as DynamicDirectorProps;
+          const shots = p.shots || DYNAMIC_DIRECTOR_DEFAULT_PROPS.shots;
+          const totalFrames = shots.reduce((sum, s) => sum + (s.durationFrames || 180), 0);
+          return {
+            durationInFrames: Math.max(totalFrames, 30),
+          };
         }}
       />
     </Folder>

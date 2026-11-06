@@ -8,6 +8,14 @@ name: Marketing Reel Bot (AI Story & App Promo)
 on:
   workflow_dispatch:
     inputs:
+      pipeline_engine:
+        description: 'Pipeline Engine (director: 100+ Shot Catalog & Dynamic Storyboard / classic: Fixed StoryPromo)'
+        required: true
+        type: choice
+        default: 'director'
+        options:
+          - 'director'
+          - 'classic'
       story_prompt:
         description: 'Story Brief / Pain Point (e.g. "anxious of exam / 10+ games", "focus-guard", "speed-arena", "auto")'
         required: false
@@ -74,7 +82,11 @@ jobs:
           IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
           DISCORD_WEBHOOK_NEWCONTENT: ${{ secrets.DISCORD_WEBHOOK_NEWCONTENT }}
         run: |
-          npm run render:marketing
+          if [ "${{ github.event.inputs.pipeline_engine }}" = "classic" ]; then
+            npm run render:marketing
+          else
+            npm run render:director
+          fi
 
       - name: Upload rendered marketing video & covers as workflow artifacts
         if: always()
@@ -82,6 +94,9 @@ jobs:
         with:
           name: marketing-story-reel
           path: |
+            marketing/video/output/*director*.mp4
+            marketing/video/output/*director*.jpg
+            marketing/video/output/*director*.json
             marketing/video/output/*marketing*.mp4
             marketing/video/output/*marketing*.jpg
             marketing/video/output/*marketing*.json
