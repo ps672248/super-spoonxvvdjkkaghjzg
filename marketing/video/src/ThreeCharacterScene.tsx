@@ -1,6 +1,7 @@
-import React, { useEffect, useRef } from 'react';
-import { useCurrentFrame, useVideoConfig } from 'remotion';
+import React, { useEffect, useRef, useState } from 'react';
+import { useCurrentFrame, useVideoConfig, delayRender, continueRender, staticFile } from 'remotion';
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import audioEnvelopes from './audioEnvelopes.json';
 
 export interface ThreeCharacterSceneProps {
@@ -20,14 +21,29 @@ export interface ThreeCharacterSceneProps {
 
 interface CharacterHandles {
   root: THREE.Group;
-  head: THREE.Group;
-  mouth: THREE.Group;
-  jaw: THREE.Mesh;
-  eyes: THREE.Group;
-  eyebrows: THREE.Group;
-  leftArm: THREE.Group;
-  rightArm: THREE.Group;
+  head: THREE.Group | THREE.Object3D;
+  mouth?: THREE.Group;
+  jaw?: THREE.Mesh;
+  eyes?: THREE.Group;
+  eyebrows?: THREE.Group;
+  leftArm?: THREE.Group;
+  rightArm?: THREE.Group;
   phone?: THREE.Group;
+  // Rigged humanoid model handles
+  isRigged?: boolean;
+  bones?: {
+    upperArmR?: THREE.Object3D;
+    lowerArmR?: THREE.Object3D;
+    handR?: THREE.Object3D;
+    upperArmL?: THREE.Object3D;
+    lowerArmL?: THREE.Object3D;
+    handL?: THREE.Object3D;
+    head?: THREE.Object3D;
+    neck?: THREE.Object3D;
+    spine?: THREE.Object3D;
+  };
+  headMesh?: THREE.Mesh;
+  mouthMorphIndex?: number;
 }
 
 /**
@@ -55,6 +71,8 @@ export const ThreeCharacterScene: React.FC<ThreeCharacterSceneProps> = ({
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
+  const [renderHandle] = useState(() => delayRender('Loading Rigged 3D Characters'));
+
   const sceneRef = useRef<THREE.Scene | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
@@ -62,7 +80,7 @@ export const ThreeCharacterScene: React.FC<ThreeCharacterSceneProps> = ({
   const monitorLightRef = useRef<THREE.PointLight | null>(null);
   const screenFaceMatRef = useRef<THREE.MeshBasicMaterial | null>(null);
 
-  // Initialize Three.js Scene
+  // Initialize Three.js Scene & Load Rigged Characters
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -93,11 +111,9 @@ export const ThreeCharacterScene: React.FC<ThreeCharacterSceneProps> = ({
     rendererRef.current = renderer;
 
     // 4. Cinematic 3-Point Lighting Rig
-    // Ambient fill (deep dark slate-blue)
     const ambientLight = new THREE.AmbientLight(0x18243b, 1.4);
     scene.add(ambientLight);
 
-    // Warm Key Light (front-right)
     const keyLight = new THREE.DirectionalLight(0xfff5e6, 2.2);
     keyLight.position.set(2.8, 3.8, 2.8);
     keyLight.castShadow = true;
@@ -105,17 +121,14 @@ export const ThreeCharacterScene: React.FC<ThreeCharacterSceneProps> = ({
     keyLight.shadow.mapSize.height = 1024;
     scene.add(keyLight);
 
-    // Cool Rim Back-Light (highlights low-poly facets from back-left)
     const rimLight = new THREE.DirectionalLight(0x06b6d4, 2.6);
     rimLight.position.set(-3.2, 2.4, -1.8);
     scene.add(rimLight);
 
-    // Secondary Magenta/Indigo accent backlight
     const accentLight = new THREE.DirectionalLight(0x818cf8, 1.2);
     accentLight.position.set(1.5, -1.0, -2.5);
     scene.add(accentLight);
 
-    // Glowing Monitor Point Light (casts dynamic blue/gold screen glow onto character)
     const monitorLight = new THREE.PointLight(0x38bdf8, 3.4, 4.5, 1.4);
     monitorLight.position.set(-0.7, 0.45, 0.35);
     scene.add(monitorLight);
@@ -123,7 +136,6 @@ export const ThreeCharacterScene: React.FC<ThreeCharacterSceneProps> = ({
 
     // 5. Environment: Angled Desk, Ultrawide Monitor, Keyboard & Books
     if (showMonitor) {
-      // Sleek Dark Wood/Carbon Desk Surface
       const deskGeo = new THREE.BoxGeometry(4.8, 0.16, 2.6);
       const deskMat = new THREE.MeshStandardMaterial({
         color: 0x0c1424,
@@ -136,7 +148,6 @@ export const ThreeCharacterScene: React.FC<ThreeCharacterSceneProps> = ({
       desk.receiveShadow = true;
       scene.add(desk);
 
-      // Desk Mat / Extended Mousepad
       const matGeo = new THREE.BoxGeometry(2.8, 0.02, 1.2);
       const matMat = new THREE.MeshStandardMaterial({
         color: 0x070d18,
@@ -148,7 +159,6 @@ export const ThreeCharacterScene: React.FC<ThreeCharacterSceneProps> = ({
       deskMatMesh.receiveShadow = true;
       scene.add(deskMatMesh);
 
-      // Mechanical Gaming Keyboard with Glowing Backlight
       const kbGeo = new THREE.BoxGeometry(0.95, 0.04, 0.36);
       const kbMat = new THREE.MeshStandardMaterial({
         color: 0x111827,
@@ -160,7 +170,6 @@ export const ThreeCharacterScene: React.FC<ThreeCharacterSceneProps> = ({
       keyboard.rotation.y = -0.08;
       scene.add(keyboard);
 
-      // Ergonomic Mouse
       const mouseGeo = new THREE.BoxGeometry(0.12, 0.04, 0.2);
       const mouseMat = new THREE.MeshStandardMaterial({
         color: 0x020617,
@@ -171,7 +180,6 @@ export const ThreeCharacterScene: React.FC<ThreeCharacterSceneProps> = ({
       mouse.position.set(0.85, -0.67, 0.35);
       scene.add(mouse);
 
-      // Ceramic Coffee Mug
       const mugGeo = new THREE.CylinderGeometry(0.1, 0.09, 0.22, 10);
       const mugMat = new THREE.MeshStandardMaterial({
         color: 0xf1f5f9,
@@ -182,7 +190,6 @@ export const ThreeCharacterScene: React.FC<ThreeCharacterSceneProps> = ({
       mug.position.set(0.95, -0.58, -0.15);
       scene.add(mug);
 
-      // Stacked Gate/PSU Textbooks
       const bookColors = [0x2563eb, 0xe11d48, 0x10b981];
       for (let i = 0; i < 3; i++) {
         const bookGeo = new THREE.BoxGeometry(0.62, 0.09, 0.46);
@@ -198,12 +205,10 @@ export const ThreeCharacterScene: React.FC<ThreeCharacterSceneProps> = ({
         scene.add(book);
       }
 
-      // 34-Inch Curved Ultrawide Monitor (Angled to the left)
       const monitorGroup = new THREE.Group();
       monitorGroup.position.set(-0.85, 0.28, -0.15);
-      monitorGroup.rotation.y = 0.42; // Turned inward towards character
+      monitorGroup.rotation.y = 0.42;
 
-      // Monitor Stand & Base
       const standPoleGeo = new THREE.CylinderGeometry(0.04, 0.05, 0.85, 8);
       const standMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.7, roughness: 0.3, flatShading: true });
       const standPole = new THREE.Mesh(standPoleGeo, standMat);
@@ -215,7 +220,6 @@ export const ThreeCharacterScene: React.FC<ThreeCharacterSceneProps> = ({
       standBase.position.set(0, -0.82, -0.1);
       monitorGroup.add(standBase);
 
-      // Monitor Frame
       const screenFrameGeo = new THREE.BoxGeometry(2.6, 1.45, 0.08);
       const screenFrameMat = new THREE.MeshStandardMaterial({
         color: 0x030712,
@@ -225,7 +229,6 @@ export const ThreeCharacterScene: React.FC<ThreeCharacterSceneProps> = ({
       const screenFrame = new THREE.Mesh(screenFrameGeo, screenFrameMat);
       monitorGroup.add(screenFrame);
 
-      // Live Terminal Texture Screen Face
       const screenFaceGeo = new THREE.PlaneGeometry(2.5, 1.35);
       const screenTex = createMonitorTexture(monitorText, monitorSubtitle);
       const screenFaceMat = new THREE.MeshBasicMaterial({ map: screenTex });
@@ -237,20 +240,87 @@ export const ThreeCharacterScene: React.FC<ThreeCharacterSceneProps> = ({
       scene.add(monitorGroup);
     }
 
-    // 6. Build Low-Poly Characters
-    const handles: { arjun?: CharacterHandles; priya?: CharacterHandles } = {};
-
+    // 6. Load Rigged Humanoid Characters (with Procedural Fallback)
+    const variantsToLoad: Array<{ name: 'arjun' | 'priya'; pos: THREE.Vector3 }> = [];
     if (variant === 'arjun' || variant === 'dual') {
-      const arjunPos = variant === 'dual' ? new THREE.Vector3(-0.35, -0.32, 0.2) : new THREE.Vector3(0.05, -0.32, 0.2);
-      handles.arjun = buildLowPolyCharacter('arjun', scene, arjunPos);
+      const arjunPos = variant === 'dual' ? new THREE.Vector3(-0.35, -1.28, 0.1) : new THREE.Vector3(0.05, -1.28, 0.1);
+      variantsToLoad.push({ name: 'arjun', pos: arjunPos });
     }
     if (variant === 'priya' || variant === 'dual') {
-      const priyaPos = variant === 'dual' ? new THREE.Vector3(0.55, -0.30, 0.1) : new THREE.Vector3(0.05, -0.32, 0.2);
-      handles.priya = buildLowPolyCharacter('priya', scene, priyaPos);
+      const priyaPos = variant === 'dual' ? new THREE.Vector3(0.55, -1.28, 0.05) : new THREE.Vector3(0.05, -1.28, 0.1);
+      variantsToLoad.push({ name: 'priya', pos: priyaPos });
     }
-    charactersRef.current = handles;
 
-    // Cleanup on unmount
+    let loadedCount = 0;
+    const totalToLoad = variantsToLoad.length;
+    const gltfLoader = new GLTFLoader();
+
+    variantsToLoad.forEach(({ name, pos }) => {
+      const modelFile = name === 'arjun' ? 'models/arjun_rigged.glb' : 'models/priya_rigged.glb';
+      const url = staticFile(modelFile);
+
+      gltfLoader.load(
+        url,
+        (gltf) => {
+          const root = gltf.scene;
+          root.position.copy(pos);
+
+          const bones: Record<string, THREE.Object3D> = {};
+          let headMesh: THREE.Mesh | undefined;
+          let mouthMorphIndex: number | undefined;
+
+          root.traverse((node: any) => {
+            if (node.isBone) {
+              if (node.name === 'UpperArm.R') bones.upperArmR = node;
+              else if (node.name === 'LowerArm.R') bones.lowerArmR = node;
+              else if (node.name === 'Hand.R') bones.handR = node;
+              else if (node.name === 'UpperArm.L') bones.upperArmL = node;
+              else if (node.name === 'LowerArm.L') bones.lowerArmL = node;
+              else if (node.name === 'Hand.L') bones.handL = node;
+              else if (node.name === 'Head') bones.head = node;
+              else if (node.name === 'Neck') bones.neck = node;
+              else if (node.name === 'Spine') bones.spine = node;
+            }
+            if (node.isMesh) {
+              node.castShadow = true;
+              node.receiveShadow = true;
+              if (node.name === 'Casual_Head' && node.morphTargetDictionary && node.morphTargetDictionary['mouthOpen'] !== undefined) {
+                headMesh = node;
+                mouthMorphIndex = node.morphTargetDictionary['mouthOpen'];
+              }
+            }
+          });
+
+          scene.add(root);
+          charactersRef.current[name] = {
+            root,
+            head: bones.head || root,
+            isRigged: true,
+            bones,
+            headMesh,
+            mouthMorphIndex,
+          };
+
+          loadedCount++;
+          if (loadedCount >= totalToLoad) {
+            continueRender(renderHandle);
+          }
+        },
+        undefined,
+        (err) => {
+          console.warn(`[ThreeCharacterScene] Could not load ${modelFile}, using procedural fallback:`, err);
+          const fallbackPos = name === 'arjun'
+            ? (variant === 'dual' ? new THREE.Vector3(-0.35, -0.32, 0.2) : new THREE.Vector3(0.05, -0.32, 0.2))
+            : (variant === 'dual' ? new THREE.Vector3(0.55, -0.30, 0.1) : new THREE.Vector3(0.05, -0.32, 0.2));
+          charactersRef.current[name] = buildLowPolyCharacter(name, scene, fallbackPos);
+          loadedCount++;
+          if (loadedCount >= totalToLoad) {
+            continueRender(renderHandle);
+          }
+        }
+      );
+    });
+
     return () => {
       renderer.dispose();
     };
@@ -283,61 +353,120 @@ export const ThreeCharacterScene: React.FC<ThreeCharacterSceneProps> = ({
 
     // ─── 2. Animate Characters ───
     const animateChar = (char: CharacterHandles, isSpeaker: boolean, isArjun: boolean) => {
-      // 3D Mouth Lip-Sync
-      if (isSpeaker) {
-        char.mouth.scale.set(mouthWidth, mouthOpen, 1);
-        char.jaw.position.y = -0.25 - (isSpeaking ? 0.04 * currentAmplitude : 0);
+      if (char.isRigged && char.bones) {
+        // ─── RIGGED HUMANOID ARMATURE ANIMATION ───
+        const armSway = Math.sin(frame * 0.16) * 0.04;
+        const breathe = Math.sin(frame / 20) * 0.015;
+
+        // A. Head & Neck Gestures
+        if (char.bones.head) {
+          const headNod = isSpeaker && isSpeaking
+            ? Math.sin(frame * 0.45) * 0.08 * currentAmplitude
+            : Math.sin(frame / 22) * 0.03;
+          const headTurn = isSpeaker && isSpeaking
+            ? Math.sin(frame / 12) * 0.06
+            : (isArjun ? -0.10 : 0.08);
+
+          char.bones.head.rotation.x = headNod;
+          char.bones.head.rotation.y = headTurn;
+          char.bones.head.rotation.z = Math.sin(frame / 28) * 0.02;
+        }
+
+        // B. Right Arm (Holding smartphone or victory pump)
+        if (char.bones.upperArmR && char.bones.lowerArmR) {
+          if (mood === 'celebrating') {
+            char.bones.upperArmR.rotation.z = 0.95 + armSway;
+            char.bones.lowerArmR.rotation.z = 0.65;
+            char.bones.upperArmR.rotation.x = -0.35;
+          } else if (mood === 'shocked') {
+            char.bones.upperArmR.rotation.z = 0.85;
+            char.bones.lowerArmR.rotation.z = 1.05;
+          } else {
+            // Conversational: subtle phone hold & arm gesturing
+            char.bones.upperArmR.rotation.z = 0.35 + (isSpeaking ? Math.sin(frame * 0.22) * 0.05 * currentAmplitude : 0);
+            char.bones.lowerArmR.rotation.z = 0.65 + armSway * 0.4;
+            char.bones.upperArmR.rotation.x = breathe;
+          }
+        }
+
+        // C. Left Arm (Gesturing or resting on desk)
+        if (char.bones.upperArmL && char.bones.lowerArmL) {
+          if (mood === 'celebrating') {
+            char.bones.upperArmL.rotation.z = -0.95 - armSway;
+            char.bones.lowerArmL.rotation.z = -0.65;
+            char.bones.upperArmL.rotation.x = -0.35;
+          } else {
+            char.bones.upperArmL.rotation.z = -0.28 - (isSpeaking ? Math.sin(frame * 0.2) * 0.08 * currentAmplitude : armSway);
+            char.bones.lowerArmL.rotation.z = -0.45 + breathe;
+          }
+        }
+
+        // D. 3D Viseme Lip-Sync (mouthOpen Shape Key)
+        if (char.headMesh && char.mouthMorphIndex !== undefined && char.headMesh.morphTargetInfluences) {
+          char.headMesh.morphTargetInfluences[char.mouthMorphIndex] = isSpeaker && isSpeaking
+            ? Math.min(1.0, 0.15 + currentAmplitude * 1.5)
+            : 0;
+        }
       } else {
-        char.mouth.scale.set(0.7, 0.08, 1);
-        char.jaw.position.y = -0.25;
-      }
+        // ─── PROCEDURAL MESH FALLBACK ───
+        if (char.mouth && char.jaw) {
+          if (isSpeaker) {
+            char.mouth.scale.set(mouthWidth, mouthOpen, 1);
+            char.jaw.position.y = -0.25 - (isSpeaking ? 0.04 * currentAmplitude : 0);
+          } else {
+            char.mouth.scale.set(0.7, 0.08, 1);
+            char.jaw.position.y = -0.25;
+          }
+        }
 
-      // Head Nodding & Natural Breathing
-      const headNod = isSpeaker && isSpeaking
-        ? Math.sin(frame * 0.45) * 0.07 * currentAmplitude
-        : Math.sin(frame / 22) * 0.02;
-      const headTurn = isSpeaker && isSpeaking
-        ? Math.sin(frame / 11) * 0.05
-        : (isArjun ? -0.12 : 0.10); // Facing slightly towards center/screen
-      const breathing = Math.sin(frame / 18) * 0.012;
+        const headNod = isSpeaker && isSpeaking
+          ? Math.sin(frame * 0.45) * 0.07 * currentAmplitude
+          : Math.sin(frame / 22) * 0.02;
+        const headTurn = isSpeaker && isSpeaking
+          ? Math.sin(frame / 11) * 0.05
+          : (isArjun ? -0.12 : 0.10);
+        const breathing = Math.sin(frame / 18) * 0.012;
 
-      char.head.rotation.x = headNod;
-      char.head.rotation.y = headTurn;
-      char.head.position.y = 0.44 + breathing + (isSpeaker && isSpeaking ? -0.012 * currentAmplitude : 0);
+        char.head.rotation.x = headNod;
+        char.head.rotation.y = headTurn;
+        char.head.position.y = 0.44 + breathing + (isSpeaker && isSpeaking ? -0.012 * currentAmplitude : 0);
 
-      // Eye Blinking (every 3.5s = 105 frames)
-      const blinkCycle = frame % 105;
-      const isBlinking = blinkCycle > 98 && blinkCycle < 103;
-      char.eyes.scale.y = isBlinking ? 0.08 : 1.0;
+        if (char.eyes) {
+          const blinkCycle = frame % 105;
+          const isBlinking = blinkCycle > 98 && blinkCycle < 103;
+          char.eyes.scale.y = isBlinking ? 0.08 : 1.0;
+        }
 
-      // Eyebrows & Moods
-      if (mood === 'shocked') {
-        char.eyebrows.position.y = 0.13;
-        char.eyebrows.rotation.z = 0;
-      } else if (mood === 'questioning') {
-        char.eyebrows.position.y = 0.11;
-        char.eyebrows.rotation.z = isArjun ? 0.08 : -0.08;
-      } else if (isSpeaker && isSpeaking) {
-        char.eyebrows.position.y = 0.095 + currentAmplitude * 0.03;
-      } else {
-        char.eyebrows.position.y = 0.09;
-      }
+        if (char.eyebrows) {
+          if (mood === 'shocked') {
+            char.eyebrows.position.y = 0.13;
+            char.eyebrows.rotation.z = 0;
+          } else if (mood === 'questioning') {
+            char.eyebrows.position.y = 0.11;
+            char.eyebrows.rotation.z = isArjun ? 0.08 : -0.08;
+          } else if (isSpeaker && isSpeaking) {
+            char.eyebrows.position.y = 0.095 + currentAmplitude * 0.03;
+          } else {
+            char.eyebrows.position.y = 0.09;
+          }
+        }
 
-      // Arms & Gestures
-      const armSway = Math.sin(frame * 0.18) * 0.04;
-      if (mood === 'celebrating') {
-        char.rightArm.rotation.set(-1.7 + armSway, 0, 0.45);
-        char.leftArm.rotation.set(-1.7 - armSway, 0, -0.45);
-        if (char.phone) char.phone.visible = false;
-      } else if (mood === 'shocked') {
-        char.rightArm.rotation.set(-1.3, 0.2, 0.5);
-        char.leftArm.rotation.set(-1.3, -0.2, -0.5);
-        if (char.phone) char.phone.visible = false;
-      } else {
-        // Natural posture: right hand holding phone or gesturing, left near keyboard
-        char.rightArm.rotation.set(-0.65 + headNod * 0.4, 0.12, -0.15);
-        char.leftArm.rotation.set(0.18 + armSway, 0.05, -0.12);
-        if (char.phone) char.phone.visible = true;
+        if (char.rightArm && char.leftArm) {
+          const armSway = Math.sin(frame * 0.18) * 0.04;
+          if (mood === 'celebrating') {
+            char.rightArm.rotation.set(-1.7 + armSway, 0, 0.45);
+            char.leftArm.rotation.set(-1.7 - armSway, 0, -0.45);
+            if (char.phone) char.phone.visible = false;
+          } else if (mood === 'shocked') {
+            char.rightArm.rotation.set(-1.3, 0.2, 0.5);
+            char.leftArm.rotation.set(-1.3, -0.2, -0.5);
+            if (char.phone) char.phone.visible = false;
+          } else {
+            char.rightArm.rotation.set(-0.65 + headNod * 0.4, 0.12, -0.15);
+            char.leftArm.rotation.set(0.18 + armSway, 0.05, -0.12);
+            if (char.phone) char.phone.visible = true;
+          }
+        }
       }
     };
 

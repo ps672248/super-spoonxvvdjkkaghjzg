@@ -329,6 +329,26 @@ export const RemotionRoot: React.FC = () => {
         }}
       />
       <Composition
+        id="DynamicDirectorThreeJS"
+        component={DynamicStoryDirector}
+        durationInFrames={1230}
+        fps={30}
+        width={1080}
+        height={1920}
+        defaultProps={{
+          ...DYNAMIC_DIRECTOR_DEFAULT_PROPS,
+          renderEngine: 'threejs',
+        }}
+        calculateMetadata={({ props }) => {
+          const p = props as DynamicDirectorProps;
+          const shots = p.shots || DYNAMIC_DIRECTOR_DEFAULT_PROPS.shots;
+          const totalFrames = shots.reduce((sum, s) => sum + (s.durationFrames || 180), 0);
+          return {
+            durationInFrames: Math.max(totalFrames, 30),
+          };
+        }}
+      />
+      <Composition
         id="ThreeCharacterScene"
         component={ThreeCharacterScene}
         durationInFrames={150}

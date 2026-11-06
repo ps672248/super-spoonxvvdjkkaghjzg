@@ -11,8 +11,10 @@ import {
 } from 'remotion';
 import { fontFamily } from './Brand';
 import { GOLD, MUTED, WHITE, CORRECT_GREEN } from './theme';
-import { getShotDefinition, type MouthAnchor } from './catalog/scenesCatalog';
+import { getShotDefinition } from './catalog/scenesCatalog';
 import { LowPolyMouth } from './LowPolyCharacter';
+import { ThreeCharacterScene } from './ThreeCharacterScene';
+import audioEnvelopes from './audioEnvelopes.json';
 
 export interface DirectorShotProps {
   sceneId: string;
@@ -21,6 +23,7 @@ export interface DirectorShotProps {
   dialogueHindi: string;
   captionEn?: string;
   audioSrc?: string;
+  dialogueClip?: keyof typeof audioEnvelopes;
   audioEnvelope?: number[];
   durationFrames: number;
   cameraMotion?: 'zoom_in' | 'zoom_out' | 'pan_left' | 'pan_right' | 'shake' | 'static';
@@ -31,6 +34,7 @@ export interface DirectorShotProps {
 
 export interface DynamicDirectorProps {
   [key: string]: unknown;
+  renderEngine?: 'hybrid' | 'threejs';
   hasBgm?: boolean;
   featureBadge?: string;
   campaignTitle?: string;
@@ -45,6 +49,7 @@ export interface DynamicDirectorProps {
 }
 
 export const DYNAMIC_DIRECTOR_DEFAULT_PROPS: DynamicDirectorProps = {
+  renderEngine: 'hybrid',
   hasBgm: true,
   featureBadge: '🎮 10+ ARCADE GAMES',
   campaignTitle: 'Exam Anxiety vs Arcade Learning',
@@ -54,22 +59,26 @@ export const DYNAMIC_DIRECTOR_DEFAULT_PROPS: DynamicDirectorProps = {
       speaker: 'arjun',
       dialogueHindi: 'Yaar exam itna paas hai aur book kholte hi anxiety ho rahi hai... padhna chahta hoon par dimag freeze ho jata hai!',
       captionEn: 'When exam anxiety freezes your brain...',
-      audioSrc: 'audio/narration/dialogue2_arjun.mp3',
+      audioSrc: 'audio/narration/dialogue1_arjun.mp3',
+      dialogueClip: 'dialogue1_arjun',
       durationFrames: 220,
       cameraMotion: 'zoom_in',
       editorialTag: '// 01 · THE REALITY CHECK',
       badgeLabel: '😰 EXAM ANXIETY',
+      assetPath: 'scenes/catalog/arjun_head_in_hands_books.jpg',
     },
     {
       sceneId: 'priya_arms_crossed_smirking',
       speaker: 'priya',
       dialogueHindi: 'Toh tension chhod aur Aspirant Arcade pe games khel na! Yahan 10 se zyada interactive games hain jo tough formulas yaad kara dete hain!',
       captionEn: 'Stop overthinking. Start gaming.',
-      audioSrc: 'audio/narration/dialogue1_priya.mp3',
-      durationFrames: 270,
+      audioSrc: 'audio/narration/dialogue2_priya.mp3',
+      dialogueClip: 'dialogue2_priya',
+      durationFrames: 268,
       cameraMotion: 'zoom_in',
       editorialTag: '// 02 · THE MENTOR INTERVENTION',
       badgeLabel: '💡 STUDY HACK',
+      assetPath: 'scenes/catalog/priya_arms_crossed_smirking.jpg',
     },
     {
       sceneId: 'screen_formula_master_combo_10x',
@@ -77,10 +86,12 @@ export const DYNAMIC_DIRECTOR_DEFAULT_PROPS: DynamicDirectorProps = {
       dialogueHindi: 'Formula Master aur Speed Arena mein questions solve karna actual video game jaisa lag raha hai!',
       captionEn: '10+ Gamified Modes for GATE & PSUs',
       audioSrc: 'audio/narration/dialogue4_priya.mp3',
-      durationFrames: 260,
+      dialogueClip: 'dialogue4_priya',
+      durationFrames: 265,
       cameraMotion: 'pan_right',
       editorialTag: '// 03 · THE GAMEPLAY',
       badgeLabel: '🕹️ FORMULA MASTER',
+      assetPath: 'scenes/catalog/screen_formula_master_combo_10x.jpg',
     },
     {
       sceneId: 'arjun_two_thumbs_up_grinning',
@@ -88,30 +99,34 @@ export const DYNAMIC_DIRECTOR_DEFAULT_PROPS: DynamicDirectorProps = {
       dialogueHindi: 'Ab exam ka koi stress nahi! Daily streaks aur boss battles se concepts chutkiyon mein clear ho gaye!',
       captionEn: 'Confidence restored. Zero stress.',
       audioSrc: 'audio/narration/dialogue5_arjun.mp3',
-      durationFrames: 240,
+      dialogueClip: 'dialogue5_arjun',
+      durationFrames: 237,
       cameraMotion: 'zoom_in',
       editorialTag: '// 04 · THE BREAKTHROUGH',
       badgeLabel: '🏆 ANXIETY DEFEATED',
+      assetPath: 'scenes/catalog/arjun_two_thumbs_up_grinning.jpg',
     },
     {
       sceneId: 'dual_high_five_celebration',
       speaker: 'both',
       dialogueHindi: 'Aaj hi Google Play Store se Aspirant Arcade download karo aur apni exam prep ko level up karo!',
       captionEn: 'Download Aspirant Arcade • Free on Play Store',
-      audioSrc: 'audio/narration/dialogue4_priya.mp3',
-      durationFrames: 240,
+      audioSrc: 'audio/narration/dialogue6_both.mp3',
+      dialogueClip: 'dialogue6_both',
+      durationFrames: 236,
       cameraMotion: 'static',
       editorialTag: '// 05 · CALL TO ACTION',
       badgeLabel: '📲 DOWNLOAD NOW',
+      assetPath: 'scenes/catalog/dual_high_five_celebration.jpg',
     },
   ],
 };
 
 export const DynamicStoryDirector: React.FC<DynamicDirectorProps> = ({
+  renderEngine = 'hybrid',
   hasBgm = true,
   featureBadge = '🎮 10+ ARCADE GAMES',
   shots = DYNAMIC_DIRECTOR_DEFAULT_PROPS.shots,
-  outro,
 }) => {
   // Compute cumulative start frames for each shot
   let cumulative = 0;
@@ -189,7 +204,12 @@ export const DynamicStoryDirector: React.FC<DynamicDirectorProps> = ({
       {/* ─── Dynamic Sequences for Every Shot Directorial Block ─── */}
       {shotSchedules.map((shot, idx) => (
         <Sequence from={shot.from} durationInFrames={shot.duration} key={`${shot.sceneId}-${idx}`}>
-          <ShotRenderer shot={shot} shotIndex={idx} totalShots={shotSchedules.length} />
+          <ShotRenderer
+            shot={shot}
+            shotIndex={idx}
+            totalShots={shotSchedules.length}
+            renderEngine={renderEngine}
+          />
         </Sequence>
       ))}
     </AbsoluteFill>
@@ -197,18 +217,19 @@ export const DynamicStoryDirector: React.FC<DynamicDirectorProps> = ({
 };
 
 /* ══════════════════════════════════════════════════════════════════
-   SHOT RENDERER (Renders individual director shot from catalog)
+   SHOT RENDERER (Supports Method 1 Three.js & Method 2 Hybrid)
 ══════════════════════════════════════════════════════════════════ */
 const ShotRenderer: React.FC<{
   shot: DirectorShotProps & { from: number; duration: number };
   shotIndex: number;
   totalShots: number;
-}> = ({ shot, shotIndex, totalShots }) => {
+  renderEngine?: 'hybrid' | 'threejs';
+}> = ({ shot, shotIndex, totalShots, renderEngine = 'hybrid' }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const shotDef = getShotDefinition(shot.sceneId);
 
-  // 1. Camera Motion Interpolation
+  // 1. Camera Motion Interpolation (Method 2)
   let transform = 'scale(1.05)';
   if (shot.cameraMotion === 'zoom_in' || !shot.cameraMotion) {
     const scale = interpolate(frame, [0, shot.duration], [1.02, 1.16], { extrapolateRight: 'clamp' });
@@ -228,10 +249,13 @@ const ShotRenderer: React.FC<{
 
   // 2. Lip-Sync Amplitude calculation
   let amplitude = 0;
-  if (shot.audioEnvelope && shot.audioEnvelope.length > 0) {
+  const clipKey = shot.dialogueClip;
+  if (clipKey && (audioEnvelopes as any)[clipKey]) {
+    const env = (audioEnvelopes as any)[clipKey];
+    amplitude = env[frame] || 0;
+  } else if (shot.audioEnvelope && shot.audioEnvelope.length > 0) {
     amplitude = shot.audioEnvelope[frame] || 0;
   } else {
-    // Natural procedural speech cadence fallback
     const speechActive = frame > 6 && frame < shot.duration - 8;
     if (speechActive) {
       const syllableWave = Math.sin(frame * 0.9) * 0.5 + Math.sin(frame * 1.7) * 0.3 + 0.5;
@@ -239,7 +263,7 @@ const ShotRenderer: React.FC<{
     }
   }
 
-  // Determine speaker styling
+  // Speaker styling
   const isArjun = shot.speaker === 'arjun';
   const isPriya = shot.speaker === 'priya';
   const isBoth = shot.speaker === 'both';
@@ -267,50 +291,69 @@ const ShotRenderer: React.FC<{
     speakerBorder = 'rgba(56, 189, 248, 0.6)';
   }
 
-  // Use dedicated on-demand generated/cached asset, or fallback
-  const imageSrc = shot.assetPath || shotDef.fallbackAsset || 'scenes/scene1_arjun_desk.jpg';
+  const imageSrc = shot.assetPath || shotDef.fallbackAsset || 'scenes/catalog/arjun_head_in_hands_books.jpg';
 
   return (
     <AbsoluteFill>
       {/* Spoken Narration Audio */}
       {shot.audioSrc && <Audio src={staticFile(shot.audioSrc)} volume={1.0} />}
 
-      {/* Visual Scene Background */}
-      <AbsoluteFill
-        style={{
-          transform,
-          transformOrigin: '50% 45%',
-        }}
-      >
-        <Img src={staticFile(imageSrc)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-
-        {/* Character Procedural Lip-Sync Mouth */}
-        {shotDef.mouth && !isScreen && (
-          <LowPolyMouth
-            amplitude={amplitude}
-            centerX={shotDef.mouth.centerX}
-            centerY={shotDef.mouth.centerY}
-            baseWidth={shotDef.mouth.baseWidth}
-            maxHeight={shotDef.mouth.maxHeight}
-            rotationDeg={shotDef.mouth.rotationDeg}
-            lipColor={shotDef.mouth.lipColor}
-          />
-        )}
-
-        {/* Ambient atmospheric lighting */}
-        <div
+      {/* ─── VISUAL ENGINE SWITCH (Method 1 vs Method 2) ─── */}
+      {renderEngine === 'threejs' ? (
+        // METHOD 1: Pure Procedural Three.js 3D WebGL Engine
+        <AbsoluteFill>
+          {isScreen ? (
+            <InGameArcadeScreen frame={frame} duration={shot.duration} />
+          ) : (
+            <ThreeCharacterScene
+              variant={isBoth ? 'dual' : isPriya ? 'priya' : 'arjun'}
+              mood={isBoth ? 'celebrating' : shot.sceneId.includes('grinning') ? 'celebrating' : shot.sceneId.includes('head_in_hands') ? 'shocked' : 'talking'}
+              cameraAngle={isBoth ? 'wide' : isPriya ? 'cinematic_3quarter' : shot.sceneId.includes('grinning') ? 'closeup' : 'cinematic_3quarter'}
+              dialogueClip={clipKey}
+              dialogueStartFrame={0}
+              width={1080}
+              height={1920}
+            />
+          )}
+        </AbsoluteFill>
+      ) : (
+        // METHOD 2: Hybrid 3D Cached Scene Plate + Real-Time Lip-Sync
+        <AbsoluteFill
           style={{
-            position: 'absolute',
-            inset: 0,
-            background: isPriya
-              ? 'radial-gradient(circle at 60% 40%, rgba(253, 192, 3, 0.16) 0%, transparent 60%)'
-              : 'radial-gradient(circle at 40% 40%, rgba(56, 189, 248, 0.16) 0%, transparent 60%)',
-            pointerEvents: 'none',
+            transform,
+            transformOrigin: '50% 45%',
           }}
-        />
-      </AbsoluteFill>
+        >
+          <Img src={staticFile(imageSrc)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
 
-      {/* Top Scrim Gradient for Ultra-Crisp Subtitle Legibility */}
+          {/* Character Procedural Lip-Sync Mouth */}
+          {shotDef.mouth && !isScreen && (
+            <LowPolyMouth
+              amplitude={amplitude}
+              centerX={shotDef.mouth.centerX}
+              centerY={shotDef.mouth.centerY}
+              baseWidth={shotDef.mouth.baseWidth}
+              maxHeight={shotDef.mouth.maxHeight}
+              rotationDeg={shotDef.mouth.rotationDeg}
+              lipColor={shotDef.mouth.lipColor}
+            />
+          )}
+
+          {/* Ambient atmospheric lighting */}
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              background: isPriya
+                ? 'radial-gradient(circle at 60% 40%, rgba(253, 192, 3, 0.16) 0%, transparent 60%)'
+                : 'radial-gradient(circle at 40% 40%, rgba(56, 189, 248, 0.16) 0%, transparent 60%)',
+              pointerEvents: 'none',
+            }}
+          />
+        </AbsoluteFill>
+      )}
+
+      {/* Top Scrim Gradient for Subtitle Legibility */}
       <div
         style={{
           position: 'absolute',
@@ -428,6 +471,171 @@ const ShotRenderer: React.FC<{
             }}
           />
         ))}
+      </div>
+    </AbsoluteFill>
+  );
+};
+
+/**
+ * High-Tech In-Game Arcade Screen Cutaway (Method 1 & 2)
+ */
+const InGameArcadeScreen: React.FC<{ frame: number; duration: number }> = ({ frame, duration }) => {
+  const pulse = Math.sin(frame * 0.2) * 0.08 + 1.0;
+  const progress = Math.min(1, frame / (duration * 0.75));
+
+  return (
+    <AbsoluteFill
+      style={{
+        backgroundColor: '#040814',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '60px 48px',
+      }}
+    >
+      {/* Background Cyber Grid */}
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          backgroundImage: 'radial-gradient(circle at 50% 50%, rgba(6, 182, 212, 0.15) 0%, transparent 70%)',
+          pointerEvents: 'none',
+        }}
+      />
+
+      {/* In-Game HUD Card */}
+      <div
+        style={{
+          width: '920px',
+          backgroundColor: 'rgba(15, 23, 42, 0.94)',
+          border: '2.5px solid #FDC003',
+          borderRadius: '28px',
+          padding: '48px',
+          boxShadow: '0 20px 60px rgba(0, 0, 0, 0.8), 0 0 40px rgba(253, 192, 3, 0.25)',
+          marginTop: '120px',
+        }}
+      >
+        {/* Header Bar */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <span style={{ fontSize: '32px' }}>⚡</span>
+            <div>
+              <p style={{ margin: 0, fontSize: '24px', fontWeight: 900, color: '#FDC003', letterSpacing: '1px' }}>
+                FORMULA MASTER · SPEED ARENA
+              </p>
+              <p style={{ margin: 0, fontSize: '15px', color: '#94A3B8', fontWeight: 600 }}>
+                1v1 LIVE MULTIPLAYER · GATE 2026
+              </p>
+            </div>
+          </div>
+
+          <div
+            style={{
+              padding: '8px 24px',
+              backgroundColor: 'rgba(34, 197, 94, 0.2)',
+              border: '2px solid #22C55E',
+              borderRadius: '999px',
+              fontSize: '18px',
+              fontWeight: 900,
+              color: '#22C55E',
+              transform: `scale(${pulse})`,
+            }}
+          >
+            🔥 10x COMBO STREAK
+          </div>
+        </div>
+
+        {/* Speed Timer Bar */}
+        <div style={{ marginBottom: '36px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '15px', fontWeight: 800, color: '#94A3B8' }}>
+            <span>COMBO SPEED GAUGE</span>
+            <span style={{ color: '#FDC003' }}>+450 XP (SURGE)</span>
+          </div>
+          <div style={{ width: '100%', height: '14px', backgroundColor: '#1E293B', borderRadius: '999px', overflow: 'hidden' }}>
+            <div
+              style={{
+                width: `${progress * 100}%`,
+                height: '100%',
+                background: 'linear-gradient(90deg, #FDC003 0%, #22C55E 100%)',
+                boxShadow: '0 0 16px rgba(34, 197, 94, 0.6)',
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Question Box */}
+        <div
+          style={{
+            backgroundColor: '#0F172A',
+            border: '1.5px solid rgba(255, 255, 255, 0.1)',
+            borderRadius: '20px',
+            padding: '32px',
+            marginBottom: '32px',
+          }}
+        >
+          <span style={{ fontSize: '14px', fontWeight: 800, color: '#38BDF8', letterSpacing: '1px', textTransform: 'uppercase' }}>
+            // QUESTION 04 OF 15 · ELECTRICAL & INSTRUMENTATION
+          </span>
+          <p style={{ margin: '14px 0 0 0', fontSize: '26px', fontWeight: 800, color: WHITE, lineHeight: 1.4 }}>
+            In any linear, bilateral circuit, which theorem replaces the whole network with one voltage source and series resistor?
+          </p>
+        </div>
+
+        {/* Options Grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+          <div
+            style={{
+              padding: '24px',
+              backgroundColor: '#1E293B',
+              borderRadius: '16px',
+              border: '1.5px solid rgba(255, 255, 255, 0.1)',
+              fontSize: '20px',
+              fontWeight: 700,
+              color: '#94A3B8',
+            }}
+          >
+            A. Norton's Theorem
+          </div>
+
+          <div
+            style={{
+              padding: '24px',
+              backgroundColor: 'rgba(34, 197, 94, 0.25)',
+              borderRadius: '16px',
+              border: '2.5px solid #22C55E',
+              fontSize: '20px',
+              fontWeight: 900,
+              color: '#22C55E',
+              boxShadow: '0 0 24px rgba(34, 197, 94, 0.35)',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}
+          >
+            <span>B. Thevenin's Theorem</span>
+            <span>✅ +100 PTS</span>
+          </div>
+        </div>
+
+        {/* Rank Surge Banner */}
+        <div
+          style={{
+            marginTop: '32px',
+            padding: '18px 28px',
+            backgroundColor: '#1E293B',
+            borderRadius: '16px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            border: '1px solid rgba(253, 192, 3, 0.3)',
+          }}
+        >
+          <span style={{ fontSize: '16px', fontWeight: 800, color: '#94A3B8' }}>LIVE LEADERBOARD SURGE</span>
+          <span style={{ fontSize: '22px', fontWeight: 900, color: '#FDC003' }}>
+            ARJUN: #420 ➔ #12 (TOP 1%) 🚀
+          </span>
+        </div>
       </div>
     </AbsoluteFill>
   );
