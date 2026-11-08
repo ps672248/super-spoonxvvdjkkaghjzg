@@ -1,5 +1,50 @@
 [
   {
+    "runAt": "2026-11-08T18:59:28.972Z",
+    "windowDays": 28,
+    "youtube": {
+      "videos": 200,
+      "totalViews": 15784,
+      "byVertical": {
+        "unknown": {
+          "videos": 192,
+          "views": 15655
+        },
+        "schooling": {
+          "videos": 4,
+          "views": 55
+        },
+        "govt": {
+          "videos": 4,
+          "views": 74
+        }
+      }
+    },
+    "instagram": {
+      "reels": 50,
+      "totalViews": 635,
+      "totalReach": 542
+    },
+    "suggestions": [
+      {
+        "action": "Prioritize news recap reels for YouTube on Admit Card, Result, Answer Key, Application Deadline, and Vacancy topics, given their high audience interest.",
+        "why": "These topics generated the highest views, with 'KTET Hall Ticket' (2302 views) and 'GATE Application Scrutiny' (834 views) leading."
+      },
+      {
+        "action": "Develop more relatable, conversational hook lines for daily quiz reels, especially for Instagram, similar to the 'Arjun' post.",
+        "why": "The 'Arjun' quiz reel (113 views) significantly outperformed most news reels on Instagram, indicating stronger audience engagement."
+      },
+      {
+        "action": "Refine YouTube titles, descriptions, and tags for news recaps using urgent keywords like 'OUT!', 'LIVE', and 'LAST CHANCE' to increase visibility.",
+        "why": "High-performing YouTube videos such as 'KTET Hall Ticket' (2302 views) and 'GATE Scrutiny' (834 views) successfully leveraged this."
+      },
+      {
+        "action": "Increase the frequency or prominence of schooling (CBSE boards) content, especially board exam updates, within Instagram Reels rotation.",
+        "why": "CBSE date sheet (114 views) and practical exam dates (135 views) reels performed notably well on Instagram."
+      }
+    ]
+  },
+  {
     "runAt": "2026-11-01T19:05:10.531Z",
     "windowDays": 28,
     "youtube": {
@@ -290,55 +335,6 @@
       {
         "action": "Review and refine the \"hook-line pool\" and \"video pacing/length\" for daily quiz reels to enhance engagement.",
         "why": "Current data does not show any high-performing quiz reels, and `vertical` data is too thin to assess their specific impact."
-      }
-    ]
-  },
-  {
-    "runAt": "2026-09-20T17:36:39.177Z",
-    "windowDays": 28,
-    "youtube": {
-      "videos": 200,
-      "totalViews": 52858,
-      "byVertical": {
-        "unknown": {
-          "videos": 180,
-          "views": 43465
-        },
-        "govt": {
-          "videos": 6,
-          "views": 4795
-        },
-        "college": {
-          "videos": 7,
-          "views": 1578
-        },
-        "schooling": {
-          "videos": 7,
-          "views": 3020
-        }
-      }
-    },
-    "instagram": {
-      "reels": 50,
-      "totalViews": 1350,
-      "totalReach": 1109
-    },
-    "suggestions": [
-      {
-        "action": "Prioritize and use strong hook lines/title formulas for \"Result Declared\" and \"Admit Card Out\" news across both YouTube and Instagram.",
-        "why": "YouTube's top performers include \"AIIMS NORCET 11 Stage 1 Result\" (8170 views) and \"ISRO ICRB Admit Card\" (1628 views), indicating high user interest."
-      },
-      {
-        "action": "Incorporate \"#Shorts\" directly into YouTube video title formulas for urgent news updates like \"Admit Card Out\" or \"Exam Date Announced.\"",
-        "why": "Videos like \"IOCL 2026 Admit Card & Exam Date Out! #Shorts\" (1381 views) and \"NMDC Steel Executive Trainee Exam Date 2026 #Shorts\" (1341 views) performed strongly."
-      },
-      {
-        "action": "Optimize Instagram captions with clear calls to action and urgency for application/registration news, leveraging relevant emojis.",
-        "why": "Instagram's top views are for \"IIT JAM 2027 application process\" (144 views) and \"IBPS RRB 2026 applications close\" (114 views)."
-      },
-      {
-        "action": "Re-evaluate the hook-line pool and overall strategy for non-urgent 'strategy' or 'preparation' videos.",
-        "why": "The YouTube video \"24 hours left for IES/ESE 2026? Maximize your score | Final Day Strategy\" received 0 views, indicating low engagement."
       }
     ]
   }
