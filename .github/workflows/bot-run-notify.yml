@@ -14,6 +14,7 @@ on:
   workflow_run:
     workflows:
       - Video Bot (daily quiz reel — Shorts/Reels render + publish)
+      - Marketing Bot (daily feature story reel)
       - Meme Bot (daily reminder — manual render on dispatch)
       - Meme Publish (after Discord approve/reject)
       - Admin Video Render (blog panel → stage to Cloudinary)

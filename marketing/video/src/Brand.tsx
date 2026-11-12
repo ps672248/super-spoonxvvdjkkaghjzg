@@ -9,11 +9,16 @@ const { fontFamily } = loadFont('normal', { weights: ['400', '700', '800'], subs
 export { fontFamily };
 
 /** Top-left wordmark + top-right vertical tag pill. Stays on screen the whole video. */
-export const Header: React.FC<{ tag: string }> = ({ tag }) => {
+export const Header: React.FC<{ tag: string; livePulse?: boolean; pulseColor?: string }> = ({
+  tag,
+  livePulse = true,
+  pulseColor = '#F43F5E',
+}) => {
   const frame = useCurrentFrame();
   const { width, height } = useVideoConfig();
   const isLandscape = width > height;
   const opacity = interpolate(frame, [0, 15], [0, 1], { extrapolateRight: 'clamp' });
+  const dotOpacity = 0.55 + Math.abs(Math.sin(frame * 0.22)) * 0.45;
 
   return (
     <AbsoluteFill style={{ padding: isLandscape ? '44px 80px' : '64px 56px', opacity, pointerEvents: 'none' }}>
@@ -26,16 +31,34 @@ export const Header: React.FC<{ tag: string }> = ({ tag }) => {
         </div>
         <div
           style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
             fontFamily,
             fontSize: isLandscape ? 18 : 22,
             fontWeight: 700,
             color: GOLD,
             letterSpacing: 2,
+            background: 'rgba(15, 21, 32, 0.72)',
             border: `2px solid ${BORDER}`,
             borderRadius: 999,
             padding: isLandscape ? '8px 18px' : '10px 22px',
+            backdropFilter: 'blur(8px)',
           }}
         >
+          {livePulse ? (
+            <span
+              style={{
+                width: isLandscape ? 10 : 12,
+                height: isLandscape ? 10 : 12,
+                borderRadius: '50%',
+                background: pulseColor,
+                opacity: dotOpacity,
+                boxShadow: `0 0 12px ${pulseColor}`,
+                display: 'inline-block',
+              }}
+            />
+          ) : null}
           {tag.toUpperCase()}
         </div>
       </div>

@@ -1,9 +1,9 @@
 /**
  * Converts English narration lines into natural spoken Hinglish (code-mixed
  * Hindi in Devanagari + English technical terms kept in Latin script) via one
- * small batched Gemini call per video. Only used when Sarvam TTS is active
- * (SARVAM_API_KEY set) — its bulbul voices are built for exactly this
- * code-mixed input, whereas the Edge en-IN fallback voice is not.
+ * small batched Gemini call per video. Active whenever Gemini TTS or Sarvam TTS
+ * is configured (both read Devanagari + Latin terms cleanly, and Edge fallback
+ * routes Devanagari to hi-IN voices).
  *
  * On-screen text is NEVER touched — this only rewrites what gets spoken.
  * Best-effort like everything else in this pipeline: any failure returns nulls
@@ -11,11 +11,11 @@
  *
  * Env: GEMINI_API_KEYS (same rotated ring as quizContent.ts), optional
  * GEMINI_MODEL (default gemini-2.5-flash), TTS_HINGLISH='false' to disable
- * conversion while keeping Sarvam voices.
+ * conversion while keeping Gemini/Sarvam voices.
  */
 
 export function hinglishEnabled(): boolean {
-  return Boolean(process.env.SARVAM_API_KEY) && process.env.TTS_HINGLISH !== 'false';
+  return Boolean(process.env.GEMINI_API_KEYS || process.env.SARVAM_API_KEY) && process.env.TTS_HINGLISH !== 'false';
 }
 
 const SCHEMA = {

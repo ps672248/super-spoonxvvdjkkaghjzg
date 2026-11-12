@@ -26,7 +26,8 @@ import type { Vertical } from './fetchContent';
 import { resolveBeats, type Beat, type NewsNarration } from './NewsRecap';
 import { hinglishEnabled, toHinglish } from './hinglish';
 import { synthesizeNarration } from './tts';
-import { audioFlags, OUTPUT_DIR, renderComposition, renderCoverStill } from './renderShared';
+import { audioFlags, OUTPUT_DIR, PUBLIC_DIR, renderComposition, renderCoverStill } from './renderShared';
+import { cadenceForClip } from './dynamicScript';
 import { readArticle, stageAdminDualVideos, stageAdminVideo, updateArticleVideo, type VideoBeat, type VideoMeta } from './adminVideoApproval';
 
 async function fail(slug: string, message: string): Promise<never> {
@@ -61,20 +62,31 @@ async function prepareNarration(
   const hookLine = videoMeta?.hookLine?.trim() || undefined;
   const resolved = resolveBeats(normalizeBeatRows(beats) || []);
 
-  const nHeadline = await synthesizeNarration(`${hookLine ? `${hookLine}. ` : ''}${headline}`, `admin-${format}-headline`);
+  const headlineSpeech = `${hookLine ? `${hookLine}. ` : ''}${headline}`;
+  const nHeadline = await synthesizeNarration(headlineSpeech, `admin-${format}-headline`);
 
+  const spokenBeatLines: (string | null)[] = [];
   const nBeats = await Promise.all(
     resolved.map(async (beat, i) => {
-      if (beat.noAudio || !beat.text?.trim()) return null;
+      if (beat.noAudio || !beat.text?.trim()) {
+        spokenBeatLines[i] = null;
+        return null;
+      }
       let line = beat.text;
       if (hinglishEnabled()) {
         const h = await toHinglish([line]);
         line = h[0] ?? line;
       }
+      spokenBeatLines[i] = line;
       return synthesizeNarration(line, `admin-${format}-beat-${i}`);
     }),
   );
-  const narration: NewsNarration = { headline: nHeadline, beats: nBeats };
+  const narration: NewsNarration = {
+    headline: nHeadline,
+    beats: nBeats,
+    headlineCadence: cadenceForClip(nHeadline, headlineSpeech, PUBLIC_DIR),
+    beatCadences: nBeats.map((clip, i) => cadenceForClip(clip, spokenBeatLines[i] ?? null, PUBLIC_DIR)),
+  };
   return { resolved, narration, hookLine };
 }
 
@@ -91,8 +103,8 @@ async function renderPreparedFormat(
   thumbnail?: VideoMeta['thumbnail'],
 ): Promise<{ videoPath: string; coverPath?: string }> {
   const compositionId = format === 'landscape' ? 'NewsRecapLandscape' : 'NewsRecap';
-  const { hasNewsBgm, hasOutro } = audioFlags();
-  const newsProps = { vertical, headline, beats: resolved, hookLine, narration, format, hasBgm: hasNewsBgm, hasOutro, thumbnail };
+  const { hasNewsBgm, hasMotivationBgm, hasCorporateBgm, hasOutro, hasSfx } = audioFlags();
+  const newsProps = { vertical, headline, beats: resolved, hookLine, narration, format, hasBgm: hasNewsBgm, hasMotivationBgm, hasCorporateBgm, hasOutro, hasSfx, thumbnail };
 
   const outFile = await renderComposition(
     bundleLocation, compositionId, newsProps,
