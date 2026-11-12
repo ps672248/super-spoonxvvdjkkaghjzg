@@ -16,6 +16,8 @@ export interface MarketingFeatureSpec {
   tag: string;
   title: string;
   pitch: string;
+  howItWorks: string;
+  modesAndControls?: string;
   painPoint: string;
   defaultSfx: 'phone_buzz' | 'alert_blip' | 'ding' | 'pop';
 }
@@ -26,9 +28,13 @@ export const MARKETING_FEATURES: MarketingFeatureSpec[] = [
     tag: 'FOCUS GUARD',
     title: 'Focus Guard (App Timer & Reel Interceptor)',
     pitch:
-      'Focus Guard has 2 custom modes to eliminate doomscrolling: (1) App Timer Mode (intervenes after every X minutes of app usage, set by you) and (2) Reel Mode (intervenes after every X reels scrolled, set by you). To resume scrolling or use the app again, you must answer Y exam MCQs correctly (count set by you)!',
+      'Focus Guard intercepts distracting apps and reels, forcing you to solve exam MCQs before unlocking screen time.',
+    howItWorks:
+      'When active, the app monitors your phone usage. Once your set limit is reached, an exam question overlay takes over the screen. You must answer your required number of questions correctly to unlock and resume scrolling.',
+    modesAndControls:
+      'Has 2 distinct modes: (1) App Timer Mode (intervenes after every X minutes of app usage, set by user), and (2) Reel Count Mode (intervenes after every X reels scrolled, set by user). User configures: X threshold value + Y required correct answers to unlock.',
     painPoint:
-      'Aspirants losing 2–3 hours every night doomscrolling Instagram Reels and YouTube Shorts without realizing how many reels or minutes vanished.',
+      'Aspirants losing 2–3 hours every night doomscrolling Instagram Reels and YouTube Shorts without realizing how much time or how many reels vanished.',
     defaultSfx: 'phone_buzz',
   },
   {
@@ -37,7 +43,12 @@ export const MARKETING_FEATURES: MarketingFeatureSpec[] = [
     title: 'Short Notes for Every Exam',
     pitch:
       'Crisp, high-yield Short Notes organized by exam and chapter so you can revise key formulas and concepts in 5 minutes without opening 500-page PDFs.',
-    painPoint: 'Getting overwhelmed by massive textbooks and bulky coaching PDFs right before exam week.',
+    howItWorks:
+      'Browse by your target exam and subject (e.g. GATE Mechanical, SSC CGL Polity, UPSC History). Each chapter is distilled into formulas, key rules, and high-frequency exam traps with clean bullet points and KaTeX math formatting.',
+    modesAndControls:
+      'Exam-wise filtering, chapter bookmarking, search by topic, and formula quick-cards.',
+    painPoint:
+      'Getting overwhelmed by massive textbooks and bulky coaching PDFs right before exam week.',
     defaultSfx: 'pop',
   },
   {
@@ -45,8 +56,13 @@ export const MARKETING_FEATURES: MarketingFeatureSpec[] = [
     tag: 'AI NOTES + QUIZ',
     title: 'AI Notes + Quiz Overview & Marks Breakdown',
     pitch:
-      'Generate custom AI notes on any weak topic paired with a full quiz overview showing exact aspirant marks, correct vs incorrect answers, and explanations.',
-    painPoint: 'Reading passive notes without knowing how much you actually remember or where you lose marks.',
+      'Generate custom AI notes on any weak topic paired with an instant quiz overview and exact marks breakdown.',
+    howItWorks:
+      'Type any topic or syllabus doubt. AI generates structured short notes, immediately followed by an interactive diagnostic quiz. When finished, you see your exact score, accuracy percentage, time taken, and line-by-line answer explanations.',
+    modesAndControls:
+      'Topic prompt input, adjustable quiz difficulty (1-10), instant markscard overview with correct vs incorrect breakdowns and negative marking calculation.',
+    painPoint:
+      'Reading passive notes without knowing how much you actually remember or where you lose marks on tricky options.',
     defaultSfx: 'ding',
   },
   {
@@ -54,8 +70,13 @@ export const MARKETING_FEATURES: MarketingFeatureSpec[] = [
     tag: '14+ ARCADE GAMES',
     title: '14+ Arcade Games for Stress-Free Learning',
     pitch:
-      'Turn boring exam prep into 14+ fast, stress-free arcade games (Cave Runner, Tsunami, Slasher, Survival, Match, Speed MCQ) so studying feels addictive.',
-    painPoint: 'Burning out and feeling sleepy after solving static black-and-white MCQ sheets.',
+      'Turn boring exam prep into 14+ fast, stress-free arcade games so studying feels addictive.',
+    howItWorks:
+      'Choose your exam syllabus and jump into action games like Cave Runner, Tsunami, Slasher, Survival, Speed Match, and MCQ Blitz. Solve questions under time pressure, maintain combos, earn XP, and level up.',
+    modesAndControls:
+      '14+ game mechanics: runner, survival dodging, card matching, speed blitz, combo multipliers, and exam category topic selection.',
+    painPoint:
+      'Burning out, eye strain, and feeling sleepy after solving hundreds of static black-and-white MCQ sheets.',
     defaultSfx: 'alert_blip',
   },
   {
@@ -63,8 +84,13 @@ export const MARKETING_FEATURES: MarketingFeatureSpec[] = [
     tag: 'CHALLENGE MODE',
     title: 'Group Challenge Mode',
     pitch:
-      'Create a live multiplayer Challenge Mode lobby, invite friends with a code, and compete in real-time quiz battles to learn faster together.',
-    painPoint: 'Feeling isolated and unmotivated while preparing alone in a hostel or PG room.',
+      'Create live multiplayer quiz lobbies, invite friends with a code, and compete in real-time quiz battles.',
+    howItWorks:
+      'One player creates a room and gets a 6-digit lobby code. Friends enter the code to join the lobby. When the host starts, all players receive identical questions with synchronized countdown timers, and a live scoreboard updates after every question.',
+    modesAndControls:
+      'Host/Join with 6-digit lobby PIN, 1v1 duel or group battle (up to 10 players), custom subject selection, synchronized question timer.',
+    painPoint:
+      'Feeling isolated, demotivated, and procrastinating while preparing alone in a hostel or PG room.',
     defaultSfx: 'alert_blip',
   },
   {
@@ -72,8 +98,13 @@ export const MARKETING_FEATURES: MarketingFeatureSpec[] = [
     tag: 'EXAM ALERTS',
     title: 'Daily Recruitment, Result & Exam News Alerts',
     pitch:
-      'Get targeted daily push notifications for PSU recruitment, SSC/GATE/JEE results, admit cards, and official exam updates filtered to your exact category.',
-    painPoint: 'Missing application deadlines or result announcements because updates get buried in spammy Telegram groups.',
+      'Get targeted daily push notifications for PSU recruitment, SSC/GATE/JEE results, admit cards, and official exam updates.',
+    howItWorks:
+      'Select your target exam categories. When an official notification drops (admit card, recruitment drive, answer key, cutoff, result), you get a direct alert with verified dates, eligibility criteria, and official link.',
+    modesAndControls:
+      'Category-specific subscriptions (e.g. PSU Engineers, Banking, SSC, State PSC), instant result pings, zero spam.',
+    painPoint:
+      'Missing application deadlines or result announcements because updates get buried in spammy Telegram and WhatsApp groups.',
     defaultSfx: 'phone_buzz',
   },
   {
@@ -81,8 +112,13 @@ export const MARKETING_FEATURES: MarketingFeatureSpec[] = [
     tag: 'INSIGHTS',
     title: 'Overall Quiz Insights by Exam Category',
     pitch:
-      'See overall insights across every quiz played in your exam category — tracking accuracy trends, speed per question, and weak chapters in one dashboard.',
-    painPoint: 'Taking dozens of mock tests without tracking whether your accuracy and speed are actually improving.',
+      'See overall insights across every quiz played in your exam category — tracking accuracy trends, speed per question, and weak chapters.',
+    howItWorks:
+      'The app aggregates every attempt across quizzes, games, and mocks. Visual analytics display your accuracy percentage trend line, average time spent per question, and a subject-wise strength/weakness breakdown.',
+    modesAndControls:
+      'Weekly/monthly accuracy progression graphs, speed vs accuracy quadrant, weak topic identification, percentile ranking.',
+    painPoint:
+      'Taking dozens of mock tests blindly without tracking whether your speed and accuracy are actually improving or stagnating.',
     defaultSfx: 'ding',
   },
   {
@@ -91,7 +127,12 @@ export const MARKETING_FEATURES: MarketingFeatureSpec[] = [
     title: 'Competitive Leaderboard',
     pitch:
       'Climb the live Competitive Leaderboard against thousands of aspirants in your exam category and turn daily revision into a real rank battle.',
-    painPoint: 'Having zero clue where you stand compared to actual competitors before the real exam day.',
+    howItWorks:
+      'Every quiz solved, arcade game won, and daily streak maintained awards XP. The leaderboard ranks all active aspirants in your exam category in real time, displaying podium positions (🥇, 🥈, 🥉) and rank changes (e.g. ↑ +3 ranks).',
+    modesAndControls:
+      'Category-filtered rankings (All-India, Weekly, All-Time), user profile avatar, rank change delta indicators, daily streak bonus.',
+    painPoint:
+      'Having zero clue where you stand compared to actual competitors before the real exam day.',
     defaultSfx: 'ding',
   },
   {
@@ -100,7 +141,12 @@ export const MARKETING_FEATURES: MarketingFeatureSpec[] = [
     title: 'AI Interview & GD/GT Simulator',
     pitch:
       'Practice PSU technical interviews, Group Discussions (GD), and Group Tasks (GT) with an AI simulator that evaluates clarity, confidence, and structure.',
-    painPoint: 'Clearing the written exam cutoff but freezing up in front of the real PSU interview or GD panel.',
+    howItWorks:
+      'Select your job profile or exam (e.g. ONGC, IOCL, BARC, Banking PO). The AI interviewer asks technical, situational, and HR questions aloud. You speak your answer; AI analyzes your speech and gives structured feedback using the STAR framework.',
+    modesAndControls:
+      'Voice-based interaction, PSU technical role selector, GD debate simulation, STAR method scorecards (Clarity, Structure, Technical depth).',
+    painPoint:
+      'Clearing the written exam cutoff with good marks but freezing up, rambling, or getting nervous in front of the real interview or GD panel.',
     defaultSfx: 'pop',
   },
   {
@@ -109,7 +155,12 @@ export const MARKETING_FEATURES: MarketingFeatureSpec[] = [
     title: 'Bookmark Questions to Remember & Re-Practice',
     pitch:
       'Bookmark tricky questions and negative-marking traps with one tap so you can revisit and re-practice them anytime before the exam.',
-    painPoint: 'Solving a tough question once, forgetting the trick a week later, and making the exact same mistake in the exam.',
+    howItWorks:
+      'While solving any quiz or arcade game, tap the bookmark icon on any tricky trap or calculation mistake. Questions are organized into your "Bookmarked Traps" vault, where you can filter by subject and launch dedicated re-practice sessions.',
+    modesAndControls:
+      'One-tap bookmark toggle, subject categorization, dedicated "Re-Practice Saved Traps" quiz mode, auto-unmark when mastered.',
+    painPoint:
+      'Solving a tough question once, forgetting the trick a week later, and making the exact same negative-marking mistake in the exam.',
     defaultSfx: 'pop',
   },
 ];
@@ -551,9 +602,10 @@ Write a fresh, punchy, relatable 5-scene character dialogue skit (22–28 second
 - PRIYA (smart mentor/friend who introduces the Aspirant Arcade feature)
 
 TODAY'S FEATURE TO SPOTLIGHT:
-- Feature: ${feature.title}
-- What it does: ${feature.pitch}
-- Relatable pain point: ${feature.painPoint}
+- Feature Name: ${feature.title} [Tag: ${feature.tag}]
+- What It Does: ${feature.pitch}
+- How It Works In The App: ${feature.howItWorks}
+${feature.modesAndControls ? `- Key Modes & User Controls: ${feature.modesAndControls}\n` : ''}- Relatable Student Pain Point: ${feature.painPoint}
 
 RECOMMENDED DEFAULT OPENING SETTING:
 - ${setting.id} (${setting.label}): ${setting.promptContext}
@@ -574,7 +626,7 @@ SCENE STRUCTURE (exactly 5 scenes in "scenes"):
 1. Scene 1 (Hook): Arjun in the problem moment (holdingPhone: true if phone distraction fits). Short punchy hook. Pick a dramatic mood (e.g. panicked, sleepy, frustrated, shocked, bored).
 2. Scene 2 (Escalation): Arjun vents or realizes the painful cost (marks lost, wasted time, stress). Mood: stressed, exhausted, frustrated, or shocked.
 3. Scene 3 (Intervention): dualCharacters: true, speaker: "priya" steps in and recommends Aspirant Arcade's "${feature.title}". Mood: confident, teasing, or whispering; Arjun listenerMood: curious or embarrassed.
-4. Scene 4 (Feature Demo): showPhoneMockup: true, speaker: "priya" or "arjun" explains how this exact feature works in action. Mood: explaining, confident, or thinking.
+4. Scene 4 (Feature Demo): showPhoneMockup: true, speaker: "priya" or "arjun" explains how this exact feature works in action using the specific mechanisms and modes described above (e.g. for Focus Guard mention App Timer vs Reel Mode and answering Y questions correctly; for Challenge Mode mention the 6-digit lobby code; for AI Interview mention STAR scoring; for Bookmarks mention re-practicing saved traps, etc.). Mood: explaining, confident, or thinking.
 5. Scene 5 (Payoff): dualCharacters: true, speaker: "arjun" or "priya", mood: "celebrate" or "determined" or "relieved", Arjun gets relief/confidence + quick CTA lead-in.
 
 RULES:
