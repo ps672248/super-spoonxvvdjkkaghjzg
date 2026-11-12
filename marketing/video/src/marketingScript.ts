@@ -190,6 +190,86 @@ export const MARKETING_SETTINGS: MarketingSettingSpec[] = [
     label: 'Evening Park Walk After Revision',
     promptContext: 'Taking a quick evening breather on a park bench talking about smart prep habits.',
   },
+  {
+    id: 'tea_stall_tapri',
+    label: '1:00 AM Roadside Chai Tapri',
+    promptContext: 'Standing by a roadside tea stall at 1:00 AM under a street lamp, sipping hot cutting chai while debating upcoming cutoffs.',
+  },
+  {
+    id: 'railway_station_platform',
+    label: 'Exam Special Train Platform',
+    promptContext: 'Sitting on a station bench with a heavy backpack and revision notes waiting for the night train to the exam city.',
+  },
+  {
+    id: 'hostel_mess_table',
+    label: 'Hostel Mess Dining Table',
+    promptContext: 'Over noisy hostel mess dinner with steel thali plates, arguing about tricky PYQs and negative marks.',
+  },
+  {
+    id: 'cyber_cafe_portal',
+    label: 'Cyber Cafe Admit Card Rush',
+    promptContext: 'Packed inside an internet cafe with other aspirants trying to download admit cards before portal servers crash.',
+  },
+  {
+    id: 'book_market_street',
+    label: 'Competitive Exam Book Market Alley',
+    promptContext: 'Walking through a famous student book market (like Mukherjee Nagar or Kalu Sarai) hunting for top-rank notes.',
+  },
+  {
+    id: 'post_exam_auto_ride',
+    label: 'Auto-Rickshaw Ride After Exam',
+    promptContext: 'Riding an auto-rickshaw right after submitting the exam paper, frantically cross-checking doubtful questions.',
+  },
+  {
+    id: 'terrace_night_study',
+    label: 'Midnight Terrace Pacing With Headphones',
+    promptContext: 'Pacing under open night stars on the hostel terrace with headphones on, trying to memorize stubborn formulas.',
+  },
+  {
+    id: 'coaching_classroom_backbench',
+    label: 'Coaching Lecture Hall Backbench',
+    promptContext: 'Sitting on the backbench of a packed 300-student coaching classroom, struggling to see the blackboard.',
+  },
+  {
+    id: 'bus_stop_rain_wait',
+    label: 'Bus Stop Shelter in Heavy Rain',
+    promptContext: 'Stuck under a leaking bus shelter in the rain after mock tests, clutching a damp syllabus sheet.',
+  },
+  {
+    id: 'hostel_balcony_dawn',
+    label: '5:30 AM Hostel Balcony Dawn',
+    promptContext: 'Standing on the hostel balcony at 5:30 AM watching the orange sunrise before a 12-hour revision marathon.',
+  },
+  {
+    id: 'university_auditorium',
+    label: 'University Seminar Auditorium',
+    promptContext: 'Sitting in a massive university auditorium attending an intimidating topper talk or placement orientation.',
+  },
+  {
+    id: 'food_truck_snack',
+    label: 'Evening Roll / Samosa Stall Break',
+    promptContext: 'Quick 15-minute evening street snack break near coaching center, venting about mock test percentiles.',
+  },
+  {
+    id: 'hostel_corridor_midnight',
+    label: 'Dimly Lit Hostel Corridor Memorizing Walk',
+    promptContext: 'Pacing up and down a quiet hostel corridor at midnight with a notebook, trying not to wake sleeping roommates.',
+  },
+  {
+    id: 'xerox_photocopy_shop',
+    label: 'Coaching Xerox Shop Notes Stacks',
+    promptContext: 'Surrounded by towering reams of paper at the coaching photocopy shop, waiting for topper short notes.',
+  },
+  {
+    id: 'temple_stairs_blessing',
+    label: 'Temple Steps on Exam Morning',
+    promptContext: 'Climbing temple steps on the morning of exam day with admit card in hand, hoping for no negative marking traps.',
+  },
+  {
+    id: 'exam_result_cyber_screen',
+    label: 'Computer Screen "Qualified" Moment',
+    promptContext: 'Staring at a computer monitor screen refreshing the result PDF with trembling hands until finding your roll number.',
+  },
 ];
 
 export interface MarketingHistoryEntry {
@@ -303,7 +383,7 @@ export function pickDailyFeature(
   return scored[0].feature;
 }
 
-/** Rotates across 14 settings, avoiding settings in this feature's last 10 entries & recent global runs. */
+/** Rotates across 30 settings, avoiding settings in this feature's last 10 entries & recent global runs. */
 export function pickRotatedSetting(
   store: MarketingHistoryStore,
   featureId: MarketingFeatureId,
@@ -337,12 +417,36 @@ export function pickRotatedSetting(
   return pool[pickIdx];
 }
 
+const ALL_CHARACTER_MOODS = [
+  'explaining',
+  'alert',
+  'thinking',
+  'excited',
+  'stressed',
+  'celebrate',
+  'shocked',
+  'sleepy',
+  'confident',
+  'frustrated',
+  'whispering',
+  'relieved',
+  'panicked',
+  'smug',
+  'bored',
+  'curious',
+  'exhausted',
+  'determined',
+  'embarrassed',
+  'teasing',
+] as const;
+
 const MARKETING_SCRIPT_SCHEMA = {
   type: 'OBJECT',
   properties: {
     hookLine: { type: 'STRING' },
     title: { type: 'STRING' },
     storySummary: { type: 'STRING' },
+    setting: { type: 'STRING', enum: MARKETING_SETTINGS.map((s) => s.id) },
     commentPrompt: { type: 'STRING' },
     ctaSpeech: { type: 'STRING' },
     youtubeTitle: { type: 'STRING' },
@@ -358,8 +462,8 @@ const MARKETING_SCRIPT_SCHEMA = {
           sceneLabel: { type: 'STRING' },
           speaker: { type: 'STRING', enum: ['arjun', 'priya'] },
           dualCharacters: { type: 'BOOLEAN' },
-          mood: { type: 'STRING', enum: ['explaining', 'alert', 'thinking', 'excited', 'stressed', 'celebrate'] },
-          listenerMood: { type: 'STRING', enum: ['explaining', 'alert', 'thinking', 'excited', 'stressed', 'celebrate'] },
+          mood: { type: 'STRING', enum: ALL_CHARACTER_MOODS },
+          listenerMood: { type: 'STRING', enum: ALL_CHARACTER_MOODS },
           holdingPhone: { type: 'BOOLEAN' },
           showPhoneMockup: { type: 'BOOLEAN' },
           captionEn: { type: 'STRING' },
@@ -375,6 +479,7 @@ const MARKETING_SCRIPT_SCHEMA = {
     'hookLine',
     'title',
     'storySummary',
+    'setting',
     'commentPrompt',
     'ctaSpeech',
     'scenes',
@@ -412,6 +517,33 @@ export async function generateMarketingStoryScript(
           .join('\n')
       : '  (No prior runs for this feature yet — make this first one iconic!)';
 
+  const settingCatalogueList = MARKETING_SETTINGS.map(
+    (s, idx) => `  ${idx + 1}. [${s.id}] "${s.label}": ${s.promptContext}`,
+  ).join('\n');
+
+  const moodList = [
+    '- explaining (neutral/helpful hand gesture)',
+    '- alert (wide eyes, urgent posture, warning badge)',
+    '- thinking (chin in hand, looking upward)',
+    '- excited (star eyes, wide open grin)',
+    '- stressed (sweat drops, worried brows)',
+    '- celebrate (hands raised, victory confetti)',
+    '- shocked (hands clutching cheeks, jaw dropped, lightning bolt)',
+    '- sleepy (droopy eyelids, yawning, Zzz drift)',
+    '- confident (thumbs up, side smirk, glint sparkle)',
+    '- frustrated (clenched fists, steam puffs from ears, teeth grimace)',
+    '- whispering (cupped hand next to mouth, conspiratorial glance)',
+    '- relieved (brow wipe, relaxed smile, phew breeze)',
+    '- panicked (water spray sweat drops, shivering wavy mouth)',
+    '- smug (folded arms, knowing cocky smirk)',
+    '- bored (resting chin on flat palm, half-closed eyes, straight mouth)',
+    '- curious (tilted head, raised brow, question mark bubble)',
+    '- exhausted (slumped shoulders, hollow dark circles, tongue panting)',
+    '- determined (double clenched fists, intense focused brows, fire aura)',
+    '- embarrassed (hand scratching back of head, rosy blush cheeks)',
+    '- teasing (playful wink, tongue poke, beckoning wave)',
+  ].join('\n');
+
   const prompt = `You are a viral Indian edutainment Reels/Shorts scriptwriter for Aspirant Arcade ("Stop scrolling. Start scoring.").
 Write a fresh, punchy, relatable 5-scene character dialogue skit (22–28 seconds total) starring two Indian exam aspirants:
 - ARJUN (relatable aspirant struggling with the problem)
@@ -422,8 +554,14 @@ TODAY'S FEATURE TO SPOTLIGHT:
 - What it does: ${feature.pitch}
 - Relatable pain point: ${feature.painPoint}
 
-TODAY'S OPENING SETTING (build the dialogue naturally around this place & moment):
+RECOMMENDED DEFAULT OPENING SETTING:
 - ${setting.id} (${setting.label}): ${setting.promptContext}
+
+COMPLETE 30-SETTING CATALOGUE (Select the single best opening "setting" for this story from these 30 IDs, or keep the recommended default):
+${settingCatalogueList}
+
+20 CHARACTER EXPRESSIONS & MOODS (Use these exact keys for "mood" and "listenerMood" across scenes):
+${moodList}
 
 MULTI-SCENE LOCATION SHIFTS:
 - You may keep the opening setting or shift scenes[].setting across 2-3 different locations when the story progresses (e.g. hostel_bedroom_2am -> morning_alarm_bed -> college_canteen_chai -> study_group_table -> exam_center_gate) so the video feels visually dynamic instead of stuck in one static room!
@@ -432,13 +570,14 @@ LAST 10 STORIES ALREADY USED FOR THIS FEATURE (DO NOT repeat these hooks, angles
 ${avoidList}
 
 SCENE STRUCTURE (exactly 5 scenes in "scenes"):
-1. Scene 1 (Hook): Arjun in the problem moment (holdingPhone: true if phone distraction fits). Short punchy hook.
-2. Scene 2 (Escalation): Arjun vents or realizes the painful cost (marks lost, wasted time, stress).
-3. Scene 3 (Intervention): dualCharacters: true, speaker: "priya" steps in and recommends Aspirant Arcade's "${feature.title}".
-4. Scene 4 (Feature Demo): showPhoneMockup: true, speaker: "priya" or "arjun" explains how this exact feature works in action.
-5. Scene 5 (Payoff): dualCharacters: true, mood: "celebrate", Arjun gets relief/confidence + quick CTA lead-in.
+1. Scene 1 (Hook): Arjun in the problem moment (holdingPhone: true if phone distraction fits). Short punchy hook. Pick a dramatic mood (e.g. panicked, sleepy, frustrated, shocked, bored).
+2. Scene 2 (Escalation): Arjun vents or realizes the painful cost (marks lost, wasted time, stress). Mood: stressed, exhausted, frustrated, or shocked.
+3. Scene 3 (Intervention): dualCharacters: true, speaker: "priya" steps in and recommends Aspirant Arcade's "${feature.title}". Mood: confident, teasing, or whispering; Arjun listenerMood: curious or embarrassed.
+4. Scene 4 (Feature Demo): showPhoneMockup: true, speaker: "priya" or "arjun" explains how this exact feature works in action. Mood: explaining, confident, or thinking.
+5. Scene 5 (Payoff): dualCharacters: true, speaker: "arjun" or "priya", mood: "celebrate" or "determined" or "relieved", Arjun gets relief/confidence + quick CTA lead-in.
 
 RULES:
+- setting: must be one of the 30 setting IDs from the catalogue above. Do NOT use any setting listed in the avoid list.
 - sceneLabel per scene: 2-3 clean uppercase words with spaces (NO underscores, e.g. "CHAI BREAK", "THE FIX", "LIVE LOBBY").
 - hookLine: max 48 chars, dramatic pattern interrupt matching the setting (NO hashtags/emojis).
 - captionEn per scene: crisp English subtitle (max 58 chars) for kinetic captions.
@@ -474,7 +613,7 @@ RULES:
       const raw = data.candidates?.[0]?.content?.parts?.[0]?.text;
       if (!raw) throw new Error('Gemini returned empty response');
 
-      const parsed = JSON.parse(raw) as Omit<GeneratedMarketingStory, 'featureId' | 'setting'>;
+      const parsed = JSON.parse(raw) as Omit<GeneratedMarketingStory, 'featureId'>;
       if (!Array.isArray(parsed.scenes) || parsed.scenes.length < 3) {
         throw new Error('Gemini returned fewer than 3 scenes');
       }
@@ -483,10 +622,20 @@ RULES:
         parsed.scenes[3].showPhoneMockup = true;
       }
 
+      const validSettingIds = new Set<string>(MARKETING_SETTINGS.map((s) => s.id));
+      const chosenSetting: MarketingSettingId =
+        parsed.setting && validSettingIds.has(parsed.setting) ? (parsed.setting as MarketingSettingId) : setting.id;
+
+      for (const sc of parsed.scenes) {
+        if (sc.setting && !validSettingIds.has(sc.setting)) {
+          delete sc.setting;
+        }
+      }
+
       return {
-        featureId: feature.id,
-        setting: setting.id,
         ...parsed,
+        featureId: feature.id,
+        setting: chosenSetting,
       };
     } catch (e) {
       lastErr = e;

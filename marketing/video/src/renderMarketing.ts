@@ -27,6 +27,7 @@ import {
 import {
   generateMarketingStoryScript,
   loadMarketingHistory,
+  MARKETING_SETTINGS,
   pickDailyFeature,
   pickRotatedSetting,
   saveMarketingHistory,
@@ -145,7 +146,13 @@ async function main() {
 
   // 1. Dynamically generate today's non-repeating story script via Gemini
   const story = await generateMarketingStoryScript(feature, setting, featureHistory);
-  console.log(`📜 Script: "${story.title}" | Hook: "${story.hookLine}" (${story.scenes.length} scenes)`);
+  const chosenSettingId = story.setting || setting.id;
+  const chosenSettingSpec =
+    MARKETING_SETTINGS.find((s) => s.id === chosenSettingId) || setting;
+
+  console.log(
+    `📜 Script: "${story.title}" | Setting: ${chosenSettingSpec.id} ("${chosenSettingSpec.label}") | Hook: "${story.hookLine}" (${story.scenes.length} scenes)`,
+  );
 
   mkdirSync(OUTPUT_DIR, { recursive: true });
   const flags = audioFlags();
@@ -173,7 +180,7 @@ async function main() {
   const props: MarketingReelProps = {
     featureId: feature.id,
     featureTag: feature.tag,
-    setting: setting.id,
+    setting: chosenSettingId,
     hookLine: story.hookLine,
     title: story.title,
     commentPrompt: story.commentPrompt,
@@ -243,13 +250,13 @@ async function main() {
 
   const links = await publish(outFile, uploadMeta, coverPath, shouldPublish, 'reel');
   flagUploadFailureForCI(links, shouldPublish);
-  await notifyDiscord(feature.title, setting.label, uploadMeta, links);
+  await notifyDiscord(feature.title, chosenSettingSpec.label, uploadMeta, links);
 
   // 5. Persist per-feature last-10 history
   saveMarketingHistory(store, {
     date: today,
     featureId: feature.id,
-    setting: setting.id,
+    setting: chosenSettingId,
     hookLine: story.hookLine,
     title: story.title,
     storySummary: story.storySummary,

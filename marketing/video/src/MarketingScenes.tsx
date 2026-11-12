@@ -29,7 +29,23 @@ export type MarketingSettingId =
   | 'morning_alarm_bed'
   | 'interview_waiting_lounge'
   | 'study_group_table'
-  | 'park_bench_evening';
+  | 'park_bench_evening'
+  | 'tea_stall_tapri'
+  | 'railway_station_platform'
+  | 'hostel_mess_table'
+  | 'cyber_cafe_portal'
+  | 'book_market_street'
+  | 'post_exam_auto_ride'
+  | 'terrace_night_study'
+  | 'coaching_classroom_backbench'
+  | 'bus_stop_rain_wait'
+  | 'hostel_balcony_dawn'
+  | 'university_auditorium'
+  | 'food_truck_snack'
+  | 'hostel_corridor_midnight'
+  | 'xerox_photocopy_shop'
+  | 'temple_stairs_blessing'
+  | 'exam_result_cyber_screen';
 
 function seeded(i: number, salt: number): number {
   const x = Math.sin(i * 127.1 + salt * 311.7) * 43758.5453;
@@ -52,14 +68,19 @@ export const MarketingSceneBackdrop: React.FC<{
   const isWarm =
     setting === 'college_canteen_chai' ||
     setting === 'coffee_shop_prep' ||
+    setting === 'tea_stall_tapri' ||
+    setting === 'food_truck_snack' ||
     setting === 'morning_alarm_bed' ||
+    setting === 'hostel_balcony_dawn' ||
     setting === 'rooftop_evening_walk';
 
   const bgTop =
-    setting === 'rooftop_evening_walk'
+    setting === 'rooftop_evening_walk' || setting === 'terrace_night_study'
       ? '#1E1B4B'
-      : setting === 'morning_alarm_bed'
+      : setting === 'morning_alarm_bed' || setting === 'hostel_balcony_dawn'
       ? '#1F1426'
+      : setting === 'exam_result_cyber_screen'
+      ? '#062016'
       : isWarm
       ? '#13111C'
       : '#090D18';
@@ -87,9 +108,18 @@ export const MarketingSceneBackdrop: React.FC<{
               <stop offset="0%" stopColor="#F43F5E" stopOpacity="0.18" />
               <stop offset="100%" stopColor="#F43F5E" stopOpacity="0" />
             </radialGradient>
+            <radialGradient id="mktGreen" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stopColor="#22C55E" stopOpacity="0.22" />
+              <stop offset="100%" stopColor="#22C55E" stopOpacity="0" />
+            </radialGradient>
             <linearGradient id="mktCone" x1="0%" y1="0%" x2="0%" y2="100%">
               <stop offset="0%" stopColor={accentColor} stopOpacity="0.24" />
               <stop offset="100%" stopColor={accentColor} stopOpacity="0" />
+            </linearGradient>
+            <linearGradient id="scannerBar" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#22C55E" stopOpacity="0" />
+              <stop offset="50%" stopColor="#22C55E" stopOpacity="0.8" />
+              <stop offset="100%" stopColor="#22C55E" stopOpacity="0" />
             </linearGradient>
           </defs>
 
@@ -104,12 +134,14 @@ export const MarketingSceneBackdrop: React.FC<{
             )}
           </g>
 
-          {/* ── SETTING: HOSTEL / PG / MORNING BED ── */}
+          {/* ── SETTING GROUP 1: HOSTEL / PG / BALCONY / CORRIDOR / DAWN ── */}
           {(setting === 'hostel_bedroom_2am' ||
             setting === 'pg_room_roommate' ||
-            setting === 'morning_alarm_bed') && (
+            setting === 'morning_alarm_bed' ||
+            setting === 'hostel_balcony_dawn' ||
+            setting === 'hostel_corridor_midnight') && (
             <g>
-              <circle cx="240" cy="480" r="520" fill={setting === 'morning_alarm_bed' ? 'url(#mktAmber)' : 'url(#mktBlue)'} />
+              <circle cx="240" cy="480" r="520" fill={setting === 'morning_alarm_bed' || setting === 'hostel_balcony_dawn' ? 'url(#mktAmber)' : 'url(#mktBlue)'} />
               <circle cx="840" cy="1420" r="560" fill="url(#mktRose)" />
 
               {/* Window with Moon or Morning Sun */}
@@ -117,12 +149,34 @@ export const MarketingSceneBackdrop: React.FC<{
                 <rect width="300" height="380" rx="20" fill="#0F172A" stroke="#334155" strokeWidth="4" />
                 <line x1="150" y1="0" x2="150" y2="380" stroke="#334155" strokeWidth="4" />
                 <line x1="0" y1="190" x2="300" y2="190" stroke="#334155" strokeWidth="4" />
-                {setting === 'morning_alarm_bed' ? (
-                  <circle cx="215" cy="95" r="42" fill="#FB923C" opacity="0.7" />
+                {setting === 'morning_alarm_bed' || setting === 'hostel_balcony_dawn' ? (
+                  <circle cx="215" cy="95" r="42" fill="#FB923C" opacity="0.75" />
                 ) : (
                   <path d="M 225 58 A 34 34 0 1 0 258 102 A 26 26 0 1 1 225 58 Z" fill={GOLD} opacity="0.8" />
                 )}
               </g>
+
+              {/* Balcony Railing if dawn balcony */}
+              {setting === 'hostel_balcony_dawn' && (
+                <g transform="translate(0, 1420)" opacity="0.32" stroke={GOLD} strokeWidth="3">
+                  <line x1="0" y1="0" x2="1080" y2="0" strokeWidth="8" />
+                  {Array.from({ length: 18 }).map((_, idx) => (
+                    <line key={idx} x1={idx * 60 + 30} y1="0" x2={idx * 60 + 30} y2="500" />
+                  ))}
+                </g>
+              )}
+
+              {/* Corridor perspective lines if corridor */}
+              {setting === 'hostel_corridor_midnight' && (
+                <g stroke="#334155" strokeWidth="2" opacity="0.25">
+                  <line x1="0" y1="0" x2="540" y2="960" />
+                  <line x1="1080" y1="0" x2="540" y2="960" />
+                  <line x1="0" y1="1920" x2="540" y2="960" />
+                  <line x1="1080" y1="1920" x2="540" y2="960" />
+                  {/* Doorway light spill */}
+                  <polygon points="120,600 220,700 220,1300 120,1400" fill="url(#mktCone)" opacity="0.3" />
+                </g>
+              )}
 
               {/* Wall Clock / Alarm Rings */}
               <g transform="translate(830, 340)" opacity="0.32" stroke={GOLD} fill="none">
@@ -156,15 +210,18 @@ export const MarketingSceneBackdrop: React.FC<{
             </g>
           )}
 
-          {/* ── SETTING: CANTEEN / COFFEE SHOP / STUDY GROUP ── */}
+          {/* ── SETTING GROUP 2: CANTEEN / CHAI TAPRI / CAFE / MESS / FOOD CART ── */}
           {(setting === 'college_canteen_chai' ||
             setting === 'coffee_shop_prep' ||
-            setting === 'study_group_table') && (
+            setting === 'study_group_table' ||
+            setting === 'tea_stall_tapri' ||
+            setting === 'hostel_mess_table' ||
+            setting === 'food_truck_snack') && (
             <g>
               <circle cx="540" cy="460" r="620" fill="url(#mktAmber)" />
               <circle cx="220" cy="1480" r="500" fill="url(#mktBlue)" />
 
-              {/* Hanging Cafe Pendant Bulbs */}
+              {/* Hanging Cafe / Tapri Pendant Lights */}
               {[220, 540, 860].map((bx, i) => (
                 <g key={i} opacity="0.42">
                   <line x1={bx} y1="0" x2={bx} y2={200 + (i % 2) * 55} stroke="#475569" strokeWidth="3" />
@@ -182,34 +239,58 @@ export const MarketingSceneBackdrop: React.FC<{
                 </g>
               ))}
 
-              {/* Steaming Chai Glasses Silhouette */}
-              <g transform="translate(790, 1590)" opacity="0.34">
-                <polygon points="10,20 74,20 64,104 20,104" fill="#1E293B" stroke={GOLD} strokeWidth="3" />
-                {[28, 46].map((mx, idx) => {
-                  const drift = Math.sin(frame * 0.09 + idx * 1.5) * 9;
-                  return (
-                    <path
-                      key={idx}
-                      d={`M ${mx} 12 Q ${mx + drift} -12, ${mx - drift * 0.6} -36 T ${mx + drift * 0.4} -72`}
-                      fill="none"
-                      stroke="#FDE68A"
-                      strokeWidth="3"
-                      strokeLinecap="round"
-                    />
-                  );
-                })}
+              {/* Street Light Post for Tea Stall Tapri */}
+              {setting === 'tea_stall_tapri' && (
+                <g transform="translate(140, 0)" opacity="0.45">
+                  <line x1="0" y1="0" x2="0" y2="400" stroke="#64748B" strokeWidth="8" />
+                  <circle cx="0" cy="400" r="32" fill={GOLD} opacity="0.8" />
+                  <polygon points="-80,410 80,410 420,1800 -420,1800" fill="url(#mktCone)" opacity="0.5" />
+                </g>
+              )}
+
+              {/* Steaming Chai Glasses & Kettle Silhouette */}
+              <g transform="translate(790, 1590)" opacity="0.38">
+                {setting === 'hostel_mess_table' ? (
+                  /* Stainless steel thalis & water jugs */
+                  <g>
+                    <ellipse cx="60" cy="80" rx="90" ry="24" fill="#334155" stroke="#94A3B8" strokeWidth="3" />
+                    <circle cx="30" cy="74" r="14" fill="#1E293B" stroke="#94A3B8" strokeWidth="2" />
+                    <circle cx="85" cy="74" r="14" fill="#1E293B" stroke="#94A3B8" strokeWidth="2" />
+                  </g>
+                ) : (
+                  /* Chai glass */
+                  <g>
+                    <polygon points="10,20 74,20 64,104 20,104" fill="#1E293B" stroke={GOLD} strokeWidth="3" />
+                    {[28, 46].map((mx, idx) => {
+                      const drift = Math.sin(frame * 0.09 + idx * 1.5) * 9;
+                      return (
+                        <path
+                          key={idx}
+                          d={`M ${mx} 12 Q ${mx + drift} -12, ${mx - drift * 0.6} -36 T ${mx + drift * 0.4} -72`}
+                          fill="none"
+                          stroke="#FDE68A"
+                          strokeWidth="3"
+                          strokeLinecap="round"
+                        />
+                      );
+                    })}
+                  </g>
+                )}
               </g>
             </g>
           )}
 
-          {/* ── SETTING: LIBRARY / HOME STUDY DESK ── */}
-          {(setting === 'library_silent_corner' || setting === 'home_study_desk') && (
+          {/* ── SETTING GROUP 3: LIBRARY / HOME / XEROX / BOOK MARKET ── */}
+          {(setting === 'library_silent_corner' ||
+            setting === 'home_study_desk' ||
+            setting === 'xerox_photocopy_shop' ||
+            setting === 'book_market_street') && (
             <g>
               <circle cx="820" cy="360" r="560" fill="url(#mktAmber)" />
               <circle cx="240" cy="1100" r="520" fill="url(#mktBlue)" />
 
-              {/* Bookshelf Silhouettes */}
-              <g transform="translate(70, 220)" opacity="0.22" fill="#1E293B" stroke="#475569" strokeWidth="2">
+              {/* Bookshelf Silhouettes / Piles of notes */}
+              <g transform="translate(70, 220)" opacity="0.25" fill="#1E293B" stroke="#475569" strokeWidth="2">
                 <rect x="0" y="0" width="260" height="440" rx="10" />
                 <line x1="0" y1="145" x2="260" y2="145" />
                 <line x1="0" y1="290" x2="260" y2="290" />
@@ -217,6 +298,34 @@ export const MarketingSceneBackdrop: React.FC<{
                   <rect key={idx} x={x} y={40 + (idx % 3) * 10} width="24" height={105 - (idx % 3) * 10} rx="3" fill="#334155" />
                 ))}
               </g>
+
+              {/* Xerox Photocopy Shop Scanner Light Bar */}
+              {setting === 'xerox_photocopy_shop' && (
+                <g opacity="0.6">
+                  <rect
+                    x="0"
+                    y={300 + ((frame * 12) % 800)}
+                    width="1080"
+                    height="18"
+                    fill="url(#scannerBar)"
+                  />
+                </g>
+              )}
+
+              {/* Book Market Awning Stripes */}
+              {setting === 'book_market_street' && (
+                <g opacity="0.3">
+                  <polygon points="0,0 1080,0 1080,180 0,180" fill="#0F172A" />
+                  {Array.from({ length: 12 }).map((_, i) => (
+                    <polygon
+                      key={i}
+                      points={`${i * 90},0 ${(i + 1) * 90},0 ${(i + 0.5) * 90},180 ${(i - 0.5) * 90},180`}
+                      fill={i % 2 === 0 ? GOLD : '#F43F5E'}
+                      opacity="0.3"
+                    />
+                  ))}
+                </g>
+              )}
 
               {/* Falling Rain on Home Desk */}
               {setting === 'home_study_desk' && (
@@ -234,12 +343,15 @@ export const MarketingSceneBackdrop: React.FC<{
             </g>
           )}
 
-          {/* ── SETTING: METRO / BUS COMMUTE ── */}
-          {setting === 'metro_bus_commute' && (
+          {/* ── SETTING GROUP 4: METRO / RAILWAY / AUTO RIDE / BUS STOP ── */}
+          {(setting === 'metro_bus_commute' ||
+            setting === 'railway_station_platform' ||
+            setting === 'post_exam_auto_ride' ||
+            setting === 'bus_stop_rain_wait') && (
             <g>
               <circle cx="540" cy="600" r="640" fill="url(#mktBlue)" />
-              {/* Passing City Light Streaks */}
-              {Array.from({ length: 14 }).map((_, i) => {
+              {/* Passing City / Track Light Streaks */}
+              {Array.from({ length: 16 }).map((_, i) => {
                 const y = 260 + seeded(i, 9) * 1200;
                 const w = 80 + seeded(i, 10) * 200;
                 const speed = 22 + seeded(i, 11) * 18;
@@ -253,22 +365,62 @@ export const MarketingSceneBackdrop: React.FC<{
                     height={6 + (i % 3) * 4}
                     rx="4"
                     fill={i % 2 === 0 ? GOLD : '#38BDF8'}
-                    opacity="0.22"
+                    opacity="0.24"
                   />
                 );
               })}
+
+              {/* Railway Station Departure Clock */}
+              {setting === 'railway_station_platform' && (
+                <g transform="translate(680, 220)" opacity="0.45">
+                  <rect width="320" height="90" rx="14" fill="#020617" stroke="#F59E0B" strokeWidth="3" />
+                  <text x="160" y="58" fill="#F59E0B" fontSize="36" fontWeight="900" textAnchor="middle" fontFamily={fontFamily}>
+                    PF #2 · EXP 04:30
+                  </text>
+                </g>
+              )}
+
+              {/* Bus Shelter & Rain */}
+              {setting === 'bus_stop_rain_wait' && (
+                <g opacity="0.35">
+                  <path d="M 120 220 Q 540 160, 960 220 L 960 250 L 120 250 Z" fill="#334155" />
+                  <g stroke="#93C5FD" strokeWidth="2" opacity="0.3">
+                    {Array.from({ length: 24 }).map((_, i) => {
+                      const bx = seeded(i, 5) * 1080;
+                      const y = ((seeded(i, 6) * 1900 + frame * 20) % 2000) - 100;
+                      return <line key={i} x1={bx} y1={y} x2={bx - 6} y2={y + 36} />;
+                    })}
+                  </g>
+                </g>
+              )}
+
+              {/* Auto Rickshaw Frame Bars */}
+              {setting === 'post_exam_auto_ride' && (
+                <g opacity="0.25" stroke="#EAB308" strokeWidth="8">
+                  <line x1="80" y1="200" x2="80" y2="1800" />
+                  <line x1="1000" y1="200" x2="1000" y2="1800" />
+                  <path d="M 80 200 Q 540 120, 1000 200" fill="none" strokeWidth="12" />
+                </g>
+              )}
+
               {/* Train Window Frame */}
-              <rect x="60" y="210" width="960" height="720" rx="48" fill="none" stroke="#334155" strokeWidth="8" opacity="0.35" />
+              {setting === 'metro_bus_commute' && (
+                <rect x="60" y="210" width="960" height="720" rx="48" fill="none" stroke="#334155" strokeWidth="8" opacity="0.35" />
+              )}
             </g>
           )}
 
-          {/* ── SETTING: ROOFTOP / PARK EVENING ── */}
-          {(setting === 'rooftop_evening_walk' || setting === 'park_bench_evening') && (
+          {/* ── SETTING GROUP 5: ROOFTOP / PARK / TERRACE / TEMPLE ── */}
+          {(setting === 'rooftop_evening_walk' ||
+            setting === 'park_bench_evening' ||
+            setting === 'terrace_night_study' ||
+            setting === 'temple_stairs_blessing') && (
             <g>
-              <circle cx="540" cy="480" r="640" fill="url(#mktAmber)" />
-              <circle cx="540" cy="1400" r="600" fill="url(#mktBlue)" />
+              <circle cx="540" cy="480" r={640} fill="url(#mktAmber)" />
+              <circle cx="540" cy="1400" r={600} fill="url(#mktBlue)" />
+
               {/* Twinkling Stars */}
-              {Array.from({ length: 20 }).map((_, i) => (
+              {Array.from({ length: 24 }).map((_, i) => (
                 <circle
                   key={i}
                   cx={seeded(i, 1) * 1080}
@@ -278,22 +430,69 @@ export const MarketingSceneBackdrop: React.FC<{
                   opacity={0.25 + Math.abs(Math.sin(frame * 0.08 + i)) * 0.45}
                 />
               ))}
-              {/* City Skyline Silhouette */}
-              <path
-                d="M 0 1920 L 0 1440 L 120 1440 L 120 1320 L 240 1320 L 240 1480 L 380 1480 L 380 1280 L 520 1280 L 520 1460 L 680 1460 L 680 1340 L 820 1340 L 820 1490 L 950 1490 L 950 1370 L 1080 1370 L 1080 1920 Z"
-                fill="#070B14"
-                opacity="0.55"
-              />
+
+              {/* Temple Shikhar Silhouette */}
+              {setting === 'temple_stairs_blessing' ? (
+                <g opacity="0.45" fill="#0A0E1A">
+                  <polygon points="540,580 420,1100 660,1100" />
+                  <polygon points="540,480 500,580 580,580" />
+                  <circle cx="540" cy="460" r="14" fill={GOLD} />
+                  {/* Temple stairs */}
+                  {Array.from({ length: 8 }).map((_, idx) => (
+                    <rect key={idx} x={240 - idx * 24} y={1100 + idx * 45} width={600 + idx * 48} height={20} rx="4" />
+                  ))}
+                </g>
+              ) : (
+                /* City Skyline Silhouette */
+                <path
+                  d="M 0 1920 L 0 1440 L 120 1440 L 120 1320 L 240 1320 L 240 1480 L 380 1480 L 380 1280 L 520 1280 L 520 1460 L 680 1460 L 680 1340 L 820 1340 L 820 1490 L 950 1490 L 950 1370 L 1080 1370 L 1080 1920 Z"
+                  fill="#070B14"
+                  opacity="0.55"
+                />
+              )}
             </g>
           )}
 
-          {/* ── SETTING: EXAM GATE / COACHING / INTERVIEW LOUNGE ── */}
+          {/* ── SETTING GROUP 6: EXAM GATE / COACHING / INTERVIEW / AUDITORIUM / CYBER SCREEN ── */}
           {(setting === 'exam_center_gate' ||
             setting === 'coaching_corridor' ||
-            setting === 'interview_waiting_lounge') && (
+            setting === 'interview_waiting_lounge' ||
+            setting === 'coaching_classroom_backbench' ||
+            setting === 'university_auditorium' ||
+            setting === 'cyber_cafe_portal' ||
+            setting === 'exam_result_cyber_screen') && (
             <g>
-              <circle cx="540" cy="420" r="620" fill="url(#mktBlue)" />
+              <circle cx="540" cy="420" r="620" fill={setting === 'exam_result_cyber_screen' ? 'url(#mktGreen)' : 'url(#mktBlue)'} />
               <circle cx="540" cy="1440" r="560" fill="url(#mktAmber)" />
+
+              {/* Result Cyber Screen Celebration Banner */}
+              {setting === 'exam_result_cyber_screen' && (
+                <g transform="translate(180, 260)" opacity="0.6">
+                  <rect width="720" height="140" rx="20" fill="rgba(34, 197, 94, 0.2)" stroke="#22C55E" strokeWidth="3" />
+                  <text x="360" y="86" fill="#22C55E" fontSize="44" fontWeight="900" textAnchor="middle" fontFamily={fontFamily}>
+                    ✓ QUALIFIED · AIR 142
+                  </text>
+                </g>
+              )}
+
+              {/* Classroom Blackboard & Equations */}
+              {setting === 'coaching_classroom_backbench' && (
+                <g transform="translate(140, 200)" opacity="0.35">
+                  <rect width="800" height="340" rx="12" fill="#022C22" stroke="#64748B" strokeWidth="6" />
+                  <text x="400" y="160" fill="#E2E8F0" fontSize="36" fontWeight="700" textAnchor="middle" fontFamily={fontFamily}>
+                    ∫ f(x) dx + ∇ · B = 0 · PYQ 2026
+                  </text>
+                </g>
+              )}
+
+              {/* Auditorium Velvet Curtain Folds */}
+              {setting === 'university_auditorium' && (
+                <g opacity="0.32" fill="#450A0A">
+                  <path d="M 0 0 C 140 180, 140 1200, 0 1600 Z" />
+                  <path d="M 1080 0 C 940 180, 940 1200, 1080 1600 Z" />
+                </g>
+              )}
+
               {/* Architectural Pillars & Spotlight */}
               <polygon points="200,0 420,0 820,1920 340,1920" fill="url(#mktCone)" opacity="0.4" />
               <g opacity="0.2" fill="#1E293B" stroke={accentColor} strokeWidth="2">
