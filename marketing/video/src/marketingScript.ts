@@ -24,10 +24,11 @@ export const MARKETING_FEATURES: MarketingFeatureSpec[] = [
   {
     id: 'focus_guard',
     tag: 'FOCUS GUARD',
-    title: 'Focus Guard (Reels & Shorts Blocker)',
+    title: 'Focus Guard (App Timer & Reel Interceptor)',
     pitch:
-      'Focus Guard intercepts Instagram Reels, YouTube Shorts, and any addictive app — forcing you to solve 1 quick exam MCQ before unlocking screen time.',
-    painPoint: 'Aspirants losing 2–3 hours every night doomscrolling Instagram Reels and YouTube Shorts instead of revising.',
+      'Focus Guard has 2 custom modes to eliminate doomscrolling: (1) App Timer Mode (intervenes after every X minutes of app usage, set by you) and (2) Reel Mode (intervenes after every X reels scrolled, set by you). To resume scrolling or use the app again, you must answer Y exam MCQs correctly (count set by you)!',
+    painPoint:
+      'Aspirants losing 2–3 hours every night doomscrolling Instagram Reels and YouTube Shorts without realizing how many reels or minutes vanished.',
     defaultSfx: 'phone_buzz',
   },
   {

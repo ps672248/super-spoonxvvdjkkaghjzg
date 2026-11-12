@@ -581,50 +581,95 @@ function renderMockupScreen(
   switch (featureId) {
     case 'focus_guard':
       return (
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: 12 }}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: 10 }}>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <div
+              style={{
+                flex: 1,
+                padding: '7px 8px',
+                borderRadius: 10,
+                background: '#1E293B',
+                color: MUTED,
+                fontSize: 11,
+                fontWeight: 800,
+                textAlign: 'center',
+              }}
+            >
+              ⏱️ APP TIMER (15m)
+            </div>
+            <div
+              style={{
+                flex: 1,
+                padding: '7px 8px',
+                borderRadius: 10,
+                background: 'rgba(234, 179, 8, 0.18)',
+                border: `1.5px solid ${GOLD}`,
+                color: GOLD,
+                fontSize: 11,
+                fontWeight: 900,
+                textAlign: 'center',
+              }}
+            >
+              🎬 REEL MODE (5 Reels) ★
+            </div>
+          </div>
           <div
             style={{
-              padding: '10px 14px',
+              padding: '8px 12px',
               borderRadius: 12,
               background: 'rgba(244, 63, 94, 0.16)',
               border: '1px solid #F43F5E',
               color: '#FDA4AF',
-              fontSize: 15,
+              fontSize: 13,
               fontWeight: 800,
               textAlign: 'center',
             }}
           >
-            🛡️ FOCUS GUARD INTERCEPTED REELS
+            🛡️ 5 REELS REACHED · INTERCEPTED
           </div>
           <div
             style={{
               flex: 1,
               background: '#111827',
               border: `2px solid ${GOLD}`,
-              borderRadius: 20,
-              padding: 18,
+              borderRadius: 18,
+              padding: 16,
               display: 'flex',
               flexDirection: 'column',
-              justifyContent: 'center',
-              gap: 12,
+              justifyContent: 'space-between',
+              gap: 8,
               transform: `scale(${interpolate(pop, [0, 1], [0.92, 1])})`,
             }}
           >
-            <div style={{ fontSize: 14, fontWeight: 800, color: GOLD }}>SOLVE 1 MCQ TO UNLOCK 5 MIN</div>
-            <div style={{ fontSize: 19, fontWeight: 800, color: WHITE, lineHeight: 1.3 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: 12, fontWeight: 900, color: GOLD }}>ANSWER 2 MCQs CORRECTLY</span>
+              <span
+                style={{
+                  fontSize: 11,
+                  fontWeight: 800,
+                  background: '#1E293B',
+                  color: CORRECT_GREEN,
+                  padding: '3px 8px',
+                  borderRadius: 99,
+                }}
+              >
+                Q 1 OF 2
+              </span>
+            </div>
+            <div style={{ fontSize: 16, fontWeight: 800, color: WHITE, lineHeight: 1.3 }}>
               For a Carnot engine between 600K & 300K, max efficiency is?
             </div>
-            {['25%', '50%', '75%'].map((opt, idx) => {
-              const selected = idx === 1 && frame > 35;
+            {['25%', '50% (Correct: 1 - 300/600)', '75%'].map((opt, idx) => {
+              const selected = idx === 1 && frame > 30;
               return (
                 <div
                   key={opt}
                   style={{
-                    padding: '10px 14px',
-                    borderRadius: 12,
+                    padding: '8px 12px',
+                    borderRadius: 10,
                     background: selected ? CORRECT_GREEN : '#1E293B',
                     color: selected ? INK : WHITE,
-                    fontSize: 16,
+                    fontSize: 14,
                     fontWeight: 800,
                   }}
                 >
@@ -633,6 +678,9 @@ function renderMockupScreen(
                 </div>
               );
             })}
+            <div style={{ fontSize: 11, color: MUTED, textAlign: 'center', fontWeight: 700 }}>
+              🔒 Must answer 2/2 correctly to resume scrolling
+            </div>
           </div>
         </div>
       );
