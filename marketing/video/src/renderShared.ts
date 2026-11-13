@@ -176,10 +176,10 @@ export async function publish(
   }
 
   // Instagram Reels: Path 2 (Staged on Cloudinary for 1-tap mobile share with real trending song)
-  // or Path 1 (Auto-published via API with embedded audio if IG_AUTO_PUBLISH=true)
+  // or Path 1 (Auto-published via API with embedded audio unless explicitly disabled with IG_AUTO_PUBLISH=false)
   if (format === 'reel') {
     const uploadPath = (instaFilePath && existsSync(instaFilePath)) ? instaFilePath : filePath;
-    const shouldAutoPublish = process.env.IG_AUTO_PUBLISH === 'true';
+    const shouldAutoPublish = process.env.IG_AUTO_PUBLISH !== 'false';
 
     if (shouldAutoPublish) {
       try {
