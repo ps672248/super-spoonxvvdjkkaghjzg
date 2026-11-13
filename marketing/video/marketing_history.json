@@ -1,7 +1,7 @@
 {
-  "lastRunDate": "2026-11-13",
-  "lastFeatureId": "ai_notes_quiz",
-  "totalRuns": 3,
+  "lastRunDate": "2026-11-14",
+  "lastFeatureId": "arcade_games",
+  "totalRuns": 4,
   "byFeature": {
     "focus_guard": [
       {
@@ -34,11 +34,24 @@
         "youtubeUrl": "https://youtube.com/shorts/jRMqJIcMKUw",
         "instagramUrl": "https://www.instagram.com/reel/DfrNq1dGYr5/"
       }
+    ],
+    "arcade_games": [
+      {
+        "date": "2026-11-14",
+        "featureId": "arcade_games",
+        "setting": "home_study_desk",
+        "hookLine": "MCQs se aankhein jal gayi, dimaag fry ho gaya!",
+        "title": "Boring Prep Se Burnout? Game On!",
+        "storySummary": "Arjun struggles with eye strain and burnout from endless MCQ sheets. Priya introduces Aspirant Arcade's 14+ arcade games, transforming his boring study into an addictive, stress-free learning experience with action games and XP rewards.",
+        "youtubeUrl": "https://youtube.com/shorts/MFAxCIotcrQ",
+        "instagramUrl": "https://www.instagram.com/reel/Dfsh4yWmTsL/"
+      }
     ]
   },
   "recentSettings": [
     "hostel_bedroom_2am",
     "library_silent_corner",
-    "metro_bus_commute"
+    "metro_bus_commute",
+    "home_study_desk"
   ]
 }
