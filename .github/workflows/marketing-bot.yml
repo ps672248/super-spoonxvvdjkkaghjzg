@@ -39,7 +39,7 @@ concurrency:
 
 jobs:
   render:
-    if: vars.MARKETING_PAUSE != 'true'
+    if: vars.MARKETING_PAUSE != 'true' && secrets.MARKETING_PAUSE != 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -75,7 +75,7 @@ jobs:
           DISCORD_WEBHOOK_NEWCONTENT: ${{ secrets.DISCORD_WEBHOOK_NEWCONTENT }}
           MARKETING_FEATURE: ${{ github.event.inputs.feature }}
           MARKETING_SETTING: ${{ github.event.inputs.setting }}
-          PUBLISH: ${{ github.event.inputs.publish || vars.MARKETING_PUBLISH || 'false' }}
+          PUBLISH: ${{ github.event.inputs.publish || vars.MARKETING_PUBLISH || secrets.MARKETING_PUBLISH || 'false' }}
           FORCE: ${{ github.event.inputs.force || (github.event_name == 'workflow_dispatch' && 'true') || 'false' }}
         run: npm run render:marketing
 

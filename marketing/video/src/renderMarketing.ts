@@ -126,7 +126,10 @@ async function main() {
     (typeof args.feature === 'string' ? args.feature : process.env.MARKETING_FEATURE)?.trim() || undefined;
   const settingOverride =
     (typeof args.setting === 'string' ? args.setting : process.env.MARKETING_SETTING)?.trim() || undefined;
-  const shouldPublish = Boolean(args.publish) || PUBLISH;
+  const shouldPublish =
+    args.publish !== undefined
+      ? String(args.publish).trim().toLowerCase() === 'true'
+      : PUBLISH;
 
   const store = loadMarketingHistory();
   if (!force && !featureOverride && store.lastRunDate === today) {
