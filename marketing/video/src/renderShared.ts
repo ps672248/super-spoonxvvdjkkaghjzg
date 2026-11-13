@@ -1,7 +1,7 @@
 import path from 'node:path';
 import { existsSync, appendFileSync } from 'node:fs';
 import { renderMedia, renderStill, selectComposition } from '@remotion/renderer';
-import { BGM_FILE, OUTRO_FILE, QUIZ_BGM_FILE, REVEAL_FILE, TICK_FILE } from './audio';
+import { BGM_FILE, BGM_INSTA_TRENDING_FILE, OUTRO_FILE, QUIZ_BGM_FILE, REVEAL_FILE, TICK_FILE } from './audio';
 import type { UploadMetadata } from './metadata';
 import { setYouTubeThumbnail, uploadYouTubeShort } from './publishYouTube';
 import { uploadInstagramReel } from './publishInstagram';
@@ -15,6 +15,7 @@ export function audioFlags() {
   return {
     hasQuizBgm: existsSync(path.join(PUBLIC_DIR, QUIZ_BGM_FILE)),
     hasNewsBgm: existsSync(path.join(PUBLIC_DIR, BGM_FILE)),
+    hasInstaTrendingBgm: existsSync(path.join(PUBLIC_DIR, BGM_INSTA_TRENDING_FILE)),
     hasTick: existsSync(path.join(PUBLIC_DIR, TICK_FILE)),
     hasReveal: existsSync(path.join(PUBLIC_DIR, REVEAL_FILE)),
     hasOutro: existsSync(path.join(PUBLIC_DIR, OUTRO_FILE)),
@@ -108,6 +109,7 @@ export async function publish(
    * — or off. Omit to keep the default behaviour. */
   gate: boolean = PUBLISH,
   format: 'reel' | 'landscape' = 'reel',
+  instaFilePath?: string,
 ): Promise<PublishResult> {
   if (!gate) {
     console.log(`[video] PUBLISH not set — leaving ${path.basename(filePath)} as a local/artifact file only.`);
@@ -139,12 +141,13 @@ export async function publish(
 
   // Instagram Reels algorithm is strictly 9:16 vertical
   if (format === 'reel') {
+    const uploadPath = (instaFilePath && existsSync(instaFilePath)) ? instaFilePath : filePath;
     try {
-      const url = await uploadInstagramReel(filePath, meta.instagram.caption, coverPath);
+      const url = await uploadInstagramReel(uploadPath, meta.instagram.caption, coverPath);
       links.instagramUrl = url;
-      console.log(`[video] ✓ Instagram Reel published: ${url}`);
+      console.log(`[video] ✓ Instagram Reel published (${uploadPath === instaFilePath ? 'SingleFrame' : 'Standard'}): ${url}`);
     } catch (e) {
-      console.error(`[video] ✗ Instagram upload failed for ${path.basename(filePath)}:`, e);
+      console.error(`[video] ✗ Instagram upload failed for ${path.basename(uploadPath)}:`, e);
     }
   } else {
     console.log(`[video] Skipping Instagram upload for landscape (16:9) format.`);

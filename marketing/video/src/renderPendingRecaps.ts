@@ -39,6 +39,7 @@ import 'dotenv/config';
 import { getFirebaseApp } from './firebaseAdmin';
 import type { ArticleVideoMeta, Vertical } from './fetchContent';
 import type { Beat } from './NewsRecap';
+import type { InstaFrameData } from './NewsRecapSingleFrame';
 import type { TelegramCta } from './Brand';
 import { renderOneRecap } from './renderNewsRecap';
 
@@ -80,6 +81,7 @@ interface PendingArticleDoc {
   landscapeMeta?: ArticleVideoMeta;
   videoTelegram?: TelegramCta;
   videoKind?: string;
+  instaFrame?: InstaFrameData;
 }
 
 function resolveArticleVertical(doc: PendingArticleDoc): Vertical | undefined {
@@ -159,6 +161,7 @@ async function main() {
           telegram: article.videoTelegram,
           format: 'reel',
           kind: article.videoKind,
+          instaFrame: article.instaFrame,
         });
         if (reelLinks.youtubeUrl) {
           videoLinks.youtube = reelLinks.youtubeUrl;
@@ -195,6 +198,7 @@ async function main() {
           telegram: article.videoTelegram,
           format,
           kind: article.videoKind,
+          instaFrame: article.instaFrame,
         });
         if (links.youtubeUrl) {
           videoLinks.youtube = links.youtubeUrl;

@@ -33,6 +33,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { bundle } from '@remotion/bundler';
 import type { ArticleVideoMeta, Vertical } from './fetchContent';
 import { resolveBeats, type Beat, type NewsNarration, type NewsRecapProps } from './NewsRecap';
+import type { InstaFrameData, NewsRecapSingleFrameProps } from './NewsRecapSingleFrame';
 import type { TelegramCta } from './Brand';
 import { buildNewsMetadata, type UploadMetadata } from './metadata';
 import { hinglishEnabled, toHinglish } from './hinglish';
@@ -100,6 +101,7 @@ export type RenderOneRecapInput = {
   format?: 'reel' | 'landscape';
   /** 'strategy' picks the Telegram CTA over the full-story one — see spokenCta below. */
   kind?: string;
+  instaFrame?: InstaFrameData;
 };
 
 /** Renders, uploads (if PUBLISH=true), and returns the platform links. Throws
@@ -161,8 +163,8 @@ export async function renderOneRecap(input: RenderOneRecapInput): Promise<Publis
   console.log(`[news-recap] Bundling Remotion project for ${compositionId} (${format})...`);
   const bundleLocation = await bundle({ entryPoint: path.join(process.cwd(), 'src', 'index.ts') });
 
-  const { hasNewsBgm, hasOutro } = audioFlags();
-  console.log(`[news-recap] Audio available — newsBgm:${hasNewsBgm} outro:${hasOutro}`);
+  const { hasNewsBgm, hasInstaTrendingBgm, hasOutro } = audioFlags();
+  console.log(`[news-recap] Audio available — newsBgm:${hasNewsBgm} instaBgm:${hasInstaTrendingBgm} outro:${hasOutro}`);
 
   const newsProps: NewsRecapProps = {
     vertical,
@@ -184,6 +186,28 @@ export async function renderOneRecap(input: RenderOneRecapInput): Promise<Publis
     path.join(OUTPUT_DIR, `${today}-${vertical}-${slugify(headline)}.mp4`),
   );
 
+  // For Instagram Reels (9:16): render high-retention 6-second single-frame video
+  // with no voiceover narration and low-tone trending BGM.
+  let outFileInsta: string | undefined;
+  if (format === 'reel') {
+    console.log(`[news-recap] Rendering 6s Single-Frame Reel for Instagram...`);
+    const singleFrameProps: NewsRecapSingleFrameProps = {
+      vertical,
+      headline,
+      hookLine,
+      beats: resolved,
+      instaFrame: input.instaFrame,
+      hasBgm: hasNewsBgm,
+      hasInstaTrendingBgm,
+    };
+    outFileInsta = await renderComposition(
+      bundleLocation,
+      'NewsRecapSingleFrame',
+      singleFrameProps as unknown as Record<string, unknown>,
+      path.join(OUTPUT_DIR, `${today}-${vertical}-${slugify(headline)}-insta.mp4`),
+    );
+  }
+
   // Cover/thumbnail: the headline card at 1.5s — entrance animation settled,
   // still inside the 2.5s headline section. Best-effort (undefined on failure).
   const coverPath = await renderCoverStill(
@@ -192,7 +216,14 @@ export async function renderOneRecap(input: RenderOneRecapInput): Promise<Publis
 
   const meta = buildNewsMetadata(vertical, headline, resolved, videoMeta, articleUrl, format);
   writeFileSync(outFile.replace(/\.mp4$/, '.meta.json'), JSON.stringify(meta, null, 2));
-  const links = await publish(outFile, meta, coverPath, undefined, format === 'landscape' ? 'landscape' : 'reel');
+  const links = await publish(
+    outFile,
+    meta,
+    coverPath,
+    undefined,
+    format === 'landscape' ? 'landscape' : 'reel',
+    outFileInsta,
+  );
   flagUploadFailureForCI(links);
 
   await notifyDiscord(vertical, meta, links, articleUrl);
@@ -213,9 +244,12 @@ async function main() {
   const telegram: TelegramCta | undefined = process.env.NEWS_RECAP_TELEGRAM_JSON
     ? JSON.parse(process.env.NEWS_RECAP_TELEGRAM_JSON)
     : undefined;
+  const instaFrame: InstaFrameData | undefined = process.env.NEWS_RECAP_INSTA_FRAME_JSON
+    ? JSON.parse(process.env.NEWS_RECAP_INSTA_FRAME_JSON)
+    : undefined;
   const kind = process.env.NEWS_RECAP_KIND;
 
-  const links = await renderOneRecap({ vertical, headline, beats, videoMeta, telegram, kind });
+  const links = await renderOneRecap({ vertical, headline, beats, videoMeta, telegram, kind, instaFrame });
 
   // Parseable line for anything scripting this CLI form to pick the links
   // back up.
