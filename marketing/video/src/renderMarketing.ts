@@ -119,6 +119,11 @@ async function notifyDiscord(
 }
 
 async function main() {
+  if (process.env.MARKETING_PAUSE === 'true') {
+    console.log('[marketing] MARKETING_PAUSE is true — skipping render.');
+    return;
+  }
+
   const args = parseArgs(process.argv.slice(2));
   const today = todayIST();
   const force = Boolean(args.force) || process.env.FORCE === 'true';
