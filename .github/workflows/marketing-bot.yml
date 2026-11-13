@@ -1,0 +1,101 @@
+name: Marketing Bot (daily feature story reel)
+
+# Renders 1 pure-code character-driven marketing skit reel per day rotating
+# across all 10 Aspirant Arcade features and 14 relatable aspirant settings.
+# Gemini writes a fresh non-repeating story every run using the last 10
+# entries for that specific feature in marketing_history.json.
+#
+# 7:30 PM IST (14:00 UTC) — spaced between the 6:30 PM QuizCard slot and
+# the 8:30 PM Meme slot.
+
+on:
+  schedule:
+    - cron: '0 14 * * *'   # 7:30 PM IST daily
+  workflow_dispatch:
+    inputs:
+      feature:
+        description: 'Optional feature override (focus_guard|short_notes|ai_notes_quiz|arcade_games|challenge_mode|daily_notifications|category_insights|leaderboard|ai_interview_gd|bookmarks). Blank = 1/day rotation.'
+        required: false
+        default: ''
+      setting:
+        description: 'Optional setting override (e.g. hostel_bedroom_2am, college_canteen_chai). Blank = auto rotation.'
+        required: false
+        default: ''
+      publish:
+        description: 'Upload to YouTube Shorts & Instagram Reels? (true/false). Blank uses MARKETING_PUBLISH repo variable.'
+        required: false
+        default: ''
+      force:
+        description: 'true = render even if today already generated a marketing reel.'
+        required: false
+        default: 'false'
+
+permissions:
+  contents: write   # commits marketing_history.json back
+
+concurrency:
+  group: marketing-bot
+  cancel-in-progress: false
+
+jobs:
+  render:
+    if: vars.MARKETING_PAUSE != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        working-directory: marketing/video
+        run: npm install
+
+      - name: Write YouTube upload credentials from secrets
+        working-directory: marketing/video
+        run: |
+          echo '${{ secrets.YT_CLIENT_SECRET }}' > client_secret.json
+          echo '${{ secrets.YT_UPLOAD_TOKEN }}' > youtube_upload_token.json
+
+      - name: Generate & render today's marketing story reel
+        id: render_marketing
+        working-directory: marketing/video
+        env:
+          GEMINI_API_KEYS: ${{ secrets.GEMINI_API_KEYS }}
+          SARVAM_API_KEY: ${{ secrets.SARVAM_API_KEY }}
+          CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
+          CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
+          CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
+          IG_BUSINESS_ACCOUNT_ID: ${{ secrets.IG_BUSINESS_ACCOUNT_ID }}
+          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+          DISCORD_WEBHOOK_NEWCONTENT: ${{ secrets.DISCORD_WEBHOOK_NEWCONTENT }}
+          MARKETING_FEATURE: ${{ github.event.inputs.feature }}
+          MARKETING_SETTING: ${{ github.event.inputs.setting }}
+          MARKETING_PAUSE: ${{ vars.MARKETING_PAUSE || secrets.MARKETING_PAUSE || '' }}
+          PUBLISH: ${{ github.event.inputs.publish || vars.MARKETING_PUBLISH || secrets.MARKETING_PUBLISH || 'false' }}
+          FORCE: ${{ github.event.inputs.force || (github.event_name == 'workflow_dispatch' && 'true') || 'false' }}
+        run: npm run render:marketing
+
+      - name: Commit updated marketing_history.json back to repo
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add marketing/video/marketing_history.json
+          git diff --staged --quiet || git commit -m "chore: update marketing history [skip ci]"
+          git push
+
+      - name: Upload rendered marketing reel as workflow artifact (recovery copy)
+        if: steps.render_marketing.outputs.upload_failed == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: marketing-reel-${{ github.run_id }}
+          path: |
+            marketing/video/output/marketing-*.mp4
+            marketing/video/output/marketing-*.meta.json
+            marketing/video/output/marketing-*-cover.jpg
+          retention-days: 14
+          if-no-files-found: ignore

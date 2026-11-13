@@ -1,0 +1,69 @@
+{
+  "id": "gate-air42-experience-demo",
+  "mode": "experience",
+  "vertical": "engineering",
+  "format": "reel",
+  "scene": "study_night",
+  "character": "priya",
+  "bgmMood": "motivation",
+  "hookLine": "42 marks in first mock to AIR 42 in GATE!",
+  "headline": "How Ankit Cracked GATE With a Full-Time Job",
+  "spokenHeadline": "42 marks in the first mock, and then All India Rank 42 in GATE! Here is how Ankit turned his prep around with a full-time job.",
+  "beats": [
+    {
+      "label": "THE TRAP",
+      "emoji": "😰",
+      "mood": "stressed",
+      "sfx": "pop",
+      "text": "Lost 14 Marks to Silly Negative Marking Errors",
+      "spokenText": "In his first attempt, Ankit knew the syllabus, yet lost fourteen marks purely to silly calculation traps.",
+      "mediaType": "stat_callout",
+      "stat": {
+        "value": "-14 Marks",
+        "subtext": "Lost to Silly Errors & Negative Marking",
+        "emoji": "⚠️"
+      }
+    },
+    {
+      "label": "THE SHIFT",
+      "emoji": "⚔️",
+      "mood": "thinking",
+      "sfx": "ding",
+      "text": "Switched From Passive Notes to Timed Drills",
+      "spokenText": "So he stopped passively re-reading thick textbooks and switched to thirty-minute timed sprints and mistake logs.",
+      "mediaType": "comparison",
+      "comparison": {
+        "leftTitle": "Old Routine",
+        "leftItems": [
+          "Passive note reading",
+          "No timer pressure",
+          "Skipping error review"
+        ],
+        "rightTitle": "Winning System",
+        "rightItems": [
+          "30-min speed drills",
+          "Virtual calc practice",
+          "Weekly mistake audit"
+        ]
+      }
+    },
+    {
+      "label": "THE RESULT",
+      "emoji": "🏆",
+      "mood": "celebrate",
+      "sfx": "ding",
+      "text": "95% Accuracy Unlocked Top PSU & IIT Calls",
+      "spokenText": "Within sixty days, his accuracy jumped to ninety-five percent, unlocking top PSU and IIT interview calls.",
+      "mediaType": "checklist",
+      "checklist": {
+        "items": [
+          "Attempted fewer risky guesses",
+          "Mastered top 12 high-weightage topics",
+          "Built daily streak on Aspirant Arcade"
+        ]
+      }
+    }
+  ],
+  "ctaSpeech": "Practice daily speed drills free on Aspirant Arcade. Download now!",
+  "fullStoryLabel": "aspirant-arcade.xyz/blog"
+}

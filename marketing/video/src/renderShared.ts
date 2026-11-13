@@ -1,29 +1,61 @@
 import path from 'node:path';
 import { existsSync, appendFileSync } from 'node:fs';
 import { renderMedia, renderStill, selectComposition } from '@remotion/renderer';
-import { BGM_FILE, BGM_INSTA_TRENDING_FILE, OUTRO_FILE, QUIZ_BGM_FILE, REVEAL_FILE, TICK_FILE } from './audio';
+import {
+  BGM_CORPORATE_FILE,
+  BGM_FILE,
+  BGM_INSTA_TRENDING_FILE,
+  BGM_MOTIVATION_FILE,
+  OUTRO_FILE,
+  QUIZ_BGM_FILE,
+  REVEAL_FILE,
+  TICK_FILE,
+} from './audio';
+import { ensureProceduralSfx } from './sfxSynth';
 import type { UploadMetadata } from './metadata';
 import { setYouTubeThumbnail, uploadYouTubeShort } from './publishYouTube';
 import { stageToCloudinary, uploadInstagramReel } from './publishInstagram';
 
 export const OUTPUT_DIR = path.join(process.cwd(), 'output');
 export const PUBLIC_DIR = path.join(process.cwd(), 'public');
-export const PUBLISH = process.env.PUBLISH === 'true';
+export const PUBLISH = String(process.env.PUBLISH ?? '').trim().toLowerCase() === 'true';
+
+/**
+ * Use local Chrome/Edge if already installed so local renders don't have to
+ * download 113MB+ chrome-headless-shell on every fresh setup. Returns undefined
+ * in CI (or when none found) so Remotion falls back to its own headless shell.
+ */
+export function resolveBrowserExecutable(): string | undefined {
+  if (process.env.REMOTION_BROWSER_EXECUTABLE) return process.env.REMOTION_BROWSER_EXECUTABLE;
+  if (process.env.CI) return undefined;
+  const candidates = [
+    'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+    'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+    'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
+    'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe',
+  ];
+  return candidates.find((p) => existsSync(p));
+}
 
 /** Audio is optional — only pass the has* flags true if the file was actually added to public/. */
 export function audioFlags() {
+  const sfx = ensureProceduralSfx(PUBLIC_DIR);
   return {
     hasQuizBgm: existsSync(path.join(PUBLIC_DIR, QUIZ_BGM_FILE)),
     hasNewsBgm: existsSync(path.join(PUBLIC_DIR, BGM_FILE)),
     hasInstaTrendingBgm: existsSync(path.join(PUBLIC_DIR, BGM_INSTA_TRENDING_FILE)),
+    hasMotivationBgm: existsSync(path.join(PUBLIC_DIR, BGM_MOTIVATION_FILE)),
+    hasCorporateBgm: existsSync(path.join(PUBLIC_DIR, BGM_CORPORATE_FILE)),
     hasTick: existsSync(path.join(PUBLIC_DIR, TICK_FILE)),
     hasReveal: existsSync(path.join(PUBLIC_DIR, REVEAL_FILE)),
     hasOutro: existsSync(path.join(PUBLIC_DIR, OUTRO_FILE)),
+    hasSfx: sfx.hasHookBoom && sfx.hasWhoosh && sfx.hasDing && sfx.hasPop && sfx.hasPhoneBuzz && sfx.hasAlertBlip,
   };
 }
 
 export async function renderComposition(bundleLocation: string, compositionId: string, inputProps: Record<string, unknown>, outFile: string): Promise<string> {
-  const composition = await selectComposition({ serveUrl: bundleLocation, id: compositionId, inputProps });
+  const browserExecutable = resolveBrowserExecutable();
+  const composition = await selectComposition({ serveUrl: bundleLocation, id: compositionId, inputProps, browserExecutable });
   let lastPercent = -1;
   await renderMedia({
     composition,
@@ -32,6 +64,7 @@ export async function renderComposition(bundleLocation: string, compositionId: s
     colorSpace: 'bt709',
     outputLocation: outFile,
     inputProps,
+    browserExecutable,
     onProgress: ({ progress }) => {
       const percent = Math.round(progress * 100);
       if (percent !== lastPercent) {
@@ -57,6 +90,7 @@ export async function renderCoverStill(
   bundleLocation: string, compositionId: string, inputProps: Record<string, unknown>, frame: number, outFile: string,
 ): Promise<string | undefined> {
   try {
+    const browserExecutable = resolveBrowserExecutable();
     const thumbCompId =
       compositionId === 'NewsRecapLandscape'
         ? 'NewsThumbnailLandscape'
@@ -66,9 +100,9 @@ export async function renderCoverStill(
 
     let composition;
     try {
-      composition = await selectComposition({ serveUrl: bundleLocation, id: thumbCompId, inputProps });
+      composition = await selectComposition({ serveUrl: bundleLocation, id: thumbCompId, inputProps, browserExecutable });
     } catch {
-      composition = await selectComposition({ serveUrl: bundleLocation, id: compositionId, inputProps });
+      composition = await selectComposition({ serveUrl: bundleLocation, id: compositionId, inputProps, browserExecutable });
     }
 
     await renderStill({
@@ -77,6 +111,7 @@ export async function renderCoverStill(
       output: outFile,
       frame: Math.min(frame, composition.durationInFrames - 1),
       inputProps,
+      browserExecutable,
       imageFormat: 'jpeg',
       jpegQuality: 92, // High clarity, well under YouTube 2MB cap
     });

@@ -38,8 +38,9 @@ import type { TelegramCta } from './Brand';
 import { buildNewsMetadata, type UploadMetadata } from './metadata';
 import { hinglishEnabled, toHinglish } from './hinglish';
 import { synthesizeNarration } from './tts';
-import { audioFlags, flagUploadFailureForCI, OUTPUT_DIR, publish, renderComposition, renderCoverStill, type PublishResult } from './renderShared';
+import { audioFlags, flagUploadFailureForCI, OUTPUT_DIR, PUBLIC_DIR, publish, renderComposition, renderCoverStill, type PublishResult } from './renderShared';
 import { cleanupOldCloudinaryArtifacts } from './cloudinaryCleanup';
+import { cadenceForClip } from './dynamicScript';
 
 const SITE_URL = 'https://www.aspirant-arcade.xyz';
 
@@ -140,13 +141,18 @@ export async function renderOneRecap(input: RenderOneRecapInput): Promise<Publis
   // piggybacked on the caller's video-content Gemini call (zero extra requests),
   // else one toHinglish() fallback call (per-line fallback to English).
   const resolved = resolveBeats(beats);
-  const nHeadline = await synthesizeNarration(`${hookLine ? `${hookLine}. ` : ''}${headline}`, 'news-headline');
+  const headlineSpeech = `${hookLine ? `${hookLine}. ` : ''}${headline}`;
+  const nHeadline = await synthesizeNarration(headlineSpeech, 'news-headline');
 
+  const spokenBeatLines: (string | null)[] = [];
   const nBeats = await Promise.all(
     resolved.map(async (beat, i) => {
-      if (beat.noAudio || !beat.text?.trim()) return null;
-      let line = beat.text;
-      if (hinglishEnabled()) {
+      if (beat.noAudio || !beat.text?.trim()) {
+        spokenBeatLines[i] = null;
+        return null;
+      }
+      let line = beat.spokenText?.trim() || beat.text;
+      if (!beat.spokenText && hinglishEnabled()) {
         if (videoMeta?.hinglishBeats?.[i]) {
           line = videoMeta.hinglishBeats[i]!;
         } else {
@@ -154,10 +160,17 @@ export async function renderOneRecap(input: RenderOneRecapInput): Promise<Publis
           line = h[0] ?? line;
         }
       }
+      spokenBeatLines[i] = line;
       return synthesizeNarration(line, `news-beat-${i}`);
     }),
   );
-  const narration: NewsNarration = { headline: nHeadline, beats: nBeats };
+
+  const narration: NewsNarration = {
+    headline: nHeadline,
+    beats: nBeats,
+    headlineCadence: cadenceForClip(nHeadline, headlineSpeech, PUBLIC_DIR),
+    beatCadences: nBeats.map((clip, i) => cadenceForClip(clip, spokenBeatLines[i] ?? null, PUBLIC_DIR)),
+  };
   console.log(`[news-recap] Narration — headline:${!!nHeadline} beats:${nBeats.map((n) => !!n).join(',')}`);
 
   // Spoken CTA over the outro. Sound-on is the default for a first Reels view,
@@ -170,8 +183,11 @@ export async function renderOneRecap(input: RenderOneRecapInput): Promise<Publis
   console.log(`[news-recap] Bundling Remotion project for ${compositionId} (${format})...`);
   const bundleLocation = await bundle({ entryPoint: path.join(process.cwd(), 'src', 'index.ts') });
 
-  const { hasNewsBgm, hasInstaTrendingBgm, hasOutro } = audioFlags();
-  console.log(`[news-recap] Audio available — newsBgm:${hasNewsBgm} instaBgm:${hasInstaTrendingBgm} outro:${hasOutro}`);
+  const { hasNewsBgm, hasInstaTrendingBgm, hasMotivationBgm, hasCorporateBgm, hasOutro, hasSfx } = audioFlags();
+  console.log(`[news-recap] Audio available — newsBgm:${hasNewsBgm} instaBgm:${hasInstaTrendingBgm} outro:${hasOutro} sfx:${hasSfx}`);
+
+  const normalizedKind =
+    kind === 'strategy' || kind === 'experience' || kind === 'marketing' ? kind : 'news';
 
   const newsProps: NewsRecapProps = {
     vertical,
@@ -180,8 +196,13 @@ export async function renderOneRecap(input: RenderOneRecapInput): Promise<Publis
     hookLine,
     narration,
     format,
+    videoKind: normalizedKind,
+    character: isStrategy ? 'priya' : 'arjun',
     hasBgm: hasNewsBgm,
+    hasMotivationBgm,
+    hasCorporateBgm,
     hasOutro,
+    hasSfx,
     fullStoryLabel,
     telegram,
     duckOutroSting: !!nCta,

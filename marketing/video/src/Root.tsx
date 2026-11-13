@@ -9,6 +9,7 @@ import {
   type NewsRecapSingleFrameProps,
 } from './NewsRecapSingleFrame';
 import { MemeCard, MEME_CARD_DURATION_IN_FRAMES, MEME_CARD_FPS, calculateMemeCardMetadata, type MemeCardProps } from './MemeCard';
+import { MarketingReel, MARKETING_REEL_DURATION_IN_FRAMES, MARKETING_REEL_FPS, calculateMarketingReelMetadata, type MarketingReelProps } from './MarketingReel';
 import { LongFormEdit, calculateLongFormEditMetadata, VIDEO_FPS } from './LongFormEdit';
 
 // hasBgm/hasTick/hasReveal default to true here (unlike render.ts, which computes
@@ -96,6 +97,8 @@ const NEWS_RECAP_DEFAULT_PROPS: NewsRecapProps = {
       noAudio: false,
     },
   ],
+  videoKind: 'news',
+  character: 'arjun',
   hasBgm: true,
   hasOutro: true,
 };
@@ -195,6 +198,8 @@ const NEWS_RECAP_LANDSCAPE_DEFAULT_PROPS: NewsRecapProps = {
       noAudio: false,
     },
   ],
+  videoKind: 'news',
+  character: 'arjun',
   hasBgm: true,
   hasOutro: true,
 };
@@ -238,6 +243,47 @@ const NEWS_RECAP_SINGLE_FRAME_DEFAULT_PROPS: NewsRecapSingleFrameProps = {
   },
   hasBgm: true,
   hasInstaTrendingBgm: false,
+};
+
+const MARKETING_REEL_DEFAULT_PROPS: MarketingReelProps = {
+  featureId: 'focus_guard',
+  featureTag: 'FOCUS GUARD',
+  setting: 'hostel_bedroom_2am',
+  hookLine: '2:30 AM and still scrolling Reels?',
+  title: 'Stop Doomscrolling With Focus Guard',
+  commentPrompt: 'What is your daily screen time? Comment below',
+  scenes: [
+    {
+      sceneLabel: '2:30 AM · HOSTEL',
+      speaker: 'arjun',
+      mood: 'stressed',
+      holdingPhone: true,
+      captionEn: 'Just 5 minutes of Reels turned into 2 hours again!',
+      spokenLine: 'Yaar, 5 minute bolke 2 ghante Reels scroll kar li!',
+      sfx: 'phone_buzz',
+    },
+    {
+      sceneLabel: 'THE INTERVENTION',
+      speaker: 'priya',
+      dualCharacters: true,
+      mood: 'explaining',
+      listenerMood: 'stressed',
+      captionEn: 'Turn on Focus Guard inside Aspirant Arcade!',
+      spokenLine: 'Toh Aspirant Arcade ka Focus Guard on kar na!',
+      sfx: 'pop',
+    },
+    {
+      sceneLabel: 'IN ACTION',
+      speaker: 'priya',
+      mood: 'excited',
+      showPhoneMockup: true,
+      captionEn: 'Set timer or reel limits — solve MCQs correctly to unlock!',
+      spokenLine: 'Timer ya Reel count set kar — sahi answer dekar hi scroll hoga!',
+      sfx: 'alert_blip',
+    },
+  ],
+  hasBgm: true,
+  hasOutro: true,
 };
 
 import { ThumbnailCard, type ThumbnailCardProps } from './ThumbnailCard';
@@ -311,6 +357,16 @@ export const RemotionRoot: React.FC = () => {
         height={1920}
         defaultProps={MEME_CARD_DEFAULT_PROPS}
         calculateMetadata={calculateMemeCardMetadata}
+      />
+      <Composition
+        id="MarketingReel"
+        component={MarketingReel}
+        durationInFrames={MARKETING_REEL_DURATION_IN_FRAMES}
+        fps={MARKETING_REEL_FPS}
+        width={1080}
+        height={1920}
+        defaultProps={MARKETING_REEL_DEFAULT_PROPS}
+        calculateMetadata={calculateMarketingReelMetadata}
       />
       <Composition
         id="LongFormEdit"

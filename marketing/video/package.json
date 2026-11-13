@@ -9,6 +9,8 @@
     "render": "npx tsx src/render.ts",
     "render:news": "npx tsx src/renderNewsRecap.ts",
     "render:pending": "npx tsx src/renderPendingRecaps.ts",
+    "render:dynamic": "npx tsx scripts/renderDynamicVideo.ts",
+    "render:marketing": "npx tsx src/renderMarketing.ts",
     "render:longform": "npx tsx src/renderLongForm.ts",
     "meme": "npx tsx src/renderMeme.ts",
     "meme:test": "npx tsx scripts/testMeme.ts",

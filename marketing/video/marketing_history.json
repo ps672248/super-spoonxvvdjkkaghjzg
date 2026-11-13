@@ -1,0 +1,44 @@
+{
+  "lastRunDate": "2026-11-13",
+  "lastFeatureId": "ai_notes_quiz",
+  "totalRuns": 3,
+  "byFeature": {
+    "focus_guard": [
+      {
+        "date": "2026-11-13",
+        "featureId": "focus_guard",
+        "setting": "hostel_bedroom_2am",
+        "hookLine": "2:30 AM: Phir se Reels? Not again!",
+        "title": "Reel Addiction vs. Exam Goals? #FocusGuard",
+        "storySummary": "Arjun loses hours to doomscrolling reels every night. Priya introduces him to Aspirant Arcade's Focus Guard, which intercepts distracting apps with MCQs, helping him reclaim his study time."
+      }
+    ],
+    "short_notes": [
+      {
+        "date": "2026-11-13",
+        "featureId": "short_notes",
+        "setting": "library_silent_corner",
+        "hookLine": "Exam revision ka shortcut chahiye?",
+        "title": "The Revision Rescue Mission!",
+        "storySummary": "Arjun is overwhelmed by massive books and PDFs for exam revision. Priya introduces him to Aspirant Arcade's 'Short Notes for Every Exam' feature, showcasing how it simplifies revision with crisp, organized, and searchable notes."
+      }
+    ],
+    "ai_notes_quiz": [
+      {
+        "date": "2026-11-13",
+        "featureId": "ai_notes_quiz",
+        "setting": "metro_bus_commute",
+        "hookLine": "Notes padhe, yaad kitna aaya?",
+        "title": "Smart Notes, Smart Scores!",
+        "storySummary": "Arjun struggles with passive revision and not knowing his weak points. Priya introduces Aspirant Arcade's AI Notes + Quiz feature, which generates custom notes and then quizzes him, providing a detailed marks breakdown, solving his problem.",
+        "youtubeUrl": "https://youtube.com/shorts/jRMqJIcMKUw",
+        "instagramUrl": "https://www.instagram.com/reel/DfrNq1dGYr5/"
+      }
+    ]
+  },
+  "recentSettings": [
+    "hostel_bedroom_2am",
+    "library_silent_corner",
+    "metro_bus_commute"
+  ]
+}
