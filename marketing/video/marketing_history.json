@@ -1,7 +1,7 @@
 {
   "lastRunDate": "2026-11-13",
-  "lastFeatureId": "short_notes",
-  "totalRuns": 2,
+  "lastFeatureId": "ai_notes_quiz",
+  "totalRuns": 3,
   "byFeature": {
     "focus_guard": [
       {
@@ -22,10 +22,23 @@
         "title": "The Revision Rescue Mission!",
         "storySummary": "Arjun is overwhelmed by massive books and PDFs for exam revision. Priya introduces him to Aspirant Arcade's 'Short Notes for Every Exam' feature, showcasing how it simplifies revision with crisp, organized, and searchable notes."
       }
+    ],
+    "ai_notes_quiz": [
+      {
+        "date": "2026-11-13",
+        "featureId": "ai_notes_quiz",
+        "setting": "metro_bus_commute",
+        "hookLine": "Notes padhe, yaad kitna aaya?",
+        "title": "Smart Notes, Smart Scores!",
+        "storySummary": "Arjun struggles with passive revision and not knowing his weak points. Priya introduces Aspirant Arcade's AI Notes + Quiz feature, which generates custom notes and then quizzes him, providing a detailed marks breakdown, solving his problem.",
+        "youtubeUrl": "https://youtube.com/shorts/jRMqJIcMKUw",
+        "instagramUrl": "https://www.instagram.com/reel/DfrNq1dGYr5/"
+      }
     ]
   },
   "recentSettings": [
     "hostel_bedroom_2am",
-    "library_silent_corner"
+    "library_silent_corner",
+    "metro_bus_commute"
   ]
 }
