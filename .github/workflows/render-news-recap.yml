@@ -60,6 +60,7 @@ jobs:
           CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
           IG_BUSINESS_ACCOUNT_ID: ${{ secrets.IG_BUSINESS_ACCOUNT_ID }}
           IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+          IG_AUTO_PUBLISH: ${{ vars.IG_AUTO_PUBLISH || 'true' }}
           DISCORD_WEBHOOK_NEWCONTENT: ${{ secrets.DISCORD_WEBHOOK_NEWCONTENT }}
         run: |
           echo '${{ secrets.YT_CLIENT_SECRET }}' > client_secret.json
