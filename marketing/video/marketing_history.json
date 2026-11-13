@@ -1,5 +1,20 @@
 {
-  "totalRuns": 0,
-  "byFeature": {},
-  "recentSettings": []
+  "lastRunDate": "2026-11-13",
+  "lastFeatureId": "focus_guard",
+  "totalRuns": 1,
+  "byFeature": {
+    "focus_guard": [
+      {
+        "date": "2026-11-13",
+        "featureId": "focus_guard",
+        "setting": "hostel_bedroom_2am",
+        "hookLine": "2:30 AM: Phir se Reels? Not again!",
+        "title": "Reel Addiction vs. Exam Goals? #FocusGuard",
+        "storySummary": "Arjun loses hours to doomscrolling reels every night. Priya introduces him to Aspirant Arcade's Focus Guard, which intercepts distracting apps with MCQs, helping him reclaim his study time."
+      }
+    ]
+  },
+  "recentSettings": [
+    "hostel_bedroom_2am"
+  ]
 }
