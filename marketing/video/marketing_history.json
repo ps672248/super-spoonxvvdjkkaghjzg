@@ -1,7 +1,7 @@
 {
   "lastRunDate": "2026-11-13",
-  "lastFeatureId": "focus_guard",
-  "totalRuns": 1,
+  "lastFeatureId": "short_notes",
+  "totalRuns": 2,
   "byFeature": {
     "focus_guard": [
       {
@@ -12,9 +12,20 @@
         "title": "Reel Addiction vs. Exam Goals? #FocusGuard",
         "storySummary": "Arjun loses hours to doomscrolling reels every night. Priya introduces him to Aspirant Arcade's Focus Guard, which intercepts distracting apps with MCQs, helping him reclaim his study time."
       }
+    ],
+    "short_notes": [
+      {
+        "date": "2026-11-13",
+        "featureId": "short_notes",
+        "setting": "library_silent_corner",
+        "hookLine": "Exam revision ka shortcut chahiye?",
+        "title": "The Revision Rescue Mission!",
+        "storySummary": "Arjun is overwhelmed by massive books and PDFs for exam revision. Priya introduces him to Aspirant Arcade's 'Short Notes for Every Exam' feature, showcasing how it simplifies revision with crisp, organized, and searchable notes."
+      }
     ]
   },
   "recentSettings": [
-    "hostel_bedroom_2am"
+    "hostel_bedroom_2am",
+    "library_silent_corner"
   ]
 }
