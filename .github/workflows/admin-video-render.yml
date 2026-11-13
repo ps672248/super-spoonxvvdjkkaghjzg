@@ -46,6 +46,7 @@ jobs:
         env:
           ARTICLE_SLUG: ${{ github.event.inputs.article_slug }}
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          GEMINI_API_KEYS: ${{ secrets.GEMINI_API_KEYS }}
           CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
           CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
           CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}

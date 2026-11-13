@@ -13,9 +13,24 @@ import {
 import { Audio } from '@remotion/media';
 import { CTAOutro, CTA_OUTRO_SECONDS, Header, fontFamily, type TelegramCta } from './Brand';
 import { LandscapeOutro } from './LandscapeOutro';
-import { AnimatedBackground, KenBurns, ProgressBar } from './Motion';
-import { GOLD, INK, VERTICAL_LABEL, WHITE, MUTED } from './theme';
-import { BGM_FILE, BGM_MOTIVATION_FILE, BGM_CORPORATE_FILE, WHOOSH_FILE, DING_FILE, POP_FILE } from './audio';
+import { KenBurns } from './Motion';
+import { SceneBackground, resolveSceneTheme, type SceneTheme } from './SceneBackground';
+import {
+  AnimatedCharacter,
+  inferMoodFromBeat,
+  type CharacterId,
+  type CharacterMood,
+} from './AnimatedCharacter';
+import { GOLD, INK, VERTICAL_LABEL, WHITE } from './theme';
+import {
+  BGM_FILE,
+  BGM_MOTIVATION_FILE,
+  BGM_CORPORATE_FILE,
+  WHOOSH_FILE,
+  DING_FILE,
+  POP_FILE,
+  HOOK_BOOM_FILE,
+} from './audio';
 import type { NarrationClip } from './tts';
 import {
   TableCard,
@@ -50,8 +65,12 @@ export type BeatMediaType =
 export type Beat = {
   label: string;
   text: string;
+  spokenText?: string;
   noAudio?: boolean;
   emoji?: string;
+  mood?: CharacterMood;
+  scene?: SceneTheme;
+  sfx?: 'whoosh' | 'ding' | 'pop' | 'boom';
   mediaType?: BeatMediaType;
   mediaUrl?: string;
   table?: TableData;
@@ -69,6 +88,10 @@ export type NewsNarration = {
   beats?: (NarrationClip | null)[];
   /** One spoken CTA over the outro */
   cta?: NarrationClip | null;
+  /** Optional precomputed per-frame speech openness [0..1] for lip-sync */
+  headlineCadence?: number[] | null;
+  beatCadences?: (number[] | null)[];
+  ctaCadence?: number[] | null;
 };
 
 export type NewsRecapProps = {
@@ -78,8 +101,13 @@ export type NewsRecapProps = {
   hookLine?: string;
   narration?: NewsNarration;
   format?: 'reel' | 'landscape';
+  videoKind?: 'news' | 'strategy' | 'experience' | 'marketing';
+  scene?: SceneTheme;
+  character?: CharacterId | 'none';
   bgmMood?: 'breaking_news' | 'motivation' | 'corporate';
   hasBgm?: boolean;
+  hasMotivationBgm?: boolean;
+  hasCorporateBgm?: boolean;
   hasOutro?: boolean;
   hasSfx?: boolean;
   fullStoryLabel?: string;
@@ -89,8 +117,8 @@ export type NewsRecapProps = {
 
 const FPS = 30;
 const HEADLINE_SECONDS = 2.8;
-const WORDS_PER_SECOND = 2.5;
-const MIN_BEAT_SECONDS = 2.5;
+const WORDS_PER_SECOND = 2.6;
+const MIN_BEAT_SECONDS = 2.6;
 const MAX_BEAT_SECONDS = 15;
 const PAD_SEC = 0.4;
 const FALLBACK_BEAT: Beat = { label: 'KEY POINT', text: 'See the full article in the app.' };
@@ -101,22 +129,22 @@ export const CTA_LEN = CTA_OUTRO_SECONDS * FPS;
 function defaultVisualDurationForMedia(beat: Beat): number {
   switch (beat.mediaType) {
     case 'table':
-      return 4.8;
+      return 4.5;
     case 'checklist':
-      return 4.2;
+      return 4.0;
     case 'comparison':
-      return 4.6;
+      return 4.4;
     case 'image':
     case 'video_clip':
-      return 3.8;
-    case 'quote':
       return 3.6;
+    case 'quote':
+      return 3.4;
     case 'stat_callout':
-      return 3.2;
+      return 3.0;
     case 'gif':
-      return 3.0;
+      return 2.8;
     default:
-      return 3.0;
+      return 2.9;
   }
 }
 
@@ -154,7 +182,6 @@ export function outroFramesFor(narration?: NewsNarration): number {
   return Math.round(sec * FPS);
 }
 
-/** Total duration calculation */
 export const calculateNewsRecapMetadata: CalculateMetadataFunction<NewsRecapProps> = ({ props }) => {
   const headlineLen = headlineFramesFor(props.narration);
   const totalBeatFrames = beatFramesFor(props.beats, props.narration).reduce((a, b) => a + b, 0);
@@ -165,6 +192,169 @@ export const calculateNewsRecapMetadata: CalculateMetadataFunction<NewsRecapProp
   };
 };
 
+function tagSuffixForKind(kind?: string): { label: string; pulseColor: string } {
+  switch (kind) {
+    case 'strategy':
+      return { label: 'STRATEGY', pulseColor: '#38BDF8' };
+    case 'experience':
+      return { label: 'REAL STORY', pulseColor: '#A855F7' };
+    case 'marketing':
+      return { label: 'FEATURE', pulseColor: '#22C55E' };
+    default:
+      return { label: 'BREAKING', pulseColor: '#F43F5E' };
+  }
+}
+
+function accentForKind(kind?: string): string {
+  switch (kind) {
+    case 'strategy':
+      return '#38BDF8';
+    case 'experience':
+      return '#C084FC';
+    case 'marketing':
+      return '#22C55E';
+    default:
+      return GOLD;
+  }
+}
+
+/* ─── Pure-Code Voice Waveform Visualizer ─── */
+const VoiceWaveform: React.FC<{
+  active: boolean;
+  cadence?: number[] | null;
+  accentColor?: string;
+  bars?: number;
+}> = ({ active, cadence, accentColor = GOLD, bars = 14 }) => {
+  const frame = useCurrentFrame();
+  const amp = cadence && cadence.length > 0 ? cadence[Math.min(cadence.length - 1, frame)] ?? 0 : 0.65;
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 5, height: 34 }}>
+      {Array.from({ length: bars }).map((_, idx) => {
+        const wave = active
+          ? 0.25 + Math.abs(Math.sin(frame * 0.35 + idx * 0.72) * Math.cos(frame * 0.14 - idx * 0.3)) * (0.4 + amp * 0.7)
+          : 0.16;
+        const barH = Math.round(6 + Math.min(1, wave) * 26);
+        return (
+          <div
+            key={idx}
+            style={{
+              width: 5,
+              height: barH,
+              borderRadius: 99,
+              background: idx % 3 === 0 ? accentColor : '#FFFFFF',
+              opacity: active ? 0.92 : 0.3,
+              boxShadow: active && idx % 3 === 0 ? `0 0 10px ${accentColor}` : 'none',
+            }}
+          />
+        );
+      })}
+    </div>
+  );
+};
+
+/* ─── Presenter HUD Box beside Character ─── */
+const PresenterStatusCard: React.FC<{
+  character: CharacterId;
+  mood: CharacterMood;
+  speaking: boolean;
+  cadence?: number[] | null;
+  accentColor: string;
+  badgeText: string;
+}> = ({ character, mood, speaking, cadence, accentColor, badgeText }) => {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const enter = spring({ frame: Math.max(0, frame - 4), fps, config: { damping: 14 } });
+
+  const moodTag =
+    mood === 'alert'
+      ? '🚨 ACTION ALERT'
+      : mood === 'shocked'
+      ? '⚡ HUGE SHOCK'
+      : mood === 'celebrate'
+      ? '🎉 BIG OPPORTUNITY'
+      : mood === 'thinking'
+      ? '💡 EXAM INSIGHT'
+      : mood === 'stressed'
+      ? '⚠️ WATCH OUT'
+      : mood === 'frustrated'
+      ? '😤 DON\'T FALL FOR THIS'
+      : mood === 'confident' || mood === 'smug'
+      ? '💪 CONFIDENT MOVE'
+      : mood === 'determined'
+      ? '🔥 LOCK IN NOW'
+      : mood === 'whispering'
+      ? '🤫 INSIDER TIP'
+      : mood === 'relieved'
+      ? '😌 RELIEF AHEAD'
+      : mood === 'panicked'
+      ? '😱 CRUNCH TIME'
+      : mood === 'curious'
+      ? '🔍 DEEP DIVE'
+      : mood === 'excited'
+      ? '⚡ LIVE UPDATE'
+      : '🎙️ KEY BREAKDOWN';
+
+  const hostName = character === 'priya' ? 'Priya · Exam Mentor' : 'Arjun · Aspirant Host';
+
+  return (
+    <div
+      style={{
+        flex: 1,
+        opacity: enter,
+        transform: `translateX(${interpolate(enter, [0, 1], [24, 0])}px)`,
+        background: 'rgba(15, 21, 32, 0.80)',
+        border: `1.5px solid ${accentColor}55`,
+        borderRadius: 22,
+        padding: '22px 26px',
+        backdropFilter: 'blur(12px)',
+        boxShadow: '0 16px 34px rgba(0, 0, 0, 0.5)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 14,
+        fontFamily,
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+        <span
+          style={{
+            fontSize: 18,
+            fontWeight: 900,
+            color: WHITE,
+            background: 'rgba(255, 255, 255, 0.10)',
+            border: `1.5px solid ${accentColor}`,
+            borderRadius: 999,
+            padding: '6px 16px',
+            letterSpacing: '0.04em',
+            textTransform: 'uppercase',
+          }}
+        >
+          {moodTag}
+        </span>
+      </div>
+
+      <div style={{ fontSize: 24, fontWeight: 700, color: WHITE, lineHeight: 1.25 }}>
+        {badgeText}
+      </div>
+
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          paddingTop: 10,
+          borderTop: '1px solid rgba(255,255,255,0.1)',
+        }}
+      >
+        <VoiceWaveform active={speaking} cadence={cadence} accentColor={accentColor} bars={12} />
+        <span style={{ fontSize: 16, fontWeight: 700, color: 'rgba(255,255,255,0.68)' }}>
+          {hostName}
+        </span>
+      </div>
+    </div>
+  );
+};
+
 /* ─── Headline Scene Component ─── */
 const HeadlineBeat: React.FC<{
   vertical: string;
@@ -172,61 +362,220 @@ const HeadlineBeat: React.FC<{
   hookLine?: string;
   durationInFrames: number;
   format?: 'reel' | 'landscape';
-}> = ({ vertical, headline, hookLine, durationInFrames, format = 'reel' }) => {
+  videoKind?: string;
+  defaultScene: SceneTheme;
+  character?: CharacterId | 'none';
+  speaking?: boolean;
+  cadence?: number[] | null;
+}> = ({
+  vertical,
+  headline,
+  hookLine,
+  durationInFrames,
+  format = 'reel',
+  videoKind,
+  defaultScene,
+  character = 'arjun',
+  speaking = false,
+  cadence,
+}) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const isLandscape = format === 'landscape';
+  const kindMeta = tagSuffixForKind(videoKind);
+  const accent = accentForKind(videoKind);
 
-  const hookPunch = spring({ frame, fps, config: { damping: 10, mass: 0.7 } });
+  const hookPunch = spring({ frame, fps, config: { damping: 10, mass: 0.65 } });
   const handoff = hookLine
-    ? interpolate(frame, [22, 34], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' })
+    ? interpolate(frame, [14, 24], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' })
     : 1;
-  const headlineOpacity = hookLine ? handoff : interpolate(frame, [0, 14], [0, 1], { extrapolateRight: 'clamp' });
+  const headlineOpacity = hookLine ? handoff : interpolate(frame, [0, 12], [0, 1], { extrapolateRight: 'clamp' });
 
   return (
-    <KenBurns durationInFrames={durationInFrames}>
-      <Header tag={`${VERTICAL_LABEL[vertical] ?? vertical} · NEWS`} />
-      <AbsoluteFill
-        style={{
-          justifyContent: 'center',
-          alignItems: 'center',
-          padding: isLandscape ? '0 120px' : '0 56px',
-          textAlign: 'center',
-        }}
-      >
-        {hookLine ? (
-          <div
-            style={{
-              opacity: Math.min(1, hookPunch * 1.4),
-              transform: `scale(${interpolate(hookPunch, [0, 1], [0.65, 1]) - handoff * 0.15}) translateY(${-handoff * 20}px)`,
-              fontFamily,
-              fontSize: isLandscape ? 40 : 54,
-              fontWeight: 900,
-              color: GOLD,
-              lineHeight: 1.2,
-              marginBottom: isLandscape ? 20 : 28,
-              textShadow: '0 0 35px rgba(253, 192, 3, 0.4)',
-            }}
-          >
-            {hookLine}
-          </div>
-        ) : null}
-        <div
+    <AbsoluteFill>
+      <SceneBackground scene={defaultScene} format={format} />
+      <KenBurns durationInFrames={durationInFrames}>
+      <Header
+        tag={`${VERTICAL_LABEL[vertical] ?? vertical} · ${kindMeta.label}`}
+        livePulse
+        pulseColor={kindMeta.pulseColor}
+      />
+      {isLandscape ? (
+        <AbsoluteFill
           style={{
-            opacity: headlineOpacity,
-            transform: `translateY(${interpolate(headlineOpacity, [0, 1], [30, 0])}px)`,
-            fontFamily,
-            fontSize: isLandscape ? 48 : 52,
-            fontWeight: 800,
-            color: WHITE,
-            lineHeight: 1.22,
-            maxWidth: isLandscape ? 1200 : '100%',
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '110px 100px 80px 100px',
+            gap: 48,
           }}
         >
-          {headline}
-        </div>
-      </AbsoluteFill>
-    </KenBurns>
+          <div style={{ flex: 1.35, display: 'flex', flexDirection: 'column', gap: 22 }}>
+            {hookLine ? (
+              <div
+                style={{
+                  alignSelf: 'flex-start',
+                  opacity: Math.min(1, hookPunch * 1.4),
+                  transform: `scale(${interpolate(hookPunch, [0, 1], [0.72, 1])})`,
+                  fontFamily,
+                  fontSize: 32,
+                  fontWeight: 900,
+                  color: INK,
+                  background: GOLD,
+                  borderRadius: 16,
+                  padding: '12px 24px',
+                  boxShadow: '0 0 36px rgba(253, 192, 3, 0.5)',
+                }}
+              >
+                ⚡ {hookLine}
+              </div>
+            ) : null}
+            <div
+              style={{
+                opacity: headlineOpacity,
+                transform: `translateY(${interpolate(headlineOpacity, [0, 1], [24, 0])}px)`,
+                fontFamily,
+                fontSize: 54,
+                fontWeight: 900,
+                color: WHITE,
+                lineHeight: 1.18,
+                textShadow: '0 6px 24px rgba(0,0,0,0.85)',
+              }}
+            >
+              {headline}
+            </div>
+            <div style={{ marginTop: 8 }}>
+              <VoiceWaveform active={speaking} cadence={cadence} accentColor={accent} bars={18} />
+            </div>
+          </div>
+
+          {character !== 'none' ? (
+            <div style={{ flex: 0.75, display: 'flex', justifyContent: 'center', alignItems: 'flex-end' }}>
+              <AnimatedCharacter
+                character={character}
+                mood="excited"
+                speaking={speaking}
+                cadence={cadence ?? undefined}
+                accentColor={accent}
+                size={410}
+              />
+            </div>
+          ) : null}
+        </AbsoluteFill>
+      ) : (
+        /* 9:16 Reel Headline Stage */
+        <AbsoluteFill style={{ pointerEvents: 'none' }}>
+          {/* Center Headline Stage */}
+          <div
+            style={{
+              position: 'absolute',
+              top: 390,
+              left: 54,
+              right: 54,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              textAlign: 'center',
+              gap: 30,
+            }}
+          >
+            {hookLine ? (
+              <div
+                style={{
+                  opacity: Math.min(1, hookPunch * 1.4),
+                  transform: `scale(${interpolate(hookPunch, [0, 1], [0.65, 1])})`,
+                  fontFamily,
+                  fontSize: 38,
+                  fontWeight: 900,
+                  color: INK,
+                  background: GOLD,
+                  borderRadius: 20,
+                  padding: '16px 30px',
+                  lineHeight: 1.2,
+                  boxShadow: '0 10px 35px rgba(253, 192, 3, 0.45)',
+                }}
+              >
+                ⚡ {hookLine}
+              </div>
+            ) : null}
+            <div
+              style={{
+                opacity: headlineOpacity,
+                transform: `translateY(${interpolate(headlineOpacity, [0, 1], [28, 0])}px)`,
+                fontFamily,
+                fontSize: 54,
+                fontWeight: 900,
+                color: WHITE,
+                lineHeight: 1.22,
+                textShadow: '0 6px 26px rgba(0, 0, 0, 0.9)',
+                background: 'rgba(15, 21, 32, 0.72)',
+                border: `2px solid ${accent}44`,
+                borderRadius: 28,
+                padding: '34px 30px',
+                boxShadow: `0 24px 54px rgba(0, 0, 0, 0.6), 0 0 36px ${accent}22`,
+                backdropFilter: 'blur(14px)',
+              }}
+            >
+              {headline}
+            </div>
+            <div
+              style={{
+                opacity: headlineOpacity,
+                fontFamily,
+                fontSize: 22,
+                fontWeight: 800,
+                color: accent,
+                letterSpacing: '0.12em',
+                textTransform: 'uppercase',
+              }}
+            >
+              ● KEY BREAKDOWN COMING UP ↓
+            </div>
+          </div>
+
+          {/* Lower Stage Character + Waveform */}
+          {character !== 'none' ? (
+            <div
+              style={{
+                position: 'absolute',
+                bottom: 145,
+                left: 48,
+                right: 48,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 20,
+              }}
+            >
+              <AnimatedCharacter
+                character={character}
+                mood="excited"
+                speaking={speaking}
+                cadence={cadence ?? undefined}
+                accentColor={accent}
+                size={360}
+              />
+              <PresenterStatusCard
+                character={character}
+                mood="excited"
+                speaking={speaking}
+                cadence={cadence}
+                accentColor={accent}
+                badgeText={
+                  videoKind === 'strategy'
+                    ? 'Full blueprint in 20 seconds'
+                    : videoKind === 'experience'
+                    ? 'Real aspirant insights ahead'
+                    : videoKind === 'marketing'
+                    ? 'Level up your daily prep'
+                    : 'Key dates, stats & rules inside'
+                }
+              />
+            </div>
+          ) : null}
+        </AbsoluteFill>
+      )}
+      </KenBurns>
+    </AbsoluteFill>
   );
 };
 
@@ -237,74 +586,127 @@ const HighlightBeat: React.FC<{
   index: number;
   durationInFrames: number;
   format?: 'reel' | 'landscape';
-}> = ({ vertical, beat, index, durationInFrames, format = 'reel' }) => {
+  videoKind?: string;
+  defaultScene: SceneTheme;
+  character?: CharacterId | 'none';
+  speaking?: boolean;
+  cadence?: number[] | null;
+}> = ({
+  vertical,
+  beat,
+  index,
+  durationInFrames,
+  format = 'reel',
+  videoKind,
+  defaultScene,
+  character = 'arjun',
+  speaking = false,
+  cadence,
+}) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const enter = spring({ frame, fps, config: { damping: 13, mass: 0.8 } });
+  const enter = spring({ frame, fps, config: { damping: 12, mass: 0.75 } });
+  const sceneFade = interpolate(frame, [0, 8], [0.25, 1], { extrapolateRight: 'clamp' });
   const isLandscape = format === 'landscape';
+  const kindMeta = tagSuffixForKind(videoKind);
+  const accent = accentForKind(videoKind);
 
-  const labelSpacing = interpolate(enter, [0, 1], [8, 2]);
+  const mood = inferMoodFromBeat({
+    mood: beat.mood,
+    emoji: beat.emoji,
+    label: beat.label,
+    mediaType: beat.mediaType,
+  });
+
   const hasCustomMedia = beat.mediaType && beat.mediaType !== 'none';
+  const stepTag = `${String(index + 1).padStart(2, '0')} · ${beat.label}`;
 
   return (
-    <KenBurns durationInFrames={durationInFrames}>
-      <Header tag={`${VERTICAL_LABEL[vertical] ?? vertical} · NEWS`} />
+    <AbsoluteFill style={{ opacity: sceneFade }}>
+      <SceneBackground scene={beat.scene ?? defaultScene} format={format} />
+      <KenBurns durationInFrames={durationInFrames}>
+      <Header
+        tag={`${VERTICAL_LABEL[vertical] ?? vertical} · ${kindMeta.label}`}
+        livePulse
+        pulseColor={kindMeta.pulseColor}
+      />
 
       {isLandscape ? (
-        /* ─── Long Form (16:9 Landscape): Split Dual-Pane Layout ─── */
+        /* ─── Long Form (16:9 Landscape): Dual-Pane with Character ─── */
         <AbsoluteFill
           style={{
             display: 'flex',
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'space-between',
-            padding: '100px 90px 80px 90px',
-            gap: 60,
+            padding: '108px 90px 76px 90px',
+            gap: 48,
           }}
         >
-          {/* Left Column: Tag, Subtitle / Text, Highlights */}
+          {/* Left Column: Tag, Captions, Character */}
           <div
             style={{
               flex: 1,
+              height: '100%',
               display: 'flex',
               flexDirection: 'column',
-              gap: 20,
+              justifyContent: 'space-between',
               opacity: enter,
-              transform: `translateX(${interpolate(enter, [0, 1], [-50, 0])}px)`,
+              transform: `translateX(${interpolate(enter, [0, 1], [-40, 0])}px)`,
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              {beat.emoji ? <span style={{ fontSize: 32 }}>{beat.emoji}</span> : null}
-              <div
-                style={{
-                  fontFamily,
-                  fontSize: 24,
-                  fontWeight: 800,
-                  color: GOLD,
-                  letterSpacing: labelSpacing,
-                  textTransform: 'uppercase',
-                }}
-              >
-                {beat.label}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                {beat.emoji ? <span style={{ fontSize: 34 }}>{beat.emoji}</span> : null}
+                <div
+                  style={{
+                    fontFamily,
+                    fontSize: 22,
+                    fontWeight: 900,
+                    color: INK,
+                    background: GOLD,
+                    borderRadius: 999,
+                    padding: '6px 18px',
+                    letterSpacing: '0.06em',
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  {stepTag}
+                </div>
               </div>
+
+              {beat.text ? (
+                <KineticCaptions
+                  text={beat.text}
+                  durationInFrames={durationInFrames}
+                  format="landscape"
+                  fontSize={34}
+                  highlightColor={accent}
+                />
+              ) : null}
             </div>
 
-            <div style={{ width: 80, height: 5, borderRadius: 3, background: GOLD }} />
-
-            {beat.text ? (
-              <KineticCaptions
-                text={beat.text}
-                durationInFrames={durationInFrames}
-                format="landscape"
-                fontSize={36}
-              />
+            {character !== 'none' ? (
+              <div style={{ display: 'flex', alignItems: 'flex-end', gap: 18 }}>
+                <AnimatedCharacter
+                  character={character}
+                  mood={mood}
+                  speaking={speaking}
+                  cadence={cadence ?? undefined}
+                  accentColor={accent}
+                  size={250}
+                />
+                <div style={{ paddingBottom: 24 }}>
+                  <VoiceWaveform active={speaking} cadence={cadence} accentColor={accent} bars={14} />
+                </div>
+              </div>
             ) : null}
           </div>
 
           {/* Right Column: Visual Media Card */}
           <div
             style={{
-              flex: 1.2,
+              flex: 1.15,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -312,103 +714,193 @@ const HighlightBeat: React.FC<{
               transform: `scale(${interpolate(enter, [0, 1], [0.9, 1])})`,
             }}
           >
-            {renderMediaCard(beat, 'landscape', durationInFrames)}
+            {hasCustomMedia ? (
+              renderMediaCard(beat, 'landscape', durationInFrames)
+            ) : (
+              <HeroTextCard text={beat.text} emoji={beat.emoji} label={beat.label} accentColor={accent} isLandscape />
+            )}
           </div>
         </AbsoluteFill>
       ) : (
-        /* ─── Reels (9:16 Vertical): Stacked Layout ─── */
-        <AbsoluteFill
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
-            alignItems: 'center',
-            padding: '120px 48px 140px 48px',
-            gap: 24,
-          }}
-        >
-          {/* Top Tag & Emoji */}
+        /* ─── Reels (9:16 Vertical): Non-overlapping 4-Zone Stage ─── */
+        <AbsoluteFill style={{ pointerEvents: 'none' }}>
+          {/* Zone 1 (y: 188..258): Beat Step Tag Pill */}
           <div
             style={{
+              position: 'absolute',
+              top: 188,
+              left: 54,
+              right: 54,
               display: 'flex',
+              justifyContent: 'center',
               alignItems: 'center',
-              gap: 12,
               opacity: enter,
-              transform: `translateY(${interpolate(enter, [0, 1], [-20, 0])}px)`,
+              transform: `translateY(${interpolate(enter, [0, 1], [-18, 0])}px)`,
             }}
           >
-            {beat.emoji ? <span style={{ fontSize: 36 }}>{beat.emoji}</span> : null}
             <div
               style={{
-                fontFamily,
-                fontSize: 26,
-                fontWeight: 800,
-                color: GOLD,
-                letterSpacing: labelSpacing,
-                textTransform: 'uppercase',
-                textShadow: '0 0 20px rgba(253, 192, 3, 0.4)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 12,
+                background: 'rgba(15, 21, 32, 0.88)',
+                border: `2px solid ${accent}`,
+                borderRadius: 999,
+                padding: '10px 26px',
+                boxShadow: `0 0 28px ${accent}44`,
               }}
             >
-              {beat.label}
+              {beat.emoji ? <span style={{ fontSize: 30 }}>{beat.emoji}</span> : null}
+              <span
+                style={{
+                  fontFamily,
+                  fontSize: 25,
+                  fontWeight: 900,
+                  color: GOLD,
+                  letterSpacing: '0.07em',
+                  textTransform: 'uppercase',
+                }}
+              >
+                {stepTag}
+              </span>
             </div>
           </div>
 
-          {/* Center Media Card (if present) or prominent text highlight */}
-          {hasCustomMedia ? (
+          {/* Zone 2 (y: 268..960): Center Glassmorphic Visual Card */}
+          <div
+            style={{
+              position: 'absolute',
+              top: 268,
+              left: 48,
+              right: 48,
+              height: 690,
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+            }}
+          >
+            {hasCustomMedia ? (
+              renderMediaCard(beat, 'reel', durationInFrames)
+            ) : (
+              <HeroTextCard text={beat.text} emoji={beat.emoji} label={beat.label} accentColor={accent} />
+            )}
+          </div>
+
+          {/* Zone 3 (y: 985..1245): Bouncy Kinetic Captions */}
+          {beat.text && !beat.noAudio ? (
             <div
               style={{
-                width: '100%',
+                position: 'absolute',
+                top: 985,
+                left: 52,
+                right: 52,
+                height: 260,
                 display: 'flex',
                 justifyContent: 'center',
                 alignItems: 'center',
-                margin: '12px 0',
               }}
             >
-              {renderMediaCard(beat, 'reel', durationInFrames)}
-            </div>
-          ) : (
-            <div
-              style={{
-                fontFamily,
-                fontSize: 46,
-                fontWeight: 800,
-                color: WHITE,
-                lineHeight: 1.3,
-                textAlign: 'center',
-                margin: '20px 0',
-                textShadow: '0 4px 15px rgba(0,0,0,0.8)',
-              }}
-            >
-              {beat.text}
-            </div>
-          )}
-
-          {/* Subtitle / Kinetic Caption below media */}
-          {hasCustomMedia && beat.text && !beat.noAudio ? (
-            <div style={{ marginTop: 12 }}>
               <KineticCaptions
                 text={beat.text}
                 durationInFrames={durationInFrames}
                 format="reel"
-                fontSize={34}
+                fontSize={40}
+                highlightColor={accent}
               />
             </div>
           ) : null}
 
-          {/* Gold Divider Accent */}
-          <div
-            style={{
-              width: interpolate(enter, [0, 1], [0, 140]),
-              height: 6,
-              borderRadius: 3,
-              background: GOLD,
-              marginTop: 10,
-              boxShadow: '0 0 15px rgba(253,192,3,0.6)',
-            }}
-          />
+          {/* Zone 4 (bottom: 140..535): Animated Character + Live Presenter Card */}
+          {character !== 'none' ? (
+            <div
+              style={{
+                position: 'absolute',
+                bottom: 140,
+                left: 48,
+                right: 48,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 20,
+              }}
+            >
+              <AnimatedCharacter
+                character={character}
+                mood={mood}
+                speaking={speaking}
+                cadence={cadence ?? undefined}
+                accentColor={accent}
+                size={340}
+              />
+              <PresenterStatusCard
+                character={character}
+                mood={mood}
+                speaking={speaking}
+                cadence={cadence}
+                accentColor={accent}
+                badgeText={beat.label}
+              />
+            </div>
+          ) : null}
         </AbsoluteFill>
       )}
-    </KenBurns>
+      </KenBurns>
+    </AbsoluteFill>
+  );
+};
+
+/* ─── Hero Card Fallback when beat has no specialized mediaType ─── */
+const HeroTextCard: React.FC<{
+  text: string;
+  emoji?: string;
+  label: string;
+  accentColor: string;
+  isLandscape?: boolean;
+}> = ({ text, emoji, label, accentColor, isLandscape }) => {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const enter = spring({ frame, fps, config: { damping: 12 } });
+
+  return (
+    <div
+      style={{
+        width: '100%',
+        maxWidth: isLandscape ? 820 : 920,
+        padding: isLandscape ? '42px 44px' : '46px 36px',
+        borderRadius: 28,
+        background: 'rgba(15, 21, 32, 0.88)',
+        border: `2.5px solid ${accentColor}`,
+        boxShadow: `0 25px 50px rgba(0,0,0,0.65), 0 0 40px ${accentColor}28`,
+        backdropFilter: 'blur(14px)',
+        textAlign: 'center',
+        transform: `scale(${interpolate(enter, [0, 1], [0.88, 1])})`,
+        opacity: enter,
+        fontFamily,
+      }}
+    >
+      {emoji ? <div style={{ fontSize: isLandscape ? 64 : 76, marginBottom: 14 }}>{emoji}</div> : null}
+      <div
+        style={{
+          fontSize: isLandscape ? 22 : 24,
+          fontWeight: 800,
+          color: accentColor,
+          letterSpacing: '0.08em',
+          textTransform: 'uppercase',
+          marginBottom: 14,
+        }}
+      >
+        {label}
+      </div>
+      <div
+        style={{
+          fontSize: isLandscape ? 38 : 44,
+          fontWeight: 900,
+          color: WHITE,
+          lineHeight: 1.28,
+        }}
+      >
+        {text}
+      </div>
+    </div>
   );
 };
 
@@ -451,8 +943,9 @@ const FullStoryStrip: React.FC<{ label: string; format?: 'reel' | 'landscape' }>
       style={{
         justifyContent: 'flex-end',
         alignItems: 'center',
-        paddingBottom: isLandscape ? 36 : 78,
+        paddingBottom: isLandscape ? 28 : 56,
         opacity,
+        pointerEvents: 'none',
       }}
     >
       <div
@@ -461,14 +954,14 @@ const FullStoryStrip: React.FC<{ label: string; format?: 'reel' | 'landscape' }>
           fontSize: isLandscape ? 20 : 24,
           fontWeight: 700,
           color: WHITE,
-          background: 'rgba(0,0,0,0.55)',
+          background: 'rgba(10, 14, 23, 0.78)',
           border: `1.5px solid ${GOLD}`,
           borderRadius: 999,
           padding: isLandscape ? '8px 24px' : '10px 28px',
           boxShadow: '0 4px 20px rgba(0,0,0,0.6)',
         }}
       >
-        📰 Full story → {label}
+        📰 Full details → {label}
       </div>
     </AbsoluteFill>
   );
@@ -482,8 +975,13 @@ export const NewsRecap: React.FC<NewsRecapProps> = ({
   hookLine,
   narration,
   format = 'reel',
+  videoKind = 'news',
+  scene,
+  character = 'arjun',
   bgmMood = 'breaking_news',
   hasBgm,
+  hasMotivationBgm,
+  hasCorporateBgm,
   hasOutro,
   hasSfx,
   fullStoryLabel,
@@ -499,11 +997,15 @@ export const NewsRecap: React.FC<NewsRecapProps> = ({
   const inCta = frame >= totalNonCta;
   const isLandscape = format === 'landscape';
 
-  const bgmVolume = narration ? 0.18 : 0.35;
+  const resolvedScene = resolveSceneTheme(vertical, videoKind, scene);
+
+  // Duck BGM cleanly while narration speaks
+  const hasAnyNarration = Boolean(narration?.headline || narration?.beats?.some(Boolean));
+  const bgmVolume = hasAnyNarration ? 0.14 : 0.32;
   const bgmTrack =
-    bgmMood === 'motivation'
+    bgmMood === 'motivation' && hasMotivationBgm
       ? BGM_MOTIVATION_FILE
-      : bgmMood === 'corporate'
+      : bgmMood === 'corporate' && hasCorporateBgm
       ? BGM_CORPORATE_FILE
       : BGM_FILE;
 
@@ -531,8 +1033,6 @@ export const NewsRecap: React.FC<NewsRecapProps> = ({
 
   return (
     <AbsoluteFill style={{ background: INK }}>
-      <AnimatedBackground format={format} />
-
       {/* Segmented Top Progress Bar */}
       {!inCta ? (
         <SegmentedProgressBar
@@ -543,8 +1043,40 @@ export const NewsRecap: React.FC<NewsRecapProps> = ({
         />
       ) : null}
 
-      {/* Background Bed Audio */}
+      {/* Background Music Bed */}
       {hasBgm && <Audio src={staticFile(bgmTrack)} loop volume={bgmVolume} />}
+
+      {/* Pure-Code Procedural SFX Layer */}
+      {hasSfx && (
+        <>
+          {/* 0.0s Hook Impact Boom */}
+          <Sequence from={0} durationInFrames={Math.min(24, headlineLen)} layout="none">
+            <Audio src={staticFile(HOOK_BOOM_FILE)} volume={0.65} />
+          </Sequence>
+
+          {/* Per-Beat Transition Whoosh + Data Reveal Ding/Pop */}
+          {resolvedBeats.map((beat, i) => {
+            const start = beatStart(i);
+            const len = beatFrames[i];
+            const revealSfx =
+              beat.sfx === 'ding' || beat.mediaType === 'stat_callout' || beat.mediaType === 'table'
+                ? DING_FILE
+                : POP_FILE;
+            return (
+              <React.Fragment key={`sfx-${i}`}>
+                <Sequence from={start} durationInFrames={Math.min(18, len)} layout="none">
+                  <Audio src={staticFile(WHOOSH_FILE)} volume={0.42} />
+                </Sequence>
+                {len > 16 ? (
+                  <Sequence from={start + 5} durationInFrames={Math.min(24, len - 5)} layout="none">
+                    <Audio src={staticFile(revealSfx)} volume={0.36} />
+                  </Sequence>
+                ) : null}
+              </React.Fragment>
+            );
+          })}
+        </>
+      )}
 
       {/* Headline Narration */}
       {narration?.headline ? (
@@ -553,7 +1085,7 @@ export const NewsRecap: React.FC<NewsRecapProps> = ({
         </Sequence>
       ) : null}
 
-      {/* Beat Narrations (skipped when beat.noAudio === true) */}
+      {/* Beat Narrations */}
       {resolvedBeats.map((beat, i) =>
         !beat.noAudio && narration?.beats?.[i] ? (
           <Sequence key={`n${i}`} from={beatStart(i)} durationInFrames={beatFrames[i]} layout="none">
@@ -579,6 +1111,11 @@ export const NewsRecap: React.FC<NewsRecapProps> = ({
               hookLine={hookLine}
               durationInFrames={headlineLen}
               format={format}
+              videoKind={videoKind}
+              defaultScene={resolvedScene}
+              character={character}
+              speaking={Boolean(narration?.headline)}
+              cadence={narration?.headlineCadence}
             />
           </Series.Sequence>
           {resolvedBeats.map((beat, i) => (
@@ -589,6 +1126,11 @@ export const NewsRecap: React.FC<NewsRecapProps> = ({
                 index={i}
                 durationInFrames={beatFrames[i]}
                 format={format}
+                videoKind={videoKind}
+                defaultScene={resolvedScene}
+                character={character}
+                speaking={!beat.noAudio && Boolean(narration?.beats?.[i])}
+                cadence={narration?.beatCadences?.[i]}
               />
             </Series.Sequence>
           ))}

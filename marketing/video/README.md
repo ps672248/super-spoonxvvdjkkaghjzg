@@ -6,6 +6,8 @@ Remotion pipeline with three independent entrypoints. Part of `marketing/PLAN.md
 |---|---|---|
 | `npm run render` (`src/render.ts`) | `QuizCard` only | `video-bot.yml`'s own daily schedule |
 | `npm run render:news` (`src/renderNewsRecap.ts`) | `NewsRecap` only, for one specific article | `scripts/blog_bot.ts`, directly, right after it publishes that article |
+| `npm run render:dynamic` (`scripts/renderDynamicVideo.ts`) | `NewsRecap` / `NewsRecapLandscape` driven by dynamic video scripts (pure-code animated character, living SVG scene backdrops, kinetic captions & procedural SFX) | Manual CLI (`--script`, `--preset`, or `--topic`) |
+| `npm run render:marketing` (`src/renderMarketing.ts`) | `MarketingReel` — daily non-repeating character skit rotating across 10 Aspirant Arcade features & 14 settings (`marketing_history.json` tracks last 10 per feature) | `marketing-bot.yml` (7:30 PM IST daily) |
 | `npm run meme` (`src/renderMeme.ts`) | `MemeCard` only | `meme-bot.yml`'s own daily schedule (8:30 PM IST) |
 
 These aren't on the same schedule and don't poll each other. `NewsRecap` used to
@@ -39,10 +41,7 @@ and when narration exists, off the actual voiceover length, whichever is longer.
 `QuizCard` works the same way per scene (`quizTimeline()` in `src/QuizCard.tsx`).
 The CTA outro is a fixed 2s (`CTA_OUTRO_SECONDS` in `src/Brand.tsx`).
 
-**Voiceover (`src/tts.ts`):** every render tries to synthesize narration clips
-with Microsoft Edge's free TTS (`en-IN-NeerjaNeural`, override with `TTS_VOICE`)
-before bundling; scenes stretch to fit the audio. Fully best-effort — offline or
-failing TTS just renders the old silent version.
+**Voiceover (`src/tts.ts`):** every render tries Gemini AI TTS (`gemini-2.5-flash-preview-tts`, rotated round-robin across `GEMINI_API_KEYS` with 24kHz WAV output for real lip-sync) as primary, falling back to Microsoft Edge TTS (`en-IN-NeerjaNeural` / `en-IN-PrabhatNeural` / `hi-IN-SwaraNeural`) as secondary and Google `translate_tts` as tertiary. Scenes stretch dynamically to fit the audio. Fully best-effort — offline or failing TTS renders silently.
 
 **Hook lines:** the first ~1.5s pattern interrupt. `NewsRecap` gets it from
 Gemini via `videoMeta.hookLine` (blog bot prompt); `QuizCard` gets it from its
