@@ -188,7 +188,7 @@ export function buildNewsMetadata(
         description: ytDesc,
         tags: geminiMeta.youtubeTags?.length ? geminiMeta.youtubeTags : [...VERTICAL_KEYWORDS[vertical], ...BRAND_KEYWORDS],
       },
-      instagram: { caption: `${geminiMeta.instagramCaption}\n\n${linkBlock(blogUrl, 'instagram')}\n\n${igHashtags.join(' ')} ${FORMAT_MARKER.news}` },
+      instagram: { caption: `${geminiMeta.instagramCaption}\n\n📌 Save this reel so you don't miss the deadline!\n\n${linkBlock(blogUrl, 'instagram')}\n\n${igHashtags.join(' ')} ${FORMAT_MARKER.news}` },
     };
   }
 
@@ -212,7 +212,7 @@ export function buildNewsMetadata(
       description: `${description}${isLandscape ? '' : '\n#Shorts'}`,
       tags: [...VERTICAL_KEYWORDS[vertical], ...BRAND_KEYWORDS, 'exam news', 'recruitment notification'],
     },
-    instagram: { caption: `${title}\n\n${beatLines}\n\n${linkBlock(blogUrl, 'instagram')}\n\n${tags.join(' ')} ${FORMAT_MARKER.news}` },
+    instagram: { caption: `${title}\n\n📌 Save this reel to prepare later!\n\n${beatLines}\n\n${linkBlock(blogUrl, 'instagram')}\n\n${tags.join(' ')} ${FORMAT_MARKER.news}` },
   };
 }
 

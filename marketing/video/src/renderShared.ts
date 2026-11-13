@@ -1,11 +1,20 @@
 import path from 'node:path';
 import { existsSync, appendFileSync } from 'node:fs';
 import { renderMedia, renderStill, selectComposition } from '@remotion/renderer';
-import { BGM_CORPORATE_FILE, BGM_FILE, BGM_MOTIVATION_FILE, OUTRO_FILE, QUIZ_BGM_FILE, REVEAL_FILE, TICK_FILE } from './audio';
+import {
+  BGM_CORPORATE_FILE,
+  BGM_FILE,
+  BGM_INSTA_TRENDING_FILE,
+  BGM_MOTIVATION_FILE,
+  OUTRO_FILE,
+  QUIZ_BGM_FILE,
+  REVEAL_FILE,
+  TICK_FILE,
+} from './audio';
 import { ensureProceduralSfx } from './sfxSynth';
 import type { UploadMetadata } from './metadata';
 import { setYouTubeThumbnail, uploadYouTubeShort } from './publishYouTube';
-import { uploadInstagramReel } from './publishInstagram';
+import { stageToCloudinary, uploadInstagramReel } from './publishInstagram';
 
 export const OUTPUT_DIR = path.join(process.cwd(), 'output');
 export const PUBLIC_DIR = path.join(process.cwd(), 'public');
@@ -34,6 +43,7 @@ export function audioFlags() {
   return {
     hasQuizBgm: existsSync(path.join(PUBLIC_DIR, QUIZ_BGM_FILE)),
     hasNewsBgm: existsSync(path.join(PUBLIC_DIR, BGM_FILE)),
+    hasInstaTrendingBgm: existsSync(path.join(PUBLIC_DIR, BGM_INSTA_TRENDING_FILE)),
     hasMotivationBgm: existsSync(path.join(PUBLIC_DIR, BGM_MOTIVATION_FILE)),
     hasCorporateBgm: existsSync(path.join(PUBLIC_DIR, BGM_CORPORATE_FILE)),
     hasTick: existsSync(path.join(PUBLIC_DIR, TICK_FILE)),
@@ -118,6 +128,7 @@ export type PublishResult = {
   youtubeShortUrl?: string;
   youtubeLongFormUrl?: string;
   instagramUrl?: string;
+  instagramStagedVideoUrl?: string;
 };
 
 /** Uploads to both platforms independently — one failing doesn't block the other,
@@ -134,6 +145,7 @@ export async function publish(
    * — or off. Omit to keep the default behaviour. */
   gate: boolean = PUBLISH,
   format: 'reel' | 'landscape' = 'reel',
+  instaFilePath?: string,
 ): Promise<PublishResult> {
   if (!gate) {
     console.log(`[video] PUBLISH not set — leaving ${path.basename(filePath)} as a local/artifact file only.`);
@@ -163,14 +175,31 @@ export async function publish(
     console.error(`[video] ✗ YouTube upload failed for ${path.basename(filePath)}:`, e);
   }
 
-  // Instagram Reels algorithm is strictly 9:16 vertical
+  // Instagram Reels: Path 2 (Staged on Cloudinary for 1-tap mobile share with real trending song)
+  // or Path 1 (Auto-published via API with embedded audio if IG_AUTO_PUBLISH=true)
   if (format === 'reel') {
-    try {
-      const url = await uploadInstagramReel(filePath, meta.instagram.caption, coverPath);
-      links.instagramUrl = url;
-      console.log(`[video] ✓ Instagram Reel published: ${url}`);
-    } catch (e) {
-      console.error(`[video] ✗ Instagram upload failed for ${path.basename(filePath)}:`, e);
+    const uploadPath = (instaFilePath && existsSync(instaFilePath)) ? instaFilePath : filePath;
+    const shouldAutoPublish = process.env.IG_AUTO_PUBLISH === 'true';
+
+    if (shouldAutoPublish) {
+      try {
+        const url = await uploadInstagramReel(uploadPath, meta.instagram.caption, coverPath);
+        links.instagramUrl = url;
+        console.log(`[video] ✓ Instagram Reel auto-published: ${url}`);
+      } catch (e) {
+        console.error(`[video] ✗ Instagram auto-publish failed for ${path.basename(uploadPath)}:`, e);
+      }
+    } else {
+      // Path 2: Stage to Cloudinary so admin can download and post directly with Instagram's #1 trending audio
+      try {
+        console.log(`[video] Staging Instagram Single-Frame Reel to Cloudinary (Path 2: ready for trending audio selection)...`);
+        const staged = await stageToCloudinary(uploadPath, 'video');
+        links.instagramStagedVideoUrl = staged.url;
+        console.log(`[video] ✓ Instagram Reel staged on Cloudinary: ${staged.url}`);
+        console.log(`[video] 📱 Action: Open video on phone -> Share to Reels -> Audio -> Select #1 Trending Song -> Paste caption -> Share!`);
+      } catch (e) {
+        console.warn(`[video] Cloudinary staging for Instagram reel failed:`, e);
+      }
     }
   } else {
     console.log(`[video] Skipping Instagram upload for landscape (16:9) format.`);

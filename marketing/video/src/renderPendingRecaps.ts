@@ -39,8 +39,10 @@ import 'dotenv/config';
 import { getFirebaseApp } from './firebaseAdmin';
 import type { ArticleVideoMeta, Vertical } from './fetchContent';
 import type { Beat } from './NewsRecap';
+import type { InstaFrameData } from './NewsRecapSingleFrame';
 import type { TelegramCta } from './Brand';
 import { renderOneRecap } from './renderNewsRecap';
+import { cleanupOldCloudinaryArtifacts } from './cloudinaryCleanup';
 
 const ARTICLES_COLLECTION = 'articles';
 const TARGET_DATE = process.env.RECAP_TARGET_DATE || new Date().toISOString().slice(0, 10);
@@ -80,6 +82,7 @@ interface PendingArticleDoc {
   landscapeMeta?: ArticleVideoMeta;
   videoTelegram?: TelegramCta;
   videoKind?: string;
+  instaFrame?: InstaFrameData;
 }
 
 function resolveArticleVertical(doc: PendingArticleDoc): Vertical | undefined {
@@ -159,6 +162,7 @@ async function main() {
           telegram: article.videoTelegram,
           format: 'reel',
           kind: article.videoKind,
+          instaFrame: article.instaFrame,
         });
         if (reelLinks.youtubeUrl) {
           videoLinks.youtube = reelLinks.youtubeUrl;
@@ -195,6 +199,7 @@ async function main() {
           telegram: article.videoTelegram,
           format,
           kind: article.videoKind,
+          instaFrame: article.instaFrame,
         });
         if (links.youtubeUrl) {
           videoLinks.youtube = links.youtubeUrl;
@@ -214,6 +219,9 @@ async function main() {
       console.error(`  [render-pending] Render failed for articles/${article.id}, left pending for next run: ${e}`);
     }
   }
+
+  // Automatically remove staging reels and video artifacts older than 2 days
+  await cleanupOldCloudinaryArtifacts(2);
 
   console.log(`[render-pending] Done. Rendered ${rendered}/${candidates.length}.`);
 }

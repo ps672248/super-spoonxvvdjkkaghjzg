@@ -33,11 +33,13 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { bundle } from '@remotion/bundler';
 import type { ArticleVideoMeta, Vertical } from './fetchContent';
 import { resolveBeats, type Beat, type NewsNarration, type NewsRecapProps } from './NewsRecap';
+import type { InstaFrameData, NewsRecapSingleFrameProps } from './NewsRecapSingleFrame';
 import type { TelegramCta } from './Brand';
 import { buildNewsMetadata, type UploadMetadata } from './metadata';
 import { hinglishEnabled, toHinglish } from './hinglish';
 import { synthesizeNarration } from './tts';
 import { audioFlags, flagUploadFailureForCI, OUTPUT_DIR, PUBLIC_DIR, publish, renderComposition, renderCoverStill, type PublishResult } from './renderShared';
+import { cleanupOldCloudinaryArtifacts } from './cloudinaryCleanup';
 import { cadenceForClip } from './dynamicScript';
 
 const SITE_URL = 'https://www.aspirant-arcade.xyz';
@@ -55,12 +57,18 @@ function slugify(text: string): string {
 // website/lib/discord.ts's embed builder rather than a cross-package import.
 async function notifyDiscord(vertical: Vertical, meta: UploadMetadata, links: PublishResult, articleUrl: string): Promise<void> {
   const webhookUrl = process.env.DISCORD_WEBHOOK_NEWCONTENT;
-  if (!webhookUrl || (!links.youtubeUrl && !links.instagramUrl)) return;
+  if (!webhookUrl || (!links.youtubeUrl && !links.instagramUrl && !links.instagramStagedVideoUrl)) return;
 
   const descriptionLines = meta.youtube.description.split('\n').slice(0, 3).join('\n');
   const fields: { name: string; value: string; inline?: boolean }[] = [{ name: 'Category', value: vertical, inline: true }];
   if (links.youtubeUrl) fields.push({ name: 'YouTube', value: links.youtubeUrl });
   if (links.instagramUrl) fields.push({ name: 'Instagram', value: links.instagramUrl });
+  if (links.instagramStagedVideoUrl) {
+    fields.push({
+      name: '📱 Instagram Reel Ready (1-Tap Trending Audio)',
+      value: `[Download Staged Reel MP4](${links.instagramStagedVideoUrl})\n**Action:** Share to Reels -> Audio -> Pick #1 Trending Song -> Paste Caption!`,
+    });
+  }
   fields.push({ name: 'Article', value: articleUrl });
 
   try {
@@ -101,6 +109,7 @@ export type RenderOneRecapInput = {
   format?: 'reel' | 'landscape';
   /** 'strategy' picks the Telegram CTA over the full-story one — see spokenCta below. */
   kind?: string;
+  instaFrame?: InstaFrameData;
 };
 
 /** Renders, uploads (if PUBLISH=true), and returns the platform links. Throws
@@ -174,8 +183,8 @@ export async function renderOneRecap(input: RenderOneRecapInput): Promise<Publis
   console.log(`[news-recap] Bundling Remotion project for ${compositionId} (${format})...`);
   const bundleLocation = await bundle({ entryPoint: path.join(process.cwd(), 'src', 'index.ts') });
 
-  const { hasNewsBgm, hasMotivationBgm, hasCorporateBgm, hasOutro, hasSfx } = audioFlags();
-  console.log(`[news-recap] Audio available — newsBgm:${hasNewsBgm} outro:${hasOutro} sfx:${hasSfx}`);
+  const { hasNewsBgm, hasInstaTrendingBgm, hasMotivationBgm, hasCorporateBgm, hasOutro, hasSfx } = audioFlags();
+  console.log(`[news-recap] Audio available — newsBgm:${hasNewsBgm} instaBgm:${hasInstaTrendingBgm} outro:${hasOutro} sfx:${hasSfx}`);
 
   const normalizedKind =
     kind === 'strategy' || kind === 'experience' || kind === 'marketing' ? kind : 'news';
@@ -205,6 +214,28 @@ export async function renderOneRecap(input: RenderOneRecapInput): Promise<Publis
     path.join(OUTPUT_DIR, `${today}-${vertical}-${slugify(headline)}.mp4`),
   );
 
+  // For Instagram Reels (9:16): render high-retention 6-second single-frame video
+  // with no voiceover narration and low-tone trending BGM.
+  let outFileInsta: string | undefined;
+  if (format === 'reel') {
+    console.log(`[news-recap] Rendering 6s Single-Frame Reel for Instagram...`);
+    const singleFrameProps: NewsRecapSingleFrameProps = {
+      vertical,
+      headline,
+      hookLine,
+      beats: resolved,
+      instaFrame: input.instaFrame,
+      hasBgm: hasNewsBgm,
+      hasInstaTrendingBgm,
+    };
+    outFileInsta = await renderComposition(
+      bundleLocation,
+      'NewsRecapSingleFrame',
+      singleFrameProps as unknown as Record<string, unknown>,
+      path.join(OUTPUT_DIR, `${today}-${vertical}-${slugify(headline)}-insta.mp4`),
+    );
+  }
+
   // Cover/thumbnail: the headline card at 1.5s — entrance animation settled,
   // still inside the 2.5s headline section. Best-effort (undefined on failure).
   const coverPath = await renderCoverStill(
@@ -213,10 +244,21 @@ export async function renderOneRecap(input: RenderOneRecapInput): Promise<Publis
 
   const meta = buildNewsMetadata(vertical, headline, resolved, videoMeta, articleUrl, format);
   writeFileSync(outFile.replace(/\.mp4$/, '.meta.json'), JSON.stringify(meta, null, 2));
-  const links = await publish(outFile, meta, coverPath, undefined, format === 'landscape' ? 'landscape' : 'reel');
+  const links = await publish(
+    outFile,
+    meta,
+    coverPath,
+    undefined,
+    format === 'landscape' ? 'landscape' : 'reel',
+    outFileInsta,
+  );
   flagUploadFailureForCI(links);
 
   await notifyDiscord(vertical, meta, links, articleUrl);
+
+  // Automatically remove staging reels and video artifacts older than 2 days
+  await cleanupOldCloudinaryArtifacts(2);
+
   console.log('[news-recap] Done.');
   return links;
 }
@@ -234,9 +276,12 @@ async function main() {
   const telegram: TelegramCta | undefined = process.env.NEWS_RECAP_TELEGRAM_JSON
     ? JSON.parse(process.env.NEWS_RECAP_TELEGRAM_JSON)
     : undefined;
+  const instaFrame: InstaFrameData | undefined = process.env.NEWS_RECAP_INSTA_FRAME_JSON
+    ? JSON.parse(process.env.NEWS_RECAP_INSTA_FRAME_JSON)
+    : undefined;
   const kind = process.env.NEWS_RECAP_KIND;
 
-  const links = await renderOneRecap({ vertical, headline, beats, videoMeta, telegram, kind });
+  const links = await renderOneRecap({ vertical, headline, beats, videoMeta, telegram, kind, instaFrame });
 
   // Parseable line for anything scripting this CLI form to pick the links
   // back up.

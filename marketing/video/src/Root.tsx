@@ -2,6 +2,12 @@ import React from 'react';
 import { Composition, Folder } from 'remotion';
 import { QuizCard, QUIZ_CARD_DURATION_IN_FRAMES, QUIZ_CARD_FPS, calculateQuizCardMetadata, type QuizCardProps } from './QuizCard';
 import { NewsRecap, NEWS_RECAP_DURATION_IN_FRAMES, NEWS_RECAP_FPS, calculateNewsRecapMetadata, type NewsRecapProps } from './NewsRecap';
+import {
+  NewsRecapSingleFrame,
+  NEWS_RECAP_SINGLE_FRAME_DURATION,
+  NEWS_RECAP_SINGLE_FRAME_FPS,
+  type NewsRecapSingleFrameProps,
+} from './NewsRecapSingleFrame';
 import { MemeCard, MEME_CARD_DURATION_IN_FRAMES, MEME_CARD_FPS, calculateMemeCardMetadata, type MemeCardProps } from './MemeCard';
 import { MarketingReel, MARKETING_REEL_DURATION_IN_FRAMES, MARKETING_REEL_FPS, calculateMarketingReelMetadata, type MarketingReelProps } from './MarketingReel';
 import { LongFormEdit, calculateLongFormEditMetadata, VIDEO_FPS } from './LongFormEdit';
@@ -208,6 +214,37 @@ const MEME_CARD_DEFAULT_PROPS: MemeCardProps = {
   hasOutro: true,
 };
 
+const NEWS_RECAP_SINGLE_FRAME_DEFAULT_PROPS: NewsRecapSingleFrameProps = {
+  vertical: 'engineering',
+  headline: 'HPCL Executive Trainee 2026 Notification Released',
+  hookLine: '500+ PSU jobs just dropped',
+  beats: NEWS_RECAP_DEFAULT_PROPS.beats,
+  instaFrame: {
+    badge: '🚨 OFFICIAL NOTICE',
+    category: 'PSU RECRUITMENT',
+    kicker: '⚡ MASSIVE VACANCY ALERT',
+    headline: 'HPCL Executive Trainee 2026: 500+ Posts Out',
+    heroStat: {
+      metric: '500+ POSTS',
+      label: 'TOTAL OPENINGS',
+      subtext: 'Mechanical, Electrical, Chemical',
+    },
+    points: [
+      { icon: '📅', label: 'Deadline', value: '30 June 2026', subtext: 'Online portal closes' },
+      { icon: '💰', label: 'Pay Scale', value: '₹50,000 – ₹1,60,000', subtext: 'CTC ~17.3 Lakhs/annum' },
+      { icon: '🎓', label: 'Eligibility', value: 'B.Tech / B.E.', subtext: 'Min 60% marks in degree' },
+      { icon: '📝', label: 'Selection', value: 'CBT + GD + Interview', subtext: 'No GATE score required' },
+    ],
+    bottomCta: {
+      saveText: '📌 SAVE THIS REEL TO PREPARE LATER',
+      followText: '🔔 FOLLOW FOR UPDATES',
+      downloadText: '📲 DOWNLOAD APP (BIO)',
+    },
+  },
+  hasBgm: true,
+  hasInstaTrendingBgm: false,
+};
+
 const MARKETING_REEL_DEFAULT_PROPS: MarketingReelProps = {
   featureId: 'focus_guard',
   featureTag: 'FOCUS GUARD',
@@ -273,6 +310,15 @@ export const RemotionRoot: React.FC = () => {
         height={1920}
         defaultProps={{ ...NEWS_RECAP_DEFAULT_PROPS, format: 'reel' }}
         calculateMetadata={calculateNewsRecapMetadata}
+      />
+      <Composition
+        id="NewsRecapSingleFrame"
+        component={NewsRecapSingleFrame}
+        durationInFrames={NEWS_RECAP_SINGLE_FRAME_DURATION}
+        fps={NEWS_RECAP_SINGLE_FRAME_FPS}
+        width={1080}
+        height={1920}
+        defaultProps={NEWS_RECAP_SINGLE_FRAME_DEFAULT_PROPS}
       />
       <Composition
         id="NewsRecapLandscape"
