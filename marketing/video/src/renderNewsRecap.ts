@@ -39,6 +39,7 @@ import { buildNewsMetadata, type UploadMetadata } from './metadata';
 import { hinglishEnabled, toHinglish } from './hinglish';
 import { synthesizeNarration } from './tts';
 import { audioFlags, flagUploadFailureForCI, OUTPUT_DIR, publish, renderComposition, renderCoverStill, type PublishResult } from './renderShared';
+import { cleanupOldCloudinaryArtifacts } from './cloudinaryCleanup';
 
 const SITE_URL = 'https://www.aspirant-arcade.xyz';
 
@@ -55,12 +56,18 @@ function slugify(text: string): string {
 // website/lib/discord.ts's embed builder rather than a cross-package import.
 async function notifyDiscord(vertical: Vertical, meta: UploadMetadata, links: PublishResult, articleUrl: string): Promise<void> {
   const webhookUrl = process.env.DISCORD_WEBHOOK_NEWCONTENT;
-  if (!webhookUrl || (!links.youtubeUrl && !links.instagramUrl)) return;
+  if (!webhookUrl || (!links.youtubeUrl && !links.instagramUrl && !links.instagramStagedVideoUrl)) return;
 
   const descriptionLines = meta.youtube.description.split('\n').slice(0, 3).join('\n');
   const fields: { name: string; value: string; inline?: boolean }[] = [{ name: 'Category', value: vertical, inline: true }];
   if (links.youtubeUrl) fields.push({ name: 'YouTube', value: links.youtubeUrl });
   if (links.instagramUrl) fields.push({ name: 'Instagram', value: links.instagramUrl });
+  if (links.instagramStagedVideoUrl) {
+    fields.push({
+      name: '📱 Instagram Reel Ready (1-Tap Trending Audio)',
+      value: `[Download Staged Reel MP4](${links.instagramStagedVideoUrl})\n**Action:** Share to Reels -> Audio -> Pick #1 Trending Song -> Paste Caption!`,
+    });
+  }
   fields.push({ name: 'Article', value: articleUrl });
 
   try {
@@ -227,6 +234,10 @@ export async function renderOneRecap(input: RenderOneRecapInput): Promise<Publis
   flagUploadFailureForCI(links);
 
   await notifyDiscord(vertical, meta, links, articleUrl);
+
+  // Automatically remove staging reels and video artifacts older than 2 days
+  await cleanupOldCloudinaryArtifacts(2);
+
   console.log('[news-recap] Done.');
   return links;
 }

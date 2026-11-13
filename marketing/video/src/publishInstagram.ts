@@ -42,7 +42,7 @@ function configureCloudinary(): void {
   });
 }
 
-async function stageToCloudinary(filePath: string, resourceType: 'video' | 'image'): Promise<{ url: string; publicId: string }> {
+export async function stageToCloudinary(filePath: string, resourceType: 'video' | 'image'): Promise<{ url: string; publicId: string }> {
   configureCloudinary();
   const result = await cloudinary.uploader.upload(filePath, {
     resource_type: resourceType,

@@ -4,7 +4,7 @@ import { renderMedia, renderStill, selectComposition } from '@remotion/renderer'
 import { BGM_FILE, BGM_INSTA_TRENDING_FILE, OUTRO_FILE, QUIZ_BGM_FILE, REVEAL_FILE, TICK_FILE } from './audio';
 import type { UploadMetadata } from './metadata';
 import { setYouTubeThumbnail, uploadYouTubeShort } from './publishYouTube';
-import { uploadInstagramReel } from './publishInstagram';
+import { stageToCloudinary, uploadInstagramReel } from './publishInstagram';
 
 export const OUTPUT_DIR = path.join(process.cwd(), 'output');
 export const PUBLIC_DIR = path.join(process.cwd(), 'public');
@@ -93,6 +93,7 @@ export type PublishResult = {
   youtubeShortUrl?: string;
   youtubeLongFormUrl?: string;
   instagramUrl?: string;
+  instagramStagedVideoUrl?: string;
 };
 
 /** Uploads to both platforms independently — one failing doesn't block the other,
@@ -139,15 +140,31 @@ export async function publish(
     console.error(`[video] ✗ YouTube upload failed for ${path.basename(filePath)}:`, e);
   }
 
-  // Instagram Reels algorithm is strictly 9:16 vertical
+  // Instagram Reels: Path 2 (Staged on Cloudinary for 1-tap mobile share with real trending song)
+  // or Path 1 (Auto-published via API with embedded audio if IG_AUTO_PUBLISH=true)
   if (format === 'reel') {
     const uploadPath = (instaFilePath && existsSync(instaFilePath)) ? instaFilePath : filePath;
-    try {
-      const url = await uploadInstagramReel(uploadPath, meta.instagram.caption, coverPath);
-      links.instagramUrl = url;
-      console.log(`[video] ✓ Instagram Reel published (${uploadPath === instaFilePath ? 'SingleFrame' : 'Standard'}): ${url}`);
-    } catch (e) {
-      console.error(`[video] ✗ Instagram upload failed for ${path.basename(uploadPath)}:`, e);
+    const shouldAutoPublish = process.env.IG_AUTO_PUBLISH === 'true';
+
+    if (shouldAutoPublish) {
+      try {
+        const url = await uploadInstagramReel(uploadPath, meta.instagram.caption, coverPath);
+        links.instagramUrl = url;
+        console.log(`[video] ✓ Instagram Reel auto-published: ${url}`);
+      } catch (e) {
+        console.error(`[video] ✗ Instagram auto-publish failed for ${path.basename(uploadPath)}:`, e);
+      }
+    } else {
+      // Path 2: Stage to Cloudinary so admin can download and post directly with Instagram's #1 trending audio
+      try {
+        console.log(`[video] Staging Instagram Single-Frame Reel to Cloudinary (Path 2: ready for trending audio selection)...`);
+        const staged = await stageToCloudinary(uploadPath, 'video');
+        links.instagramStagedVideoUrl = staged.url;
+        console.log(`[video] ✓ Instagram Reel staged on Cloudinary: ${staged.url}`);
+        console.log(`[video] 📱 Action: Open video on phone -> Share to Reels -> Audio -> Select #1 Trending Song -> Paste caption -> Share!`);
+      } catch (e) {
+        console.warn(`[video] Cloudinary staging for Instagram reel failed:`, e);
+      }
     }
   } else {
     console.log(`[video] Skipping Instagram upload for landscape (16:9) format.`);
