@@ -9,7 +9,7 @@ import { uploadInstagramReel } from './publishInstagram';
 
 export const OUTPUT_DIR = path.join(process.cwd(), 'output');
 export const PUBLIC_DIR = path.join(process.cwd(), 'public');
-export const PUBLISH = process.env.PUBLISH === 'true';
+export const PUBLISH = String(process.env.PUBLISH ?? '').trim().toLowerCase() === 'true';
 
 /**
  * Use local Chrome/Edge if already installed so local renders don't have to
