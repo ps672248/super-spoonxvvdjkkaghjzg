@@ -1,7 +1,7 @@
 {
-  "lastRunDate": "2026-11-14",
-  "lastFeatureId": "arcade_games",
-  "totalRuns": 4,
+  "lastRunDate": "2026-11-15",
+  "lastFeatureId": "challenge_mode",
+  "totalRuns": 5,
   "byFeature": {
     "focus_guard": [
       {
@@ -46,12 +46,25 @@
         "youtubeUrl": "https://youtube.com/shorts/MFAxCIotcrQ",
         "instagramUrl": "https://www.instagram.com/reel/Dfsh4yWmTsL/"
       }
+    ],
+    "challenge_mode": [
+      {
+        "date": "2026-11-15",
+        "featureId": "challenge_mode",
+        "setting": "rooftop_evening_walk",
+        "hookLine": "Alone in prep? Feeling the pressure?",
+        "title": "Beat Exam Isolation: Group Challenge Mode!",
+        "storySummary": "Arjun feels demotivated studying alone. Priya introduces Aspirant Arcade's Group Challenge Mode for real-time quiz battles with friends, boosting his motivation and making prep fun.",
+        "youtubeUrl": "https://youtube.com/shorts/55zNyK6ZdDw",
+        "instagramUrl": "https://www.instagram.com/reel/Dfu6EcbEkwc/"
+      }
     ]
   },
   "recentSettings": [
     "hostel_bedroom_2am",
     "library_silent_corner",
     "metro_bus_commute",
-    "home_study_desk"
+    "home_study_desk",
+    "rooftop_evening_walk"
   ]
 }
