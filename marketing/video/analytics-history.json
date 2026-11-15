@@ -1,5 +1,50 @@
 [
   {
+    "runAt": "2026-11-15T19:55:26.425Z",
+    "windowDays": 28,
+    "youtube": {
+      "videos": 200,
+      "totalViews": 17602,
+      "byVertical": {
+        "unknown": {
+          "videos": 193,
+          "views": 17493
+        },
+        "schooling": {
+          "videos": 4,
+          "views": 63
+        },
+        "govt": {
+          "videos": 3,
+          "views": 46
+        }
+      }
+    },
+    "instagram": {
+      "reels": 50,
+      "totalViews": 1703,
+      "totalReach": 1430
+    },
+    "suggestions": [
+      {
+        "action": "Discontinue the daily quiz reel format on YouTube Shorts. The current format shows no audience engagement.",
+        "why": "Multiple quiz-based #Shorts received 0-9 views and 0 likes, indicating complete lack of audience interest."
+      },
+      {
+        "action": "Prioritize news recap reel production on topics consistently drawing high views: exam results, admit cards, job vacancies, and application dates.",
+        "why": "CIL MT Result (6949 views) and APPSC Assistant Professor Admit Card (703 views) show high demand for these categories."
+      },
+      {
+        "action": "Implement A/B testing for news recap reel title formulas and hook lines, focusing on stronger urgency and benefit-driven keywords (e.g., '🚨 OUT!').",
+        "why": "Significant view disparities for similar news (e.g., 'Goa Police PET' 3 views vs 'APPSC Admit Card' 703 views) highlight title impact."
+      },
+      {
+        "action": "Increase the use of Hinglish voiceovers and captions for Instagram Reels, particularly for app feature highlights and general announcements.",
+        "why": "Hinglish-captioned posts like 'Notes toh sab padhte hain...' (257 views, 2 likes) showed higher engagement on Instagram."
+      }
+    ]
+  },
+  {
     "runAt": "2026-11-08T18:59:28.972Z",
     "windowDays": 28,
     "youtube": {
@@ -294,47 +339,6 @@
       {
         "action": "Conduct a structured A/B test for high-impact news recap reels, creating both English and Hinglish versions of voiceovers and captions to compare their performance.",
         "why": "The provided data is too thin (e.g., \"गलती हो गयी?\" YouTube 52 views; \"SSC ने 2026 JE...\" IG 15 views) to conclusively judge Hinglish impact."
-      }
-    ]
-  },
-  {
-    "runAt": "2026-09-27T18:37:27.499Z",
-    "windowDays": 28,
-    "youtube": {
-      "videos": 200,
-      "totalViews": 27951,
-      "byVertical": {
-        "unknown": {
-          "videos": 190,
-          "views": 27344
-        },
-        "entrance": {
-          "videos": 4,
-          "views": 189
-        },
-        "govt": {
-          "videos": 6,
-          "views": 418
-        }
-      }
-    },
-    "instagram": {
-      "reels": 50,
-      "totalViews": 1637,
-      "totalReach": 1390
-    },
-    "suggestions": [
-      {
-        "action": "Adjust content strategy to increase the frequency of news recap reels focusing on urgent updates like exam results, admit cards, and application deadlines.",
-        "why": "YouTube's \"AIIMS NORCET 11 Stage 1 Result\" (8288 views) and Instagram's \"NEET PG Results\" (122 views) show highest performance."
-      },
-      {
-        "action": "Refine YouTube title formulas and Instagram captions by consistently incorporating urgent keywords (\"OUT!\", \"LIVE!\", \"Released!\") and the \"🚨\" emoji for critical news updates.",
-        "why": "YouTube titles like \"AIIMS NORCET 11 Stage 1 Result 2026 Out\" (8288 views) and \"GATE 2027 Registration LIVE!\" (534 views) leverage these effectively."
-      },
-      {
-        "action": "Review and refine the \"hook-line pool\" and \"video pacing/length\" for daily quiz reels to enhance engagement.",
-        "why": "Current data does not show any high-performing quiz reels, and `vertical` data is too thin to assess their specific impact."
       }
     ]
   }
