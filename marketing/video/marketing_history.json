@@ -1,7 +1,7 @@
 {
-  "lastRunDate": "2026-11-16",
-  "lastFeatureId": "daily_notifications",
-  "totalRuns": 6,
+  "lastRunDate": "2026-11-17",
+  "lastFeatureId": "category_insights",
+  "totalRuns": 7,
   "byFeature": {
     "focus_guard": [
       {
@@ -70,6 +70,18 @@
         "youtubeUrl": "https://youtube.com/shorts/KDoZ4551ay4",
         "instagramUrl": "https://www.instagram.com/reel/DfxjUV_EfBT/"
       }
+    ],
+    "category_insights": [
+      {
+        "date": "2026-11-17",
+        "featureId": "category_insights",
+        "setting": "interview_waiting_lounge",
+        "hookLine": "Mock test diye jaa raha hu, result kaisa aayega?",
+        "title": "Blind Mock Tests? Not Anymore!",
+        "storySummary": "Arjun takes mock tests without progress tracking. Priya introduces Aspirant Arcade's 'Overall Quiz Insights' to track accuracy, speed, and weak chapters, helping him optimize his study strategy.",
+        "youtubeUrl": "https://youtube.com/shorts/ScDYJqcXvEY",
+        "instagramUrl": "https://www.instagram.com/reel/Df0hDUUjiaq/"
+      }
     ]
   },
   "recentSettings": [
@@ -78,6 +90,7 @@
     "metro_bus_commute",
     "home_study_desk",
     "rooftop_evening_walk",
-    "morning_alarm_bed"
+    "morning_alarm_bed",
+    "interview_waiting_lounge"
   ]
 }
