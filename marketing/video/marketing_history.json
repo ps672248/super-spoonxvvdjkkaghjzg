@@ -1,7 +1,7 @@
 {
-  "lastRunDate": "2026-11-17",
-  "lastFeatureId": "category_insights",
-  "totalRuns": 7,
+  "lastRunDate": "2026-11-18",
+  "lastFeatureId": "leaderboard",
+  "totalRuns": 8,
   "byFeature": {
     "focus_guard": [
       {
@@ -82,6 +82,18 @@
         "youtubeUrl": "https://youtube.com/shorts/ScDYJqcXvEY",
         "instagramUrl": "https://www.instagram.com/reel/Df0hDUUjiaq/"
       }
+    ],
+    "leaderboard": [
+      {
+        "date": "2026-11-18",
+        "featureId": "leaderboard",
+        "setting": "study_group_table",
+        "hookLine": "Blind prep? No clue where your rank stands?",
+        "title": "Competitive Leaderboard: Rank Up!",
+        "storySummary": "Arjun struggles with the uncertainty of his exam rank until Priya introduces him to Aspirant Arcade's Competitive Leaderboard, turning his revision into a real-time rank battle.",
+        "youtubeUrl": "https://youtube.com/shorts/6r1d2fzROa4",
+        "instagramUrl": "https://www.instagram.com/reel/Df296S6jwkP/"
+      }
     ]
   },
   "recentSettings": [
@@ -91,6 +103,7 @@
     "home_study_desk",
     "rooftop_evening_walk",
     "morning_alarm_bed",
-    "interview_waiting_lounge"
+    "interview_waiting_lounge",
+    "study_group_table"
   ]
 }
