@@ -1,7 +1,7 @@
 {
-  "lastRunDate": "2026-11-18",
-  "lastFeatureId": "leaderboard",
-  "totalRuns": 8,
+  "lastRunDate": "2026-11-19",
+  "lastFeatureId": "ai_interview_gd",
+  "totalRuns": 9,
   "byFeature": {
     "focus_guard": [
       {
@@ -94,6 +94,18 @@
         "youtubeUrl": "https://youtube.com/shorts/6r1d2fzROa4",
         "instagramUrl": "https://www.instagram.com/reel/Df296S6jwkP/"
       }
+    ],
+    "ai_interview_gd": [
+      {
+        "date": "2026-11-19",
+        "featureId": "ai_interview_gd",
+        "setting": "park_bench_evening",
+        "hookLine": "Written toh clear ho jaata hai, but interview...",
+        "title": "Interview/GD Ka Darr? AI Hai Na!",
+        "storySummary": "Arjun struggles with interview and GDs despite clearing written exams. Priya introduces Aspirant Arcade's AI Interview & GD/GT Simulator, which provides voice-based practice and STAR framework feedback, boosting Arjun's confidence for his upcoming PSU interviews.",
+        "youtubeUrl": "https://youtube.com/shorts/4Wcc0UGYIOI",
+        "instagramUrl": "https://www.instagram.com/reel/Df5gT24EWxI/"
+      }
     ]
   },
   "recentSettings": [
@@ -104,6 +116,7 @@
     "rooftop_evening_walk",
     "morning_alarm_bed",
     "interview_waiting_lounge",
-    "study_group_table"
+    "study_group_table",
+    "park_bench_evening"
   ]
 }
