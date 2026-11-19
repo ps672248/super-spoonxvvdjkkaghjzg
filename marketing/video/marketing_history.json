@@ -1,7 +1,7 @@
 {
-  "lastRunDate": "2026-11-19",
-  "lastFeatureId": "ai_interview_gd",
-  "totalRuns": 9,
+  "lastRunDate": "2026-11-20",
+  "lastFeatureId": "bookmarks",
+  "totalRuns": 10,
   "byFeature": {
     "focus_guard": [
       {
@@ -106,6 +106,18 @@
         "youtubeUrl": "https://youtube.com/shorts/4Wcc0UGYIOI",
         "instagramUrl": "https://www.instagram.com/reel/Df5gT24EWxI/"
       }
+    ],
+    "bookmarks": [
+      {
+        "date": "2026-11-20",
+        "featureId": "bookmarks",
+        "setting": "tea_stall_tapri",
+        "hookLine": "Woh hi same mistake, phir se!",
+        "title": "Never Repeat a Mistake Again! | Aspirant Arcade Bookmarks",
+        "storySummary": "Arjun is frustrated by repeatedly making the same mistakes in mock tests. Priya introduces him to Aspirant Arcade's 'Bookmark Questions to Remember & Re-Practice' feature, showing how one-tap saving and dedicated re-practice sessions can eliminate negative marking traps.",
+        "youtubeUrl": "https://youtube.com/shorts/19epc4DefZE",
+        "instagramUrl": "https://www.instagram.com/reel/Df8G9e9nIYY/"
+      }
     ]
   },
   "recentSettings": [
@@ -117,6 +129,7 @@
     "morning_alarm_bed",
     "interview_waiting_lounge",
     "study_group_table",
-    "park_bench_evening"
+    "park_bench_evening",
+    "tea_stall_tapri"
   ]
 }
