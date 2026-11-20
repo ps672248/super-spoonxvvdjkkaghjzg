@@ -1,7 +1,7 @@
 {
-  "lastRunDate": "2026-11-20",
-  "lastFeatureId": "bookmarks",
-  "totalRuns": 10,
+  "lastRunDate": "2026-11-21",
+  "lastFeatureId": "focus_guard",
+  "totalRuns": 11,
   "byFeature": {
     "focus_guard": [
       {
@@ -11,6 +11,16 @@
         "hookLine": "2:30 AM: Phir se Reels? Not again!",
         "title": "Reel Addiction vs. Exam Goals? #FocusGuard",
         "storySummary": "Arjun loses hours to doomscrolling reels every night. Priya introduces him to Aspirant Arcade's Focus Guard, which intercepts distracting apps with MCQs, helping him reclaim his study time."
+      },
+      {
+        "date": "2026-11-21",
+        "featureId": "focus_guard",
+        "setting": "cyber_cafe_portal",
+        "hookLine": "10 min Reels, bola tha. Kab 2 ghante ho gaye?",
+        "title": "Reels Ka Nasha? Focus Guard Bachayega!",
+        "storySummary": "Arjun loses track of time doomscrolling Reels, missing crucial study hours. Priya introduces him to Aspirant Arcade's Focus Guard, which turns distractions into productive MCQ sessions, helping him reclaim his study time.",
+        "youtubeUrl": "https://youtube.com/shorts/AvzHVtROCTA",
+        "instagramUrl": "https://www.instagram.com/reel/Df-pzjfj0ZF/"
       }
     ],
     "short_notes": [
@@ -121,7 +131,6 @@
     ]
   },
   "recentSettings": [
-    "hostel_bedroom_2am",
     "library_silent_corner",
     "metro_bus_commute",
     "home_study_desk",
@@ -130,6 +139,7 @@
     "interview_waiting_lounge",
     "study_group_table",
     "park_bench_evening",
-    "tea_stall_tapri"
+    "tea_stall_tapri",
+    "cyber_cafe_portal"
   ]
 }
