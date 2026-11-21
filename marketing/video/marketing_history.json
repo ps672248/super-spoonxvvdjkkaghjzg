@@ -1,7 +1,7 @@
 {
-  "lastRunDate": "2026-11-21",
-  "lastFeatureId": "focus_guard",
-  "totalRuns": 11,
+  "lastRunDate": "2026-11-22",
+  "lastFeatureId": "short_notes",
+  "totalRuns": 12,
   "byFeature": {
     "focus_guard": [
       {
@@ -31,6 +31,16 @@
         "hookLine": "Exam revision ka shortcut chahiye?",
         "title": "The Revision Rescue Mission!",
         "storySummary": "Arjun is overwhelmed by massive books and PDFs for exam revision. Priya introduces him to Aspirant Arcade's 'Short Notes for Every Exam' feature, showcasing how it simplifies revision with crisp, organized, and searchable notes."
+      },
+      {
+        "date": "2026-11-22",
+        "featureId": "short_notes",
+        "setting": "book_market_street",
+        "hookLine": "Ye moti-moti kitaabein, revision kaise hoga?",
+        "title": "5 Min Revision Trick: Short Notes Peedhi!",
+        "storySummary": "Arjun is overwhelmed by the sheer volume of textbooks and PDFs for exam revision, especially when time is short. Priya introduces him to Aspirant Arcade's 'Short Notes for Every Exam' feature, showing how it offers crisp, exam-specific notes for quick 5-minute revisions, making prep efficient.",
+        "youtubeUrl": "https://youtube.com/shorts/BeERycgJEw0",
+        "instagramUrl": "https://www.instagram.com/reel/DgBFhllAWaU/"
       }
     ],
     "ai_notes_quiz": [
@@ -131,7 +141,6 @@
     ]
   },
   "recentSettings": [
-    "library_silent_corner",
     "metro_bus_commute",
     "home_study_desk",
     "rooftop_evening_walk",
@@ -140,6 +149,7 @@
     "study_group_table",
     "park_bench_evening",
     "tea_stall_tapri",
-    "cyber_cafe_portal"
+    "cyber_cafe_portal",
+    "book_market_street"
   ]
 }
