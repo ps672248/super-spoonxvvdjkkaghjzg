@@ -1,7 +1,7 @@
 {
-  "lastRunDate": "2026-11-22",
-  "lastFeatureId": "short_notes",
-  "totalRuns": 12,
+  "lastRunDate": "2026-11-23",
+  "lastFeatureId": "ai_notes_quiz",
+  "totalRuns": 13,
   "byFeature": {
     "focus_guard": [
       {
@@ -53,6 +53,16 @@
         "storySummary": "Arjun struggles with passive revision and not knowing his weak points. Priya introduces Aspirant Arcade's AI Notes + Quiz feature, which generates custom notes and then quizzes him, providing a detailed marks breakdown, solving his problem.",
         "youtubeUrl": "https://youtube.com/shorts/jRMqJIcMKUw",
         "instagramUrl": "https://www.instagram.com/reel/DfrNq1dGYr5/"
+      },
+      {
+        "date": "2026-11-23",
+        "featureId": "ai_notes_quiz",
+        "setting": "post_exam_auto_ride",
+        "hookLine": "Notes padhe, marks gaye kahan?",
+        "title": "AI Notes + Quiz: Marks Breakdown for Sure!",
+        "storySummary": "Arjun struggles post-exam, realizing passive notes don't reveal weak spots or mark deductions. Priya introduces Aspirant Arcade's AI Notes + Quiz feature, which generates custom notes, quizzes him, and provides a detailed marks breakdown, helping him pinpoint exact areas for improvement.",
+        "youtubeUrl": "https://youtube.com/shorts/THm2bBbbzXY",
+        "instagramUrl": "https://www.instagram.com/reel/DgDrqiGmbo1/"
       }
     ],
     "arcade_games": [
@@ -141,7 +151,6 @@
     ]
   },
   "recentSettings": [
-    "metro_bus_commute",
     "home_study_desk",
     "rooftop_evening_walk",
     "morning_alarm_bed",
@@ -150,6 +159,7 @@
     "park_bench_evening",
     "tea_stall_tapri",
     "cyber_cafe_portal",
-    "book_market_street"
+    "book_market_street",
+    "post_exam_auto_ride"
   ]
 }
