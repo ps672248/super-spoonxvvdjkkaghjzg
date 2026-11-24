@@ -1,7 +1,7 @@
 {
-  "lastRunDate": "2026-11-23",
-  "lastFeatureId": "ai_notes_quiz",
-  "totalRuns": 13,
+  "lastRunDate": "2026-11-24",
+  "lastFeatureId": "arcade_games",
+  "totalRuns": 14,
   "byFeature": {
     "focus_guard": [
       {
@@ -75,6 +75,16 @@
         "storySummary": "Arjun struggles with eye strain and burnout from endless MCQ sheets. Priya introduces Aspirant Arcade's 14+ arcade games, transforming his boring study into an addictive, stress-free learning experience with action games and XP rewards.",
         "youtubeUrl": "https://youtube.com/shorts/MFAxCIotcrQ",
         "instagramUrl": "https://www.instagram.com/reel/Dfsh4yWmTsL/"
+      },
+      {
+        "date": "2026-11-24",
+        "featureId": "arcade_games",
+        "setting": "terrace_night_study",
+        "hookLine": "MCQ sheets ne dimag ka dahi kar diya?",
+        "title": "Level Up Your Study Game: Aspirant Arcade!",
+        "storySummary": "Arjun is exhausted and frustrated with static MCQ sheets. Priya introduces Aspirant Arcade's 14+ arcade games, turning boring exam prep into an addictive, stress-free learning experience with action games, XP, and leveling up.",
+        "youtubeUrl": "https://youtube.com/shorts/34wOrKz3hvo",
+        "instagramUrl": "https://www.instagram.com/reel/DgGyLhMjbf-/"
       }
     ],
     "challenge_mode": [
@@ -151,7 +161,6 @@
     ]
   },
   "recentSettings": [
-    "home_study_desk",
     "rooftop_evening_walk",
     "morning_alarm_bed",
     "interview_waiting_lounge",
@@ -160,6 +169,7 @@
     "tea_stall_tapri",
     "cyber_cafe_portal",
     "book_market_street",
-    "post_exam_auto_ride"
+    "post_exam_auto_ride",
+    "terrace_night_study"
   ]
 }
