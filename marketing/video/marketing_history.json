@@ -1,7 +1,7 @@
 {
-  "lastRunDate": "2026-11-24",
-  "lastFeatureId": "arcade_games",
-  "totalRuns": 14,
+  "lastRunDate": "2026-11-25",
+  "lastFeatureId": "challenge_mode",
+  "totalRuns": 15,
   "byFeature": {
     "focus_guard": [
       {
@@ -97,6 +97,16 @@
         "storySummary": "Arjun feels demotivated studying alone. Priya introduces Aspirant Arcade's Group Challenge Mode for real-time quiz battles with friends, boosting his motivation and making prep fun.",
         "youtubeUrl": "https://youtube.com/shorts/55zNyK6ZdDw",
         "instagramUrl": "https://www.instagram.com/reel/Dfu6EcbEkwc/"
+      },
+      {
+        "date": "2026-11-25",
+        "featureId": "challenge_mode",
+        "setting": "coaching_classroom_backbench",
+        "hookLine": "Alone in exam prep? The struggle is real!",
+        "title": "Exam Prep Alone? Not Anymore!",
+        "storySummary": "Arjun feels isolated and demotivated studying alone. Priya introduces him to Aspirant Arcade's Group Challenge Mode, where he can create live quiz lobbies, invite friends with a code, and compete in real-time battles, transforming his lonely prep into an engaging, competitive, and fun experience.",
+        "youtubeUrl": "https://youtube.com/shorts/Fp-XKdd6iKM",
+        "instagramUrl": "https://www.instagram.com/reel/DgJImHriQ0Y/"
       }
     ],
     "daily_notifications": [
@@ -161,7 +171,6 @@
     ]
   },
   "recentSettings": [
-    "rooftop_evening_walk",
     "morning_alarm_bed",
     "interview_waiting_lounge",
     "study_group_table",
@@ -170,6 +179,7 @@
     "cyber_cafe_portal",
     "book_market_street",
     "post_exam_auto_ride",
-    "terrace_night_study"
+    "terrace_night_study",
+    "coaching_classroom_backbench"
   ]
 }
