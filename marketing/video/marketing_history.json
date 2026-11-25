@@ -1,7 +1,7 @@
 {
-  "lastRunDate": "2026-11-25",
-  "lastFeatureId": "challenge_mode",
-  "totalRuns": 15,
+  "lastRunDate": "2026-11-26",
+  "lastFeatureId": "daily_notifications",
+  "totalRuns": 16,
   "byFeature": {
     "focus_guard": [
       {
@@ -119,6 +119,16 @@
         "storySummary": "Arjun struggles with information overload and spam from Telegram groups, almost missing an admit card date. Priya introduces him to Aspirant Arcade's 'Daily Recruitment, Result & Exam News Alerts' feature, which provides targeted, verified push notifications for all exam updates, cutting through the noise and stress.",
         "youtubeUrl": "https://youtube.com/shorts/KDoZ4551ay4",
         "instagramUrl": "https://www.instagram.com/reel/DfxjUV_EfBT/"
+      },
+      {
+        "date": "2026-11-26",
+        "featureId": "daily_notifications",
+        "setting": "bus_stop_rain_wait",
+        "hookLine": "Ek aur update miss? Nahi, ab aur nahi!",
+        "title": "Never Miss An Exam Update Again!",
+        "storySummary": "Arjun is frustrated by missing crucial exam updates due to information overload and spam. Priya introduces him to Aspirant Arcade's \"Daily Recruitment, Result & Exam News Alerts,\" which provides targeted, verified push notifications, ensuring he never misses a deadline or result again.",
+        "youtubeUrl": "https://youtube.com/shorts/gDvfHnMRPB4",
+        "instagramUrl": "https://www.instagram.com/reel/DgLqeUWMHP9/"
       }
     ],
     "category_insights": [
@@ -171,7 +181,6 @@
     ]
   },
   "recentSettings": [
-    "morning_alarm_bed",
     "interview_waiting_lounge",
     "study_group_table",
     "park_bench_evening",
@@ -180,6 +189,7 @@
     "book_market_street",
     "post_exam_auto_ride",
     "terrace_night_study",
-    "coaching_classroom_backbench"
+    "coaching_classroom_backbench",
+    "bus_stop_rain_wait"
   ]
 }
