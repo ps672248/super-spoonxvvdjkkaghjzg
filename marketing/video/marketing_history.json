@@ -1,7 +1,7 @@
 {
-  "lastRunDate": "2026-11-26",
-  "lastFeatureId": "daily_notifications",
-  "totalRuns": 16,
+  "lastRunDate": "2026-11-27",
+  "lastFeatureId": "category_insights",
+  "totalRuns": 17,
   "byFeature": {
     "focus_guard": [
       {
@@ -141,6 +141,16 @@
         "storySummary": "Arjun takes mock tests without progress tracking. Priya introduces Aspirant Arcade's 'Overall Quiz Insights' to track accuracy, speed, and weak chapters, helping him optimize his study strategy.",
         "youtubeUrl": "https://youtube.com/shorts/ScDYJqcXvEY",
         "instagramUrl": "https://www.instagram.com/reel/Df0hDUUjiaq/"
+      },
+      {
+        "date": "2026-11-27",
+        "featureId": "category_insights",
+        "setting": "hostel_balcony_dawn",
+        "hookLine": "Mock tests de raha hu, par progress kahan?",
+        "title": "Blind Mock Tests? Not Anymore!",
+        "storySummary": "Arjun is frustrated by taking countless mock tests without seeing real improvement in his speed or accuracy. Priya introduces him to Aspirant Arcade's 'Overall Quiz Insights' feature, which tracks his accuracy trends, speed per question, and identifies weak chapters, transforming his blind efforts into targeted smart study.",
+        "youtubeUrl": "https://youtube.com/shorts/VGwl3FEjFTY",
+        "instagramUrl": "https://www.instagram.com/reel/DgOOPt8zcYW/"
       }
     ],
     "leaderboard": [
@@ -181,7 +191,6 @@
     ]
   },
   "recentSettings": [
-    "interview_waiting_lounge",
     "study_group_table",
     "park_bench_evening",
     "tea_stall_tapri",
@@ -190,6 +199,7 @@
     "post_exam_auto_ride",
     "terrace_night_study",
     "coaching_classroom_backbench",
-    "bus_stop_rain_wait"
+    "bus_stop_rain_wait",
+    "hostel_balcony_dawn"
   ]
 }
