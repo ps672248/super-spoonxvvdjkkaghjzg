@@ -1,7 +1,7 @@
 {
-  "lastRunDate": "2026-11-27",
-  "lastFeatureId": "category_insights",
-  "totalRuns": 17,
+  "lastRunDate": "2026-11-28",
+  "lastFeatureId": "leaderboard",
+  "totalRuns": 18,
   "byFeature": {
     "focus_guard": [
       {
@@ -163,6 +163,16 @@
         "storySummary": "Arjun struggles with the uncertainty of his exam rank until Priya introduces him to Aspirant Arcade's Competitive Leaderboard, turning his revision into a real-time rank battle.",
         "youtubeUrl": "https://youtube.com/shorts/6r1d2fzROa4",
         "instagramUrl": "https://www.instagram.com/reel/Df296S6jwkP/"
+      },
+      {
+        "date": "2026-11-28",
+        "featureId": "leaderboard",
+        "setting": "university_auditorium",
+        "hookLine": "Exam prep blind? No clue your real rank?",
+        "title": "Rank Anxiety? Conquer the Competitive Leaderboard!",
+        "storySummary": "Arjun struggles with the common pain point of not knowing his competitive standing. Priya introduces him to Aspirant Arcade's Competitive Leaderboard, which allows him to track his real-time rank, earn XP, and battle thousands of aspirants.",
+        "youtubeUrl": "https://youtube.com/shorts/E0aVzBAvW1o",
+        "instagramUrl": "https://www.instagram.com/reel/DgQwvrIBq8N/"
       }
     ],
     "ai_interview_gd": [
@@ -191,7 +201,6 @@
     ]
   },
   "recentSettings": [
-    "study_group_table",
     "park_bench_evening",
     "tea_stall_tapri",
     "cyber_cafe_portal",
@@ -200,6 +209,7 @@
     "terrace_night_study",
     "coaching_classroom_backbench",
     "bus_stop_rain_wait",
-    "hostel_balcony_dawn"
+    "hostel_balcony_dawn",
+    "university_auditorium"
   ]
 }
